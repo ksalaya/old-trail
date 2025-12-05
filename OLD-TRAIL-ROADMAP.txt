@@ -1,0 +1,183 @@
+﻿OLD-TRAIL-ROADMAP*
+A. Routes & Cutoffs → Big Strategic Choices
+Existing goals (kept):
+* Sublette vs. Fort Bridger, Three Island vs. south of Snake, Columbia rafting vs. Barlow Road.
+* Each route changes distance, hazards, events, and forts. 
+* “You are early/late” hints at Fort Laramie, South Pass, The Dalles based on real schedule targets. 
+New detail & extensions:
+1. Segment-level route cards
+   * For each fork, define a “route card” with:
+      * Extra miles vs. baseline.
+      * Expected total days from fork to next major fort at steady pace.
+      * Climate tweak (e.g., Sublette: +heat, +dust, -water; Bridger: +cool nights, +grass, +resupply). 
+      * Special events unlocked (Shoshone trade near Bridger, alkali/dry basin events on Sublette, etc.).
+2. Historical route hints & diary flavor
+   * Add log snippets based on diaries when a route is chosen:
+      * “Men talk of the ‘dry drive’ ahead; we must fill every cask at Green River.” (Sublette) 
+      * “Some say Bridger’s road is longer, but with better grass and a friendly fort for repairs.” (Fort Bridger path).
+   * Use these as soft recommendations, not hard tutorials.
+3. Route difficulty memory
+   * Track a hidden “route stress” score for each major segment:
+      * Long desert legs, bad water, and steep passes increase stress.
+      * Good grass, cool weather, and successful trades decrease it.
+   * This can later feed into:
+      * Oxen fatigue & failure risk.
+      * Companion morale (“Everyone dreads another dry basin like the one behind us.”).
+B. Weather Layer 2.0 Tied to Route Segments
+Existing goals (kept):
+* Early departures → high rivers and more storms; late → dust and heat on Platte/Snake/alkali.
+* Cholera corridor along Platte in wet years; late snow in South Pass / Blues / Barlow. 
+New detail & extensions:
+1. Segment-specific climate tuning
+   * Use per-segment profiles (Kansas bottomlands, Platte, Sweetwater, Snake plain, Blues, Columbia) with:
+      * Seasonally adjusted pRain, pStorm, and temperature bands tuned to notes from the routes + daily life PDFs.
+2. Disease-linked weather windows
+   * Along the Platte, if a week is unusually wet + warm:
+      * Increase bad-water event chance and cholera/dysentery risk when drinking from riverbank “holes” or marshes. 
+3. Snow window logic
+   * At South Pass, Blues, and Barlow:
+      * Check date vs. “normal window” (from routes PDF). If late, add light snow/frost event chance and travel penalties, escalating into blizzard events if very late. 
+4. Oxen/weather interplay
+   * Add a per-day “stock strain” score:
+      * Long hot days, bad mud, steep grades, and headwinds increase it.
+      * Cool clear days and good camp (proper evening camp macro) reduce it. 
+C. Deeper Cooking & Meal Types, Historically Grounded
+(This is the next big feature when you say “let’s restart.”)
+Existing goals (kept):
+* Named menu: mush & bacon, beans & bacon supper, buffalo/antelope stews, salmon stews at Salmon Falls, etc.
+* Food “groups” (staples, meat, fruit/veg, coffee/tea) and long-term diet penalties.
+* Camp effort vs. meal quality; fuel and skill affecting yields and burn chance.
+New detail & extensions (from food PDF + daily life):
+1. Authentic meal roster
+ Use historically documented staples and routines:
+   * Breakfast archetypes
+   * Mush & bacon: flour/cornmeal + water + a little bacon grease.
+   * Flapjacks & coffee: flour + saleratus + water/coffee + bacon grease.
+   * Supper archetypes
+   * Beans & bacon: beans_rice + bacon + 2h simmer + decent fuel.
+   * Trail stew: fresh_meat + flour (dumplings) + dried_fruit or roots (when available).
+   * Salmon pot at Salmon Falls: special recipe unlocked via trade events.
+   2. Ration tier → recipe availability
+   * On filling rations, cook tasks can choose from hearty/feast recipes if supplies allow.
+   * On meager/bare-bones, cooking often devolves to quick fry-ups (simple meals or even burnt bread & coffee flavor events).
+   3. Food group tracker
+   * Maintain a rolling 10–14 day window of intake for:
+   * Staples (flour/hardtack/cornmeal/beans).
+   * Meat/fat (bacon, fresh_meat, rich stews).
+   * Fruit/veg (dried fruit, traded vegetables, foraged berries).
+   * Coffee/tea (morale stimulant). 
+   * Missing groups → slowly accumulate risks:
+   * Low fruit/veg → scurvy-like events (bleeding gums, poor healing).
+   * Low meat/fat → chronic fatigue and slower condition recovery.
+   * No coffee/tea for “coffee people” → morale malus.
+   4. Meal effort macros
+   * Quick fry-up (1h):
+   * Low fuel cost, can run in poor weather.
+   * Often yields meal_simple and uses basic staples.
+   * Proper supper (2–3h):
+   * Requires decent fuel and often a “camp quality” macro (Proper Camp).
+   * Converts more raw pounds → hearty/feast meals with better morale and warmth.
+   * Wet fuel / low skill → higher burn rates, with flavor text pulled from diaries (“biscuits burnt on the bottom, doughy on top”).
+   5. Region-aware recipes
+   * Tie certain recipes to segments:
+   * Buffalo-heavy feasts in Platte/buffalo country.
+   * Salmon & roots in Snake/Columbia.
+   * Potatoes and vegetables more common near Grande Ronde/Whitman Mission/Boise.
+D. Daily Rhythm & Event Layer (implemented v1, future tweaks)
+Already implemented:
+   * Morning/noon/evening/night blocks, daily rhythm scoring, camp macros (proper vs rushed), and night watch risk.
+Future depth layers:
+   1. Task nudges by block
+   * Morning: subtle boosts to travel speed + oxen recovery when you respect traditional 3–5h morning marches. 
+   * Noon: special micro-events (minor wagon fixes, brief doctoring, school or Sunday service on select days).
+   * Evening: replace some manual micro with bundled macros (camp quality already in place; later, we can auto-assign wood/water/guard/cooking combos based on priorities).
+   2. Historical day types
+   * Mark special days with unique log copy and slight rhythm expectations:
+   * Sunday “layover” days (rest & worship if morale is low or doctoring is needed).
+   * Forced layover days (storms, blizzards, or high water—heavy impact on upcoming schedule hints).
+E. Future Skill Progression Hooks
+Existing goals (kept):
+   * Use-based skills for Travel, Hunting, Cooking, Woodcutting, Doctoring, plus future Riverwork.
+   * Micro-perks at skill thresholds (Cooking 3, Woodcutting 4, Riverwork 3, etc.).
+New additions:
+   1. Soft per-day XP caps
+   * Borrow UnReal World–style daily caps so players can’t grind one task in a single day to max it. 
+   2. Background-linked perk trees
+   * Each background (Farmer/Banker/Carpenter/Teacher) unlocks one or two special perk choices at mid/high skill:
+   * Farmer: better oxen handling, improved grass sense (less stock strain).
+   * Banker: better prices when trading, small interest/credit events.
+   * Carpenter: extra wagon repair efficiency, less part usage.
+   * Teacher: morale-boosting camp events (stories, schooling) and improved doctoring outcomes.
+   3. Skill-synergy events
+   * Combine skills in checks: e.g. a difficult descent uses both Travel and Woodcutting (chaining wheels, braking), with special log text on success/failure.
+F. Inventory & Economy Tweaks Along the Route
+Existing goals (kept):
+   * Realistic price inflation at forts; segment-specific trade goods; climate-tuned spoilage.
+New detail from food & supplies + reference manual:
+   1. Fort-specific price tables
+   * Independence/St. Joseph: baseline Missouri prices from 1845 tables. 
+   * Fort Kearny/Laramie: 2–3× price multipliers for flour, bacon, coffee, ammo.
+   * Fort Hall/Boise: some items (flour, bacon, sugar, coffee) at 4–10× baseline.
+   2. Goods that matter
+   * Introduce small set of trade tags:
+   * Warm blankets, coffee, sugar, tobacco, spare ammunition, bright cloth.
+   * These can be traded with forts or Native groups for food or guidance events.
+   3. Spoilage by climate & container
+   * Raw meat and feast meals decay faster in hot, arid Snake/alkali segments; slower in high cool passes and Blue Mountain forests.
+   * Optional: simple “barrel vs sack” distinction—bacon in bran or barrels decays slower than loose or repeatedly opened supplies, nodding to period practices. 
+   4. Overload feedback
+   * Better log messaging tying overload to real wagon capacities (16–2000 lb safe cargo, as in guidebooks) so players feel why 1,600–2,000 lb is the sweet spot.
+G. Scene System & Temporal Viewport Mood
+Existing goals (kept):
+   * Use scene list mileage bands; weather/morale-aware mood selection; camp vs travel scenes. 
+New art-direction hooks (Bierstadt / Remington / Maggiori):
+   1. Mood palettes per region
+   * Bierstadt-style luminous dawn/sunset for triumphant milestones (South Pass, Grande Ronde, Oregon City). 
+   * Remington nocturnes (deep blue-green nights with firelight) for tense camp or guard events. 
+   * Maggiori cinematic storm and cloud drama for pivotal route choices and storms, emphasizing tiny wagons under massive skies. 
+   2. Scene tags
+   * Each scene in the list gets tags like travel_day_clear, camp_evening_rain, night_guard, feast_event, illness_camp.
+   * Viewport picker uses:
+   * Region + miles.
+   * Mode (camp vs travel).
+   * Weather (clear/heat/storm/cold).
+   * Party mood (mean morale, illness present, recent feast or tragedy).
+   3. Event scenes
+   * Pull from event art (river crossings, wagon crashes, illness, trade) as temporary viewport overlays when those events fire, then fade back to ambient travel scene.
+H. Health & Illness Layer Anchored to Geography
+Existing goals (kept):
+   * Cholera/dysentery corridor; alkali poisoning; mountain fever/exposure; snakebite/breaks/frostbite/exhaustion; treatments via doctoring skill + supplies.
+New specifics:
+   1. Geography-aware risk tables
+   * Platte in warm, wet periods: high cholera/dysentery risk if drinking from low holes or stagnant pools.
+   * Alkali segments (Snake/40-mile desert): “alkali water” events with taste/morale penalties and condition hits unless water is diluted or avoided.
+   * South Pass/Blues/Barlow: frostbite risk at night if warmth + clothing too low.
+   2. Affliction progression
+   * Each major illness has 3 stages (risk → onset → crisis/recovery) with clear log feedback and treatment hooks:
+   * e.g. Dysentery: risk from bad water, onset with cramps & weakness, crisis with major dehydration and potential death if not treated with boiled water + rest.
+   3. Doctoring gameplay
+   * Doctoring skill influences:
+   * Chance to correctly diagnose (log text clarity).
+   * Effectiveness of treatments (fewer hours needed, less resource waste).
+   * Fort doctors and missions can offer superior care for high price or with narrative consequences.
+I. HTML5 Overlay, Audio & Fullscreen Hooks (Polish Phase)
+Existing goals (kept):
+   * Rain/lighting overlays, CRT/temporal viewport glow, HUD polish, soundscape with ambient loops & SFX, possible voice/TTS.
+Expanded plan:
+   1. Viewport overlay stack
+   * Reuse arcade CRT/time-window treatments on scene and map (already partially in CSS).
+   * Add:
+   * Optional rain/snow canvas overlays when storms/snow events fire.
+   * Occasional lightning flicker synced to storm log entries.
+   2. Audio pass
+   * Web Audio–based ambient loops:
+   * Prairie wind, storms, river crossings, night campfire, fort bustle.
+   * Audio sprites for UI clicks, task changes, event stingers to minimize requests. 
+   3. Fullscreen support
+   * Add a “Temporal Viewport Fullscreen” button that:
+   * Uses the Fullscreen API on the Old Trail root container.
+   * Respects mobile browser constraints (user gesture, iOS quirks) per fullscreen PDF guidance.
+   4. Mobile-friendly tweaks
+   * Make sure touch targets (buttons, dropdowns) are sized & spaced for phones.
+   * Optionally auto-suggest fullscreen when user taps “Begin journey” on mobile for more immersive play, with an easy exit toggle.
+   *
