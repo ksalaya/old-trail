@@ -3940,6 +3940,39 @@
         tempC -= 0.8;
       }
     }
+  }
+
+  function getWeather(state) {
+    ensureWeatherRuntime();
+    const ws = gameState.weatherSystem || {};
+    const noise3 = ws.noise || ((x, y, t) => 0);
+    const rng = ws.rng || Math.random;
+    const climate = getClimateBaseline(state.region, state.month);
+    const tScale = (state.dayOfYear + state.hour / 24) * 0.05;
+    const sx = (state.x || 0) * 0.005;
+    const sy = (state.y || 0) * 0.003;
+
+    const profile =
+      gameState.startProfile || START_PROFILES[gameState.startProfileId];
+
+    const tempNoise = noise3(sx, sy, tScale);
+    const diurnal = Math.cos(((state.hour - 15) / 24) * 2 * Math.PI) * 5.2;
+    let tempC = lerp(climate.tMin, climate.tMax, 0.5 + 0.35 * tempNoise) + diurnal;
+    tempC -= 0.006 * (state.altitude || 0);
+    if (profile) {
+      if (profile.heatHazard === "high") tempC += 2.2;
+      else if (profile.heatHazard === "low") tempC -= 1.2;
+      if (profile.riverHazard === "high" && state.month === "April") {
+        tempC -= 0.8;
+      }
+    }
+
+    const cloudBase = noise3(sx + 12, sy - 5, tScale * 0.7);
+    const frontDrift = noise3(sx + state.dayOfYear * 0.02, sy, tScale * 0.35);
+    const clouds = clamp(0.55 + 0.35 * cloudBase + 0.15 * frontDrift, 0, 1);
+
+    let pRain = climate.pRain * (0.6 + 0.8 * clouds) * (0.75 + 0.5 * frontDrift);
+    let pStorm = climate.pStorm * (0.55 + 0.8 * Math.max(frontDrift, 0));
 
     const cloudBase = noise3(sx + 12, sy - 5, tScale * 0.7);
     const frontDrift = noise3(sx + state.dayOfYear * 0.02, sy, tScale * 0.35);
