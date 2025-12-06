@@ -1,0 +1,11 @@
+=== Illness & Medical – TODO / FUTURE HOOKS ===
+- Add additional diseases: cholera (more lethal than dysentery), scurvy/camp-scurvy tied directly to long-term low fruitVeg intake, mountain pneumonia in high passes, snakebite, broken bones, etc.
+- Integrate water quality tracking (safe wells/boiled vs. stagnant/alkali sources) and make bad-water choices explicitly increase dysentery/cholera risk.
+- Replace the current “automatic doctoring” with an explicit Doctor task:
+  - Add a 'Doctor / Care for sick' task in the hour-tasks UI.
+  - Wire JOB_DEFS.doctor to a distinct task id and handle it in performTask().
+- Add affliction icons/overlays in the temporal viewport when a major crisis occurs.
+- Tie afflictions more strongly into events:
+  - Hospital/mission care at forts (expensive but higher survival).
+  - Quarantine or delay events when an epidemic sweeps through the camp.
+- Refine numbers and probabilities using historical cholera-corridor research and playtesting.
