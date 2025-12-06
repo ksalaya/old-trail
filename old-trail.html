@@ -686,6 +686,198 @@
   margin-top: 2px;
 }
 
+/* Camp tasks overlay */
+#ot-camp-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 2, 4, 0.8);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  padding: 10px;
+}
+
+#ot-camp-overlay.ot-show {
+  display: flex;
+}
+
+#ot-camp-overlay .ot-overlay-inner {
+  position: relative;
+  max-width: 920px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+#ot-camp-overlay .ot-overlay-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+}
+
+/* Compact overlay chrome for camp planner */
+#ot-camp-overlay .ot-overlay-panel {
+  background: radial-gradient(circle at top, #171920, #0b0c11);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 8px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.7);
+}
+
+/* Camp menu shell tweaks */
+#oldtrail-camp-menu-widget .cm-shell {
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.7);
+}
+
+/* Crafting widget styling */
+#oldtrail-crafting-widget,
+#oldtrail-crafting-widget * {
+  box-sizing: border-box;
+}
+
+#oldtrail-crafting-widget {
+  font-family: "Georgia", "Times New Roman", serif;
+  background: radial-gradient(circle at top, #1c222f, #0c0f16);
+  color: #f5e9cf;
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+#oldtrail-crafting-widget .ot-craft-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+#oldtrail-crafting-widget .ot-craft-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 36px) 24px 80px;
+  gap: 4px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+#oldtrail-crafting-widget .ot-craft-cell {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.5);
+}
+
+#oldtrail-crafting-widget .ot-craft-output {
+  width: 80px;
+  height: 48px;
+  border-radius: 8px;
+  background: linear-gradient(145deg, rgba(247, 207, 127, 0.2), rgba(240, 183, 91, 0.12));
+  border: 1px solid rgba(247, 207, 127, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #f7cf7f;
+}
+
+#oldtrail-crafting-widget .ot-craft-status {
+  font-size: 11px;
+  color: #d7cfbf;
+}
+
+/* Trail log widget wrapper inside panel */
+#old-trail-log-widget {
+  width: 100%;
+}
+
+/* Thoughts bubble placement */
+#oldtrail-thoughts-bubble {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 15;
+  cursor: pointer;
+}
+
+#oldtrail-thoughts-bubble .tb-window {
+  width: 280px;
+  background: radial-gradient(circle at top, #1d1f27, #0b0c11);
+  border: 1px solid rgba(247, 207, 127, 0.35);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65);
+  overflow: hidden;
+}
+
+#oldtrail-thoughts-bubble .tb-header {
+  background: linear-gradient(90deg, #4a2b1b, #23130d);
+  color: #f6e7c6;
+  padding: 6px 8px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#oldtrail-thoughts-bubble .tb-body {
+  display: flex;
+  padding: 8px;
+  gap: 8px;
+}
+
+#oldtrail-thoughts-bubble .tb-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #c2a070, #74512f);
+  border: 1px solid rgba(247, 207, 127, 0.35);
+}
+
+#oldtrail-thoughts-bubble .tb-text {
+  font-size: 12px;
+  line-height: 1.35;
+  color: #f4e8d4;
+}
+
+#oldtrail-thoughts-bubble .tb-mood-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+#oldtrail-thoughts-bubble .tb-mood-bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  border: 1px solid rgba(247, 207, 127, 0.25);
+}
+
+#oldtrail-thoughts-bubble .tb-mood-fill {
+  height: 100%;
+  width: 50%;
+  background: linear-gradient(90deg, #a33a2b, #f0b75b);
+  transition: width 160ms ease-out;
+}
+
+#oldtrail-thoughts-bubble .tb-footer {
+  padding: 6px 8px 8px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: #b39b7c;
+  text-transform: uppercase;
+}
+
 /* Small responsive tweak */
 
 @media (max-width: 900px) {
@@ -1002,7 +1194,23 @@
 
         <div class="ot-panel">
           <div class="ot-panel-header">Trail log</div>
-          <div class="ot-panel-body ot-log" id="ot-trail-log"></div>
+          <div class="ot-panel-body" id="ot-trail-log-panel">
+            <div id="old-trail-log-widget">
+              <div class="ot-log-shell">
+                <div class="ot-log-header">
+                  <div class="ot-log-title">Trail Log</div>
+                  <div class="ot-log-sub">Journal of the Journey</div>
+                </div>
+                <div class="ot-log-body">
+                  <div class="ot-log-list"></div>
+                </div>
+                <div class="ot-log-footer">
+                  <div>Recent entries</div>
+                  <div class="ot-footer-pill">Handwritten mode</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="ot-panel">
@@ -1045,7 +1253,56 @@
         <button id="ot-btn-evening-rushed-camp" class="ot-btn-outline">
           Rushed camp (1h)
         </button>
+        <button id="ot-btn-open-camp-tasks" class="ot-btn-outline">
+          Camp tasks
+        </button>
       </div>
+    </div>
+  </div>
+
+  <!-- Camp tasks & crafting overlay -->
+  <div id="ot-camp-overlay">
+    <div class="ot-overlay-inner">
+      <div class="ot-overlay-panel">
+        <div class="ot-panel-header" style="margin-bottom: 6px">
+          Camp tasks planner
+        </div>
+        <div id="oldtrail-camp-menu-widget"></div>
+        <div style="display: flex; gap: 8px; margin-top: 8px; align-items: center">
+          <button id="ot-btn-camp-confirm" class="ot-btn-gold">Confirm chores</button>
+          <button id="ot-btn-camp-auto" class="ot-btn-outline">Auto plan</button>
+          <div class="ot-text-muted" id="ot-camp-summary-note"></div>
+        </div>
+      </div>
+      <div class="ot-overlay-panel">
+        <div class="ot-panel-header" style="margin-bottom: 6px">
+          Crafting & repairs
+        </div>
+        <div id="oldtrail-crafting-widget"></div>
+      </div>
+      <button id="ot-btn-close-camp" class="ot-btn-outline ot-overlay-close">Close</button>
+    </div>
+  </div>
+
+  <div id="oldtrail-thoughts-bubble" style="display: none">
+    <div class="tb-window">
+      <div class="tb-header">
+        <span class="tb-name">Companion</span>
+        <span class="tb-close">×</span>
+      </div>
+      <div class="tb-body">
+        <div class="tb-avatar"></div>
+        <div style="flex: 1">
+          <div class="tb-text">Quiet thoughts by the fire.</div>
+          <div class="tb-mood-row">
+            <div class="tb-mood-bar">
+              <div class="tb-mood-fill"></div>
+            </div>
+            <div class="tb-mood-label">Mood</div>
+          </div>
+        </div>
+      </div>
+      <div class="tb-footer">Tap to cycle thoughts</div>
     </div>
   </div>
 
@@ -2005,6 +2262,171 @@
     },
   };
 
+  const CAMP_TASKS = [
+    {
+      id: "cook_hot_meal",
+      label: "Cook a hot meal",
+      hours: 2,
+      effects: { hunger: 18, morale: 4, warmth: 2 },
+      desc: "Warm stew, coffee, and flour cakes for the group.",
+      priority: "food",
+    },
+    {
+      id: "gather_fuel",
+      label: "Gather fuel",
+      hours: 1.5,
+      effects: { warmth: 6, energy: -2 },
+      desc: "Collect wood or buffalo chips for the night fire.",
+      priority: "safety",
+    },
+    {
+      id: "fetch_and_boil_water",
+      label: "Fetch & boil water",
+      hours: 1.5,
+      effects: { thirst: 18, condition: 1 },
+      desc: "Haul water, boil to cut illness risk.",
+      priority: "water",
+    },
+    {
+      id: "mend_clothes_and_boots",
+      label: "Mend clothes & boots",
+      hours: 1.5,
+      effects: { warmth: 4, condition: 3, morale: 2 },
+      desc: "Patch canvas, resew soles.",
+      priority: "repair",
+    },
+    {
+      id: "repair_wagon_and_tackle",
+      label: "Repair wagon & tackle",
+      hours: 1.5,
+      effects: { wagon: 6, energy: -2 },
+      desc: "Tighten bolts, grease wheels, check yokes.",
+      priority: "repair",
+    },
+    {
+      id: "treat_wounds_and_ill",
+      label: "Treat wounds & ill",
+      hours: 1,
+      effects: { condition: 4, morale: 2 },
+      desc: "Clean cuts, tend the sick, share tonics.",
+      priority: "care",
+    },
+    {
+      id: "preserve_meat",
+      label: "Preserve meat",
+      hours: 2,
+      effects: { supplies: { preserved_meat: 4, fresh_meat: -4 }, morale: 1 },
+      desc: "Smoke or dry meat for the days ahead.",
+      priority: "food",
+    },
+    {
+      id: "set_snares_short_hunt",
+      label: "Set snares / short hunt",
+      hours: 2.5,
+      effects: { supplies: { fresh_meat: 3, ammo: -1 }, energy: -4 },
+      desc: "Chance at meat by dawn; tiring.",
+      priority: "food",
+    },
+    {
+      id: "stand_guard_night_watch",
+      label: "Night watch",
+      hours: 1.5,
+      effects: { guard: 1, energy: -3 },
+      desc: "Watch for raiders or stampede.",
+      priority: "safety",
+    },
+    {
+      id: "extra_sleep",
+      label: "Extra sleep",
+      hours: 3,
+      effects: { energy: 12, condition: 5 },
+      desc: "Turn in early and recover.",
+      priority: "rest",
+    },
+    {
+      id: "read_book",
+      label: "Read by lantern light",
+      hours: 1,
+      effects: { morale: 4, energy: 2 },
+      desc: "Quiet reading that lifts spirits.",
+      priority: "rest",
+    },
+  ];
+
+  const CRAFTING_RECIPES = [
+    {
+      id: "smoked_meat",
+      name: "Smoked meat",
+      pattern: "110110000",
+      inputs: [
+        { key: "fresh_meat", amount: 4 },
+        { key: "salt", amount: 1 },
+        { key: "fuel", amount: 1 },
+      ],
+      output: { key: "preserved_meat", amount: 4 },
+      hoursCost: 2,
+      skillTag: "cooking",
+      desc: "Preserve meat for longer stretches of trail.",
+      icon: "SM",
+    },
+    {
+      id: "repaired_shoes",
+      name: "Repair shoes",
+      pattern: "010111010",
+      inputs: [
+        { key: "leather", amount: 1 },
+        { key: "needle", amount: 1 },
+      ],
+      output: { key: "boot_durability", amount: 5 },
+      hoursCost: 1.5,
+      skillTag: "crafting",
+      desc: "Patch soles and reduce future foot injuries.",
+      icon: "RS",
+    },
+    {
+      id: "patched_cover",
+      name: "Patch wagon cover",
+      pattern: "111111000",
+      inputs: [
+        { key: "cloth", amount: 2 },
+        { key: "pitch", amount: 1 },
+      ],
+      output: { key: "wagonCondition", amount: 6 },
+      hoursCost: 1.5,
+      skillTag: "crafting",
+      desc: "Seal tears to keep stores dry.",
+      icon: "WC",
+    },
+    {
+      id: "extra_ammo",
+      name: "Hand-load ammo",
+      pattern: "100010100",
+      inputs: [
+        { key: "lead", amount: 2 },
+        { key: "powder", amount: 1 },
+      ],
+      output: { key: "ammo", amount: 4 },
+      hoursCost: 1.5,
+      skillTag: "crafting",
+      desc: "Cast bullets and paper cartridges.",
+      icon: "AM",
+    },
+    {
+      id: "herbal_tonic",
+      name: "Herbal tonic",
+      pattern: "001111000",
+      inputs: [
+        { key: "water", amount: 1 },
+        { key: "herbs", amount: 1 },
+      ],
+      output: { key: "medicine", amount: 1 },
+      hoursCost: 1,
+      skillTag: "doctoring",
+      desc: "Brew a mild fever tonic.",
+      icon: "HT",
+    },
+  ];
+
   /* ========= STATE ========================================================= */
 
   const dom = {};
@@ -2061,6 +2483,12 @@
 
   function randInt(min, max) {
     return Math.floor(randFloat(min, max + 1));
+  }
+
+  function adjustPersonStat(person, key, delta) {
+    if (!person || typeof delta !== "number") return;
+    const current = typeof person[key] === "number" ? person[key] : 0;
+    person[key] = clamp(current + delta, 0, 100);
   }
 
   function choice(arr) {
@@ -3120,7 +3548,7 @@
     dom.mapViewport = document.getElementById("ot-map-viewport");
     dom.btnToggleMapList = document.getElementById("ot-btn-toggle-maplist");
     dom.companionDetail = document.getElementById("ot-companion-detail");
-    dom.trailLog = document.getElementById("ot-trail-log");
+    dom.trailLog = document.getElementById("old-trail-log-widget");
     dom.suppliesOverview = document.getElementById("ot-supplies-overview");
     dom.footerStatus = document.getElementById("ot-footer-status");
     dom.btnAdvance1 = document.getElementById("ot-btn-advance-1");
@@ -3129,6 +3557,7 @@
     dom.btnChangePace = document.getElementById("ot-btn-change-pace");
     dom.btnChangeRations = document.getElementById("ot-btn-change-rations");
     dom.btnOpenInventory = document.getElementById("ot-btn-open-inventory");
+    dom.btnOpenCamp = document.getElementById("ot-btn-open-camp-tasks");
 
     dom.inventoryModal = document.getElementById("ot-inventory-modal");
     dom.modalBackdrop = dom.inventoryModal.querySelector(".ot-modal-backdrop");
@@ -3145,6 +3574,13 @@
     dom.btnClosePriorities = document.getElementById("ot-btn-close-priorities");
     dom.btnEveningProperCamp = document.getElementById("ot-btn-evening-proper-camp");
     dom.btnEveningRushedCamp = document.getElementById("ot-btn-evening-rushed-camp");
+    dom.campOverlay = document.getElementById("ot-camp-overlay");
+    dom.btnCloseCamp = document.getElementById("ot-btn-close-camp");
+    dom.btnCampConfirm = document.getElementById("ot-btn-camp-confirm");
+    dom.btnCampAuto = document.getElementById("ot-btn-camp-auto");
+    dom.campSummaryNote = document.getElementById("ot-camp-summary-note");
+    dom.craftingWidget = document.getElementById("oldtrail-crafting-widget");
+    dom.thoughtsBubble = document.getElementById("oldtrail-thoughts-bubble");
 
   }
 
@@ -3364,6 +3800,34 @@
     return { pRain: 0.2, pStorm: 0.08, tMin: 4, tMax: 20, windKph: [8, 22] };
   }
 
+    }
+  }
+
+  function ensureWeatherRuntime() {
+    if (!gameState.weatherSystem || !gameState.weatherSystem.seed) {
+      const year = gameState.date ? gameState.date.getFullYear() : 1848;
+      initWeatherSystem(year, gameState.partyId || "party");
+    }
+    if (!gameState.weatherSystem.rng) {
+      const seed = gameState.weatherSystem.seed || gameState.weatherSeed || 1;
+      gameState.weatherSystem.rng = mulberry32(seed);
+    }
+    if (!gameState.weatherSystem.noise) {
+      const seed = gameState.weatherSystem.seed || gameState.weatherSeed || 1;
+      gameState.weatherSystem.noise = makeNoise3D(seed);
+    }
+  }
+
+  function getClimateBaseline(regionKey, monthName) {
+    const monthly = CLIMATE[regionKey] && CLIMATE[regionKey].monthly;
+    if (monthly && monthly[monthName]) return monthly[monthName];
+    if (monthly) {
+      const first = Object.keys(monthly)[0];
+      if (first) return monthly[first];
+    }
+    return { pRain: 0.2, pStorm: 0.08, tMin: 4, tMax: 20, windKph: [8, 22] };
+  }
+
   function updateWeatherHistory(weather) {
     if (!Array.isArray(gameState.weatherHistory)) {
       gameState.weatherHistory = [];
@@ -3520,10 +3984,24 @@
     gameState.region = last.region;
   }
 
-  function addLog(text) {
-    gameState.log.push({ date: new Date(gameState.date.getTime()), text: text });
+  function addLog(text, meta) {
+    const entry = { date: new Date(gameState.date.getTime()), text: text };
+    gameState.log.push(entry);
     if (gameState.log.length > 120) {
       gameState.log.splice(0, gameState.log.length - 120);
+    }
+
+    if (window.ksOldTrailLog && ksOldTrailLog.add) {
+      const dayTag =
+        gameState.startDayOfYear != null
+          ? Math.max(1, getDayOfYear(gameState.date) - gameState.startDayOfYear + 1)
+          : getDayOfYear(gameState.date);
+      ksOldTrailLog.add(text, {
+        tag: "DAY " + dayTag,
+        location: gameState.locationName || "On the trail",
+        tone: meta && meta.tone,
+        day: dayTag,
+      });
     }
   }
 
@@ -3778,6 +4256,269 @@
       );
       person.thirst = clamp(person.thirst + 30, 0, 100);
       person.morale = clamp(person.morale + 1, 0, 100);
+    }
+  }
+
+  function isCholeraCorridor(region, miles) {
+    if (region === "central_plains" || region === "plains") {
+      return miles >= 260 && miles <= 620;
+    }
+    return false;
+  }
+
+  function afflictionSeverityLabel(sev) {
+    if (sev >= 3) return "severe";
+    if (sev >= 2) return "moderate";
+    return "mild";
+  }
+
+  function logAfflictionStageChange(person, aff, prevStage) {
+    if (!person || !aff) return;
+    if (aff.stage === "acute" && prevStage !== "acute") {
+      if (aff.id === "dysentery") {
+        addLog(
+          "After drinking from a stagnant pool along the Platte, " +
+            person.name +
+            " is struck with violent cramps and diarrhea."
+        );
+      } else if (aff.id === "camp_fever") {
+        addLog(
+          person.name +
+            " is shivering with fever and complains of aching bones."
+        );
+      } else if (aff.id === "sprain") {
+        addLog(person.name + " is laid up by a sprained ankle.");
+      }
+    } else if (aff.stage === "recovery" && prevStage !== "recovery") {
+      addLog(
+        person.name +
+          " seems to be past the worst of " +
+          aff.label.toLowerCase() +
+          " and is slowly regaining strength."
+      );
+    } else if (aff.resolved && prevStage !== "resolved") {
+      addLog(
+        person.name +
+          " is finally able to keep food down and rest; the illness lifts."
+      );
+    }
+  }
+
+  function tickAfflictionsForHour() {
+    const doctor = getBestDoctor();
+    const hasMedicine = (gameState.supplies && gameState.supplies.med_kits) > 0;
+    const docSkill = doctor && doctor.skills ? doctor.skills.doctoring || 0 : 0;
+    const treatBonusBase = 1 + docSkill * 0.2 + (hasMedicine ? 0.5 : 0);
+    const rng =
+      (gameState.weatherSystem && gameState.weatherSystem.rng) || Math.random;
+
+    getAllPeople().forEach(function (person) {
+      if (!person || !person.alive) return;
+      ensureAfflictions(person);
+      person.afflictions.forEach(function (aff) {
+        if (!aff || aff.resolved) return;
+        aff.hoursActive += 1;
+
+        if (aff.stage === "acute" && treatBonusBase > 1) {
+          aff.reliefHours = (aff.reliefHours || 0) + 0.05 * (treatBonusBase - 1);
+          if (hasMedicine && !aff.medicineUsed && aff.severity >= 2) {
+            gameState.supplies.med_kits = Math.max(
+              0,
+              (gameState.supplies.med_kits || 0) - 1
+            );
+            aff.medicineUsed = true;
+            if (doctor) {
+              addLog(
+                doctor.name +
+                  " tends to " +
+                  person.name +
+                  " with medicines, easing the worst of the sickness."
+              );
+            }
+          }
+        }
+
+        const progress = aff.hoursActive + (aff.reliefHours || 0);
+        const incubationEnd = aff.hoursIncubation || 0;
+        const acuteEnd = incubationEnd + (aff.hoursAcute || 0);
+        const recoveryEnd = acuteEnd + (aff.recoveryBuffer || 24);
+
+        let stageBefore = aff.stage;
+        if (aff.stage === "incubation" && progress >= incubationEnd) {
+          aff.stage = "acute";
+          logAfflictionStageChange(person, aff, stageBefore);
+          stageBefore = aff.stage;
+        }
+        if (aff.stage === "acute" && progress >= acuteEnd) {
+          stageBefore = aff.stage;
+          aff.stage = "recovery";
+          aff.lastNotified = aff.hoursActive;
+          logAfflictionStageChange(person, aff, stageBefore);
+        }
+        if (aff.stage === "recovery" && progress >= recoveryEnd) {
+          stageBefore = aff.stage;
+          aff.stage = "resolved";
+          aff.resolved = true;
+          logAfflictionStageChange(person, aff, stageBefore);
+          return;
+        }
+
+        let conditionLoss = 0;
+        const treatDivisor = aff.stage === "acute" ? treatBonusBase : 1.0;
+
+        if (aff.id === "dysentery") {
+          if (aff.stage === "incubation") {
+            person.morale = clamp(person.morale - 0.5, 0, 100);
+          } else if (aff.stage === "acute") {
+            person.hunger = clamp(
+              person.hunger - (6 * aff.severity) / treatDivisor,
+              0,
+              100
+            );
+            person.thirst = clamp(
+              person.thirst - (9 * aff.severity) / treatDivisor,
+              0,
+              100
+            );
+            person.energy = clamp(
+              person.energy - (5 * aff.severity) / treatDivisor,
+              0,
+              110
+            );
+            person.morale = clamp(person.morale - 4, 0, 100);
+            conditionLoss += (1.3 * aff.severity) / treatDivisor;
+          } else if (aff.stage === "recovery") {
+            person.energy = clamp(person.energy + 0.5, 0, 110);
+            person.morale = clamp(person.morale + 0.5, 0, 100);
+            conditionLoss += 0.2;
+          }
+        } else if (aff.id === "camp_fever") {
+          if (aff.stage === "incubation") {
+            person.energy = clamp(person.energy - 1.2, 0, 110);
+          } else if (aff.stage === "acute") {
+            person.energy = clamp(
+              person.energy - (4 * aff.severity) / treatDivisor,
+              0,
+              110
+            );
+            person.warmth = clamp(
+              person.warmth - (3 + aff.severity),
+              0,
+              100
+            );
+            person.morale = clamp(person.morale - 2.5, 0, 100);
+            person.thirst = clamp(person.thirst - 2, 0, 100);
+            conditionLoss += (0.9 * aff.severity) / treatDivisor;
+          } else if (aff.stage === "recovery") {
+            person.warmth = clamp(person.warmth + 0.4, 0, 100);
+            person.morale = clamp(person.morale + 0.4, 0, 100);
+            conditionLoss += 0.25;
+          }
+        } else if (aff.id === "sprain") {
+          if (aff.stage === "acute") {
+            person.energy = clamp(person.energy - 1, 0, 110);
+            person.morale = clamp(person.morale - 0.8, 0, 100);
+            conditionLoss += 0.35 / treatDivisor;
+          } else if (aff.stage === "recovery") {
+            person.energy = clamp(person.energy - 0.25, 0, 110);
+          }
+        }
+
+        person.condition = clamp(person.condition - conditionLoss, 0, 100);
+
+        const needsProgressLog =
+          aff.stage === "acute" &&
+          (aff.lastNotified == null || aff.hoursActive - aff.lastNotified >= 12);
+        if (needsProgressLog) {
+          aff.lastNotified = aff.hoursActive;
+          if (aff.id === "dysentery") {
+            addLog(
+              person.name +
+                " is too weak to walk and rides in the wagon while the illness grips them."
+            );
+          } else if (aff.id === "camp_fever") {
+            addLog(
+              person.name +
+                " burns with fever and needs tending; travel slows while they rest."
+            );
+          } else if (aff.id === "sprain") {
+            addLog(person.name + " keeps weight off a swollen ankle.");
+          }
+        }
+
+        if (person.condition <= 0 && person.alive) {
+          person.alive = false;
+          addLog(
+            person.name +
+              " dies after a brutal bout of " +
+              aff.label.toLowerCase() +
+              " on the trail."
+          );
+        }
+      });
+    });
+  }
+
+  function maybeTriggerIllnessForHour() {
+    const rng =
+      (gameState.weatherSystem && gameState.weatherSystem.rng) || Math.random;
+    const region = gameState.region;
+    const w = gameState.weatherState || {};
+    const tempC = typeof w.tempC === "number" ? w.tempC : 15;
+    const hot = tempC >= 24;
+    const wetRecently = w.precip === "rain" || gameState.recentRainHours > 24;
+    const mouths = mouthsCount();
+    const s = gameState.supplies || {};
+    const waterGal = s.water || 0;
+    const miles = gameState.milesTraveled || 0;
+    const people = getAllPeople().filter(function (p) {
+      return p && p.alive;
+    });
+    const avgConditionEnergy = people.length
+      ?
+          people.reduce(function (sum, p) {
+            return sum + ((p.condition || 0) + (p.energy || 0)) / 2;
+          }, 0) / people.length
+      : 100;
+
+    if (isCholeraCorridor(region, miles)) {
+      let base = 0.0005;
+      if (hot && wetRecently) base *= 1.5;
+      if (waterGal < mouths * 0.4) base *= 1.5;
+      if (avgConditionEnergy < 50) base *= 1.5;
+
+      let newCase = false;
+      people.some(function (p) {
+        if (hasAffliction(p, "dysentery")) return false;
+        if (rng() < base) {
+          addAffliction(p, "dysentery", { severity: rng() < 0.35 ? 2 : 1 });
+          newCase = true;
+          return true;
+        }
+        return false;
+      });
+      if (newCase) return; // avoid multiple clustered cases in one hour
+    }
+
+    const coldWet =
+      tempC <= 5 || ((w.precip === "rain" && tempC < 10) || w.precip === "snow");
+    if (gameState.mode === "camp" && coldWet) {
+      const roughCamp =
+        gameState.dayRhythm &&
+        gameState.dayRhythm.eveningCampChoice === "rushed";
+      people.forEach(function (p) {
+        if (!p || hasAffliction(p, "camp_fever")) return;
+        const warmthLow = p.warmth < 30;
+        const energyLow = p.energy < 30;
+        if (!warmthLow && !energyLow) return;
+        let risk = 0.0003;
+        if (warmthLow) risk *= 1.6;
+        if (energyLow) risk *= 1.6;
+        if (roughCamp) risk *= 1.3;
+        if (rng() < risk) {
+          addAffliction(p, "camp_fever", { severity: tempC <= 0 ? 2 : 1 });
+        }
+      });
     }
   }
 
@@ -4807,6 +5548,7 @@
     updateRegionAndLocation();
     tickAfflictionsForHour();
     maybeTriggerIllnessForHour();
+    showCompanionThoughtForHour();
     maybeRandomEvent();
 
     if (gameState.milesTraveled >= gameState.targetMiles) {
@@ -5273,16 +6015,18 @@
   }
 
   function renderTrailLog() {
-    dom.trailLog.innerHTML = "";
-    (gameState.log || []).slice(-80).forEach(function (entry) {
+    if (!window.ksOldTrailLog || !ksOldTrailLog.clear) return;
+    ksOldTrailLog.clear();
+    (gameState.log || []).slice(-6).forEach(function (entry) {
       if (!entry) return;
-      const div = document.createElement("div");
-      div.className = "ot-log-entry";
-      div.textContent =
-        formatDateTime(entry.date) + " — " + (entry.text || "");
-      dom.trailLog.appendChild(div);
+      ksOldTrailLog.add(entry.text, {
+        tag: "DAY " +
+          (gameState.startDayOfYear != null
+            ? Math.max(1, getDayOfYear(entry.date) - gameState.startDayOfYear + 1)
+            : getDayOfYear(entry.date)),
+        location: gameState.locationName || "On the trail",
+      });
     });
-    dom.trailLog.scrollTop = dom.trailLog.scrollHeight;
   }
 
   function renderSuppliesOverview() {
@@ -5983,14 +6727,628 @@
       });
     }
 
+    if (dom.btnOpenCamp && dom.campOverlay) {
+      dom.btnOpenCamp.addEventListener("click", function () {
+        openCampOverlay();
+      });
+    }
+    if (dom.btnCloseCamp && dom.campOverlay) {
+      dom.btnCloseCamp.addEventListener("click", closeCampOverlay);
+      dom.campOverlay.addEventListener("click", function (e) {
+        if (e.target === dom.campOverlay) closeCampOverlay();
+      });
+    }
+    if (dom.btnCampConfirm) {
+      dom.btnCampConfirm.addEventListener("click", confirmCampTasks);
+    }
+    if (dom.btnCampAuto) {
+      dom.btnCampAuto.addEventListener("click", autoPlanCampTasks);
+    }
+
     dom.btnReset.addEventListener("click", resetGame);
   }
 
+
+  /* ========= CAMP TASKS, LOG, THOUGHTS =================================== */
+
+  function ensureCampFlags() {
+    if (!gameState.flags) gameState.flags = {};
+  }
+
+  function buildCampMenuWidget() {
+    const root = document.getElementById("oldtrail-camp-menu-widget");
+    if (!root || root.dataset.built) return;
+    root.dataset.built = "1";
+    root.innerHTML =
+      '<div class="cm-shell"><div class="cm-inner">' +
+      '<div class="cm-header"><div class="cm-title">Camp Tasks</div><div class="cm-loc" contenteditable="true">Camp at dusk</div></div>' +
+      '<div class="cm-note">Mark what your party will tend to before sleep</div>' +
+      '<div class="cm-body"><div class="cm-head"><div>Task</div><div>Time</div><div>Effects</div><div>Choose</div></div><div data-role="cm-rows"></div></div>' +
+      '<div class="cm-footer"><div class="cm-summary"><div class="cm-line">Hours at camp: <span data-role="cm-hours">6</span></div><div class="cm-line">Used: <span data-role="cm-hours-used">0.0</span> · Remaining: <span data-role="cm-hours-remaining" class="cm-hours-remaining">6.0</span></div><div class="cm-line">Tonight\'s focus: <span data-role="cm-focus">None yet</span></div></div><div class="cm-reset" data-role="cm-reset">Clear choices</div></div>' +
+      "</div></div>";
+
+    (function () {
+      const rowsContainer = root.querySelector('[data-role="cm-rows"]');
+      const hoursEl = root.querySelector('[data-role="cm-hours"]');
+      const hoursUsedEl = root.querySelector('[data-role="cm-hours-used"]');
+      const hoursRemainingEl = root.querySelector('[data-role="cm-hours-remaining"]');
+      const focusEl = root.querySelector('[data-role="cm-focus"]');
+      const resetEl = root.querySelector('[data-role="cm-reset"]');
+      let hoursAvailable = 6;
+      let tasks = CAMP_TASKS.map(function (t) {
+        return Object.assign({}, t, { selected: false });
+      });
+
+      function describeEffects(eff) {
+        const parts = [];
+        if (eff.hunger) parts.push("Food");
+        if (eff.thirst) parts.push("Water");
+        if (eff.warmth) parts.push("Warmth");
+        if (eff.energy) parts.push("Energy");
+        if (eff.morale) parts.push("Morale");
+        if (eff.condition) parts.push("Condition");
+        if (eff.wagon) parts.push("Wagon");
+        if (eff.guard) parts.push("Guard");
+        return parts.length ? parts.join(", ") : "—";
+      }
+
+      function formatHours(h) {
+        return (Math.round(h * 10) / 10).toFixed(1);
+      }
+
+      function renderRows() {
+        rowsContainer.innerHTML = "";
+        tasks.forEach(function (task) {
+          const row = document.createElement("div");
+          row.className = "cm-row";
+          row.setAttribute("data-id", task.id);
+          const nameEl = document.createElement("div");
+          nameEl.className = "cm-action-name";
+          nameEl.textContent = task.label;
+          const timeEl = document.createElement("div");
+          timeEl.className = "cm-time";
+          timeEl.textContent = formatHours(task.hours) + "h";
+          const effectsEl = document.createElement("div");
+          effectsEl.className = "cm-effects";
+          effectsEl.textContent = describeEffects(task.effects || {});
+          const toggle = document.createElement("div");
+          toggle.className = "cm-toggle";
+          const check = document.createElement("div");
+          check.className = "cm-check";
+          if (task.selected) check.classList.add("cm-check-on");
+          check.textContent = task.selected ? "✓" : "";
+          const label = document.createElement("div");
+          label.className = "cm-check-label";
+          label.textContent = task.selected ? "Planned" : "Skip";
+          toggle.appendChild(check);
+          toggle.appendChild(label);
+          toggle.addEventListener("click", function (evt) {
+            evt.stopPropagation();
+            task.selected = !task.selected;
+            updateSummary();
+            renderRows();
+          });
+          row.title = task.desc || "";
+          row.appendChild(nameEl);
+          row.appendChild(timeEl);
+          row.appendChild(effectsEl);
+          row.appendChild(toggle);
+          rowsContainer.appendChild(row);
+        });
+      }
+
+      function updateSummary() {
+        let used = 0;
+        const totals = { food: 0, warmth: 0, morale: 0, rest: 0 };
+        tasks.forEach(function (task) {
+          if (!task.selected) return;
+          used += task.hours;
+          const e = task.effects || {};
+          if (e.hunger) totals.food += e.hunger;
+          if (e.thirst) totals.food += e.thirst;
+          if (e.warmth) totals.warmth += e.warmth;
+          if (e.morale) totals.morale += e.morale;
+          if (e.energy || e.condition) totals.rest += (e.energy || 0) + (e.condition || 0);
+        });
+        hoursUsedEl.textContent = formatHours(used);
+        const remaining = hoursAvailable - used;
+        hoursRemainingEl.textContent = formatHours(remaining);
+        hoursRemainingEl.classList.toggle("cm-warning", remaining < -0.01);
+        const maxVal = Math.max(totals.food, totals.warmth, totals.morale, totals.rest);
+        if (maxVal <= 0) {
+          focusEl.textContent = "None yet";
+        } else {
+          const focusParts = [];
+          if (totals.food === maxVal) focusParts.push("Food/Water");
+          if (totals.warmth === maxVal) focusParts.push("Warmth");
+          if (totals.morale === maxVal) focusParts.push("Morale");
+          if (totals.rest === maxVal) focusParts.push("Rest");
+          focusEl.textContent = focusParts.join(", ");
+        }
+      }
+
+      resetEl.addEventListener("click", function (evt) {
+        evt.stopPropagation();
+        tasks.forEach(function (t) {
+          t.selected = false;
+        });
+        updateSummary();
+        renderRows();
+      });
+
+      function setTasks(list) {
+        if (!Array.isArray(list)) return;
+        tasks = list.map(function (t) {
+          return Object.assign({}, t);
+        });
+        renderRows();
+        updateSummary();
+      }
+
+      window.oldTrailCampMenu = {
+        setHours: function (h) {
+          hoursAvailable = Math.max(0, Number(h) || 0);
+          hoursEl.textContent = formatHours(hoursAvailable);
+          updateSummary();
+        },
+        setTasks: setTasks,
+        getPlan: function () {
+          const selected = tasks.filter(function (t) {
+            return t.selected;
+          });
+          let used = 0;
+          selected.forEach(function (t) {
+            used += t.hours;
+          });
+          return {
+            hoursAvailable: hoursAvailable,
+            hoursUsed: used,
+            hoursRemaining: hoursAvailable - used,
+            tasks: selected,
+          };
+        },
+      };
+
+      hoursEl.textContent = formatHours(hoursAvailable);
+      renderRows();
+      updateSummary();
+    })();
+  }
+
+  function buildCraftingWidget() {
+    const root = document.getElementById("oldtrail-crafting-widget");
+    if (!root || root.dataset.built) return;
+    root.dataset.built = "1";
+    root.innerHTML =
+      '<div class="ot-craft-header"><span>Crafting</span><select id="ot-craft-select" class="ot-select" style="flex:1"></select></div>' +
+      '<div class="ot-craft-grid" id="ot-craft-grid"></div>' +
+      '<div class="ot-craft-output" id="ot-craft-output">—</div>' +
+      '<div class="ot-craft-status" id="ot-craft-status">Choose a recipe</div>' +
+      '<div style="margin-top:6px; display:flex; gap:6px; align-items:center">' +
+      '<button class="ot-btn-gold" id="ot-btn-craft-do">Craft</button>' +
+      '<div id="ot-craft-req" class="ot-text-muted" style="font-size:11px"></div>' +
+      "</div>";
+
+    const grid = root.querySelector("#ot-craft-grid");
+    const select = root.querySelector("#ot-craft-select");
+    const statusEl = root.querySelector("#ot-craft-status");
+    const outputEl = root.querySelector("#ot-craft-output");
+    const reqEl = root.querySelector("#ot-craft-req");
+    const craftBtn = root.querySelector("#ot-btn-craft-do");
+
+    const cells = [];
+    for (let i = 0; i < 9; i++) {
+      const cell = document.createElement("div");
+      cell.className = "ot-craft-cell";
+      grid.appendChild(cell);
+      cells.push(cell);
+    }
+    const arrow = document.createElement("div");
+    arrow.textContent = "➜";
+    arrow.style.textAlign = "center";
+    arrow.style.color = "#f7cf7f";
+    grid.appendChild(arrow);
+    const spacer = document.createElement("div");
+    spacer.style.display = "none";
+    grid.appendChild(spacer);
+
+    function renderSelect() {
+      select.innerHTML = "";
+      CRAFTING_RECIPES.forEach(function (rec) {
+        const opt = document.createElement("option");
+        opt.value = rec.id;
+        opt.textContent = rec.name;
+        select.appendChild(opt);
+      });
+    }
+
+    function setPattern(pattern) {
+      const p = pattern || "";
+      for (let i = 0; i < cells.length; i++) {
+        const on = p.charAt(i) === "1";
+        cells[i].style.background = on
+          ? "linear-gradient(135deg, rgba(247,207,127,0.25), rgba(240,183,91,0.15))"
+          : "rgba(255,255,255,0.06)";
+        cells[i].style.borderColor = on
+          ? "rgba(247,207,127,0.45)"
+          : "rgba(255,255,255,0.08)";
+      }
+    }
+
+    function setOutput(label, iconText) {
+      outputEl.textContent = iconText || label || "—";
+    }
+
+    function setStatus(text) {
+      statusEl.textContent = text || "";
+    }
+
+    function renderRecipeRequirements(rec) {
+      if (!rec) {
+        reqEl.textContent = "";
+        return;
+      }
+      const need = rec.inputs
+        .map(function (i) {
+          const have = gameState.supplies[i.key] || 0;
+          return i.amount + " " + i.key + " (" + have + " on hand)";
+        })
+        .join(", ");
+      reqEl.textContent = "Requires: " + need;
+    }
+
+    function currentRecipe() {
+      const recId = select.value;
+      return CRAFTING_RECIPES.find(function (r) {
+        return r.id === recId;
+      });
+    }
+
+    function craftRecipe() {
+      const rec = currentRecipe();
+      if (!rec) return;
+      for (let i = 0; i < rec.inputs.length; i++) {
+        const need = rec.inputs[i];
+        const have = gameState.supplies[need.key] || 0;
+        if (have < need.amount) {
+          setStatus("Not enough " + need.key + " to craft.");
+          return;
+        }
+      }
+      rec.inputs.forEach(function (inp) {
+        gameState.supplies[inp.key] = (gameState.supplies[inp.key] || 0) - inp.amount;
+      });
+      gameState.supplies[rec.output.key] =
+        (gameState.supplies[rec.output.key] || 0) + rec.output.amount;
+      setStatus("Crafted " + rec.output.amount + " " + rec.name + ".");
+      addLog("Crafted " + rec.name + " at camp.", { tone: "event" });
+      renderSupplies();
+      renderRecipeRequirements(rec);
+    }
+
+    select.addEventListener("change", function () {
+      const rec = currentRecipe();
+      if (!rec) return;
+      setPattern(rec.pattern);
+      setOutput(rec.icon || rec.name, rec.icon || rec.name);
+      setStatus(rec.desc);
+      renderRecipeRequirements(rec);
+    });
+    craftBtn.addEventListener("click", craftRecipe);
+
+    window.oldTrailCrafting = {
+      setPattern: setPattern,
+      setOutput: setOutput,
+      setStatus: setStatus,
+      clearGrid: function () {
+        setPattern("000000000");
+        setOutput("—");
+      },
+    };
+
+    renderSelect();
+    if (CRAFTING_RECIPES.length) {
+      select.value = CRAFTING_RECIPES[0].id;
+      select.dispatchEvent(new Event("change"));
+    }
+  }
+
+  function openCampOverlay() {
+    buildCampMenuWidget();
+    buildCraftingWidget();
+    if (window.oldTrailCampMenu) {
+      oldTrailCampMenu.setHours(6);
+      oldTrailCampMenu.setTasks(
+        CAMP_TASKS.map(function (t) {
+          return Object.assign({}, t, { selected: false });
+        })
+      );
+    }
+    dom.campOverlay.classList.add("ot-show");
+  }
+
+  function closeCampOverlay() {
+    if (dom.campOverlay) dom.campOverlay.classList.remove("ot-show");
+  }
+
+  function applyCampTasks(plan) {
+    if (!plan || !plan.tasks || !plan.tasks.length) return;
+    ensureCampFlags();
+    const people = getAllPeople().filter(function (p) {
+      return p && p.alive;
+    });
+    plan.tasks.forEach(function (task) {
+      const eff = task.effects || {};
+      people.forEach(function (p) {
+        if (eff.hunger) adjustPersonStat(p, "hunger", eff.hunger);
+        if (eff.thirst) adjustPersonStat(p, "thirst", eff.thirst);
+        if (eff.warmth) adjustPersonStat(p, "warmth", eff.warmth);
+        if (eff.morale) adjustPersonStat(p, "morale", eff.morale);
+        if (eff.energy) adjustPersonStat(p, "energy", eff.energy);
+        if (eff.condition) adjustPersonStat(p, "condition", eff.condition);
+      });
+      if (eff.wagon) {
+        gameState.wagonCondition = clamp(
+          (gameState.wagonCondition || 0) + eff.wagon,
+          0,
+          120
+        );
+      }
+      if (eff.guard) {
+        gameState.guardLevel += eff.guard;
+        gameState.flags.stoodGuard = true;
+      }
+      if (eff.supplies) {
+        Object.keys(eff.supplies).forEach(function (k) {
+          gameState.supplies[k] = (gameState.supplies[k] || 0) + eff.supplies[k];
+        });
+      }
+    });
+    const hours = Math.max(1, Math.round(plan.hoursUsed));
+    advanceHours(hours, { campQuality: plan.hoursUsed >= 2 ? "proper" : "rough" });
+    addLog(
+      "Camp chores complete: " +
+        plan.tasks
+          .map(function (t) {
+            return t.label;
+          })
+          .join(", ") +
+        ".",
+      { tone: "event" }
+    );
+  }
+
+  function autoSelectCampTasks(gameState) {
+    const people = getAllPeople().filter(function (p) {
+      return p && p.alive;
+    });
+    const avgHunger =
+      people.reduce(function (sum, p) {
+        return sum + p.hunger;
+      }, 0) / (people.length || 1);
+    const avgThirst =
+      people.reduce(function (sum, p) {
+        return sum + p.thirst;
+      }, 0) / (people.length || 1);
+    const avgEnergy =
+      people.reduce(function (sum, p) {
+        return sum + p.energy;
+      }, 0) / (people.length || 1);
+
+    let hours = 6;
+    const picks = [];
+    function tryAdd(id) {
+      const t = CAMP_TASKS.find(function (x) {
+        return x.id === id;
+      });
+      if (t && hours - t.hours >= -1) {
+        hours -= t.hours;
+        picks.push(Object.assign({}, t, { selected: true }));
+      }
+    }
+
+    if (avgThirst < 70) tryAdd("fetch_and_boil_water");
+    if (avgHunger < 70) tryAdd("cook_hot_meal");
+    if (gameState.wagonCondition < 70) tryAdd("repair_wagon_and_tackle");
+    if (avgEnergy < 60) tryAdd("extra_sleep");
+    tryAdd("gather_fuel");
+    if (picks.length === 0) tryAdd("read_book");
+
+    return CAMP_TASKS.map(function (t) {
+      const found = picks.find(function (p) {
+        return p.id === t.id;
+      });
+      return Object.assign({}, t, { selected: !!found });
+    });
+  }
+
+  function autoPlanCampTasks() {
+    if (!window.oldTrailCampMenu) return;
+    const tasks = autoSelectCampTasks(gameState);
+    oldTrailCampMenu.setTasks(tasks);
+    dom.campSummaryNote.textContent = "Auto-selected chores based on needs.";
+  }
+
+  function confirmCampTasks() {
+    if (!window.oldTrailCampMenu) return;
+    const plan = oldTrailCampMenu.getPlan();
+    if (!plan.tasks.length) {
+      dom.campSummaryNote.textContent = "No chores selected.";
+      return;
+    }
+    applyCampTasks(plan);
+    closeCampOverlay();
+    renderAll();
+  }
+
+  function initTrailLogWidget() {
+    const root = document.getElementById("old-trail-log-widget");
+    if (!root || window.ksOldTrailLog) return;
+    const listEl = root.querySelector(".ot-log-list");
+    const maxEntries = 6;
+    let queue = [];
+    let typing = false;
+
+    function createEntry(message) {
+      const entry = document.createElement("div");
+      entry.className = "ot-log-entry";
+      if (message.tone === "event") entry.classList.add("ot-entry-event");
+      if (message.tone === "warning") entry.classList.add("ot-entry-warning");
+      if (message.tone === "morale") entry.classList.add("ot-entry-morale");
+      const metaRow = document.createElement("div");
+      metaRow.className = "ot-log-meta";
+      const tag = document.createElement("span");
+      tag.className = "ot-log-tag";
+      tag.textContent = message.tag || "DAY " + (message.day || "0");
+      const loc = document.createElement("span");
+      loc.className = "ot-log-location";
+      loc.textContent = message.location || "On the trail";
+      metaRow.appendChild(tag);
+      metaRow.appendChild(loc);
+      const text = document.createElement("div");
+      text.className = "ot-log-text";
+      entry.appendChild(metaRow);
+      entry.appendChild(text);
+      const previousActive = listEl.querySelector(".ot-entry-active");
+      if (previousActive) previousActive.classList.remove("ot-entry-active");
+      entry.classList.add("ot-entry-active");
+      listEl.appendChild(entry);
+      while (listEl.children.length > maxEntries) {
+        listEl.removeChild(listEl.firstChild);
+      }
+      requestAnimationFrame(function () {
+        entry.classList.add("ot-entry-in");
+      });
+      return entry;
+    }
+
+    function typeText(entry, text, done) {
+      const textEl = entry.querySelector(".ot-log-text");
+      if (!textEl) return;
+      textEl.textContent = "";
+      const cursor = document.createElement("span");
+      cursor.className = "ot-cursor";
+      cursor.textContent = "▌";
+      textEl.appendChild(cursor);
+      let index = 0;
+      function step() {
+        if (index >= text.length) {
+          cursor.classList.add("ot-cursor-done");
+          setTimeout(function () {
+            if (cursor.parentNode) cursor.parentNode.removeChild(cursor);
+          }, 200);
+          if (done) done();
+          return;
+        }
+        const ch = text.charAt(index);
+        const node = document.createTextNode(ch);
+        textEl.insertBefore(node, cursor);
+        index += 1;
+        let delay = 18;
+        if (",.;!?".indexOf(ch) >= 0) delay = 120;
+        setTimeout(step, delay);
+      }
+      step();
+    }
+
+    function processQueue() {
+      if (!queue.length) {
+        typing = false;
+        return;
+      }
+      typing = true;
+      const message = queue.shift();
+      const entry = createEntry(message);
+      typeText(entry, message.text, function () {
+        typing = false;
+        processQueue();
+      });
+    }
+
+    function addMessage(text, meta) {
+      queue.push({
+        text: text,
+        tag: meta && meta.tag,
+        location: meta && meta.location,
+        tone: meta && meta.tone,
+        day: meta && meta.day,
+      });
+      if (!typing) processQueue();
+    }
+
+    function clearAll() {
+      queue = [];
+      typing = false;
+      while (listEl.firstChild) listEl.removeChild(listEl.firstChild);
+    }
+
+    window.ksOldTrailLog = { add: addMessage, clear: clearAll };
+  }
+
+  let thoughtIndex = 0;
+  function initThoughtBubble() {
+    if (window.oldTrailThoughts) return;
+    const root = document.getElementById("oldtrail-thoughts-bubble");
+    if (!root) {
+      window.oldTrailThoughts = { show: function () {} };
+      return;
+    }
+    const nameEl = root.querySelector(".tb-name");
+    const textEl = root.querySelector(".tb-text");
+    const fillEl = root.querySelector(".tb-mood-fill");
+    const labelEl = root.querySelector(".tb-mood-label");
+    const closeEl = root.querySelector(".tb-close");
+    function moodColor(m) {
+      if (m < 0.35) return "linear-gradient(90deg,#b81d13,#f4876c)";
+      if (m < 0.7) return "linear-gradient(90deg,#f2a71b,#ffd966)";
+      return "linear-gradient(90deg,#0b9444,#41d95b)";
+    }
+    function show(companion, mood0to1, text) {
+      if (!companion) return;
+      root.style.display = "block";
+      nameEl.textContent = companion.name;
+      textEl.textContent = '"' + text + '"';
+      fillEl.style.width = Math.round(Math.max(0, Math.min(1, mood0to1)) * 100) + "%";
+      fillEl.style.backgroundImage = moodColor(mood0to1);
+      labelEl.textContent = mood0to1 > 0.66 ? "Upbeat" : mood0to1 > 0.35 ? "Uneasy" : "Worn";
+    }
+    function hide() {
+      root.style.display = "none";
+    }
+    root.addEventListener("click", hide);
+    if (closeEl) closeEl.addEventListener("click", hide);
+    window.oldTrailThoughts = { show: show };
+  }
+
+  function companionThoughtLine(person) {
+    if (!person) return "";
+    if (person.hunger < 40) return "I could use a warm meal.";
+    if (person.thirst < 40) return "Water skins feel light; hope the next creek runs clear.";
+    if (person.energy < 35) return "My legs ache; a long rest would do me good.";
+    if (person.morale > 70) return "The sky tonight almost makes me forget the miles.";
+    if (gameState.highRiverRisk) return "The rivers run high—we must take care at crossings.";
+    return "Quietly watching the firelight dance on the wagon hoops.";
+  }
+
+  function showCompanionThoughtForHour() {
+    const people = getAllPeople().filter(function (p) {
+      return p && p.alive;
+    });
+    if (!people.length || !window.oldTrailThoughts) return;
+    const p = people[thoughtIndex % people.length];
+    thoughtIndex += 1;
+    const mood =
+      (p.condition + p.energy + p.morale + p.warmth + p.hunger + p.thirst) / 600;
+    const line = companionThoughtLine(p);
+    window.oldTrailThoughts.show(p, mood, line);
+  }
 
   /* ========= BOOTSTRAP ===================================================== */
 
   function init() {
     initDom();
+    initTrailLogWidget();
+    initThoughtBubble();
     wireEvents();
 
     const loaded = loadGame();

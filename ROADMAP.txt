@@ -9,3 +9,12 @@
   - Hospital/mission care at forts (expensive but higher survival).
   - Quarantine or delay events when an epidemic sweeps through the camp.
 - Refine numbers and probabilities using historical cholera-corridor research and playtesting.
+
+
+CAMP & CRAFTING – FUTURE TODO
+- Per-companion chore assignment with visible roles and timing.
+- Skill-based camp and crafting results plus richer failure/partial success states.
+- Weather-aware camp events (flooded camp, blown tents) and deeper guard/night watch effects.
+- Expanded regional recipes and preservation methods, plus spoilage tracking.
+- Larger thought library with location- and event-aware lines and cooldowns.
+- Audio/animation polish for campfire, crafting ticks, and trail log entries.
