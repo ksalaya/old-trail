@@ -3765,7 +3765,6 @@
     }
   }
 
-  // Weather runtime helpers – keep a single clean set to avoid duplicate definitions.
   function initWeatherSystem(year, partyId) {
     const baseSeed =
       gameState.weatherSeed || hashToInt(`${year || 1848}-${partyId || "party"}`);
@@ -3785,11 +3784,40 @@
       const year = gameState.date ? gameState.date.getFullYear() : 1848;
       initWeatherSystem(year, gameState.partyId || "party");
     }
-    const seed = gameState.weatherSystem.seed || gameState.weatherSeed || 1;
     if (!gameState.weatherSystem.rng) {
+      const seed = gameState.weatherSystem.seed || gameState.weatherSeed || 1;
       gameState.weatherSystem.rng = mulberry32(seed);
     }
     if (!gameState.weatherSystem.noise) {
+      const seed = gameState.weatherSystem.seed || gameState.weatherSeed || 1;
+      gameState.weatherSystem.noise = makeNoise3D(seed);
+    }
+  }
+
+  function getClimateBaseline(regionKey, monthName) {
+    const monthly = CLIMATE[regionKey] && CLIMATE[regionKey].monthly;
+    if (monthly && monthly[monthName]) return monthly[monthName];
+    if (monthly) {
+      const first = Object.keys(monthly)[0];
+      if (first) return monthly[first];
+    }
+    return { pRain: 0.2, pStorm: 0.08, tMin: 4, tMax: 20, windKph: [8, 22] };
+  }
+
+    }
+  }
+
+  function ensureWeatherRuntime() {
+    if (!gameState.weatherSystem || !gameState.weatherSystem.seed) {
+      const year = gameState.date ? gameState.date.getFullYear() : 1848;
+      initWeatherSystem(year, gameState.partyId || "party");
+    }
+    if (!gameState.weatherSystem.rng) {
+      const seed = gameState.weatherSystem.seed || gameState.weatherSeed || 1;
+      gameState.weatherSystem.rng = mulberry32(seed);
+    }
+    if (!gameState.weatherSystem.noise) {
+      const seed = gameState.weatherSystem.seed || gameState.weatherSeed || 1;
       gameState.weatherSystem.noise = makeNoise3D(seed);
     }
   }
@@ -3851,16 +3879,113 @@
     let pStorm = climate.pStorm * (0.55 + 0.8 * Math.max(frontDrift, 0));
 
     if (profile) {
-      if (
-        profile.riverHazard === "high" &&
-        (state.month === "April" || state.month === "May")
-      ) {
+      if (profile.riverHazard === "high" && (state.month === "April" || state.month === "May")) {
         pRain *= 1.1;
       }
-      if (
-        profile.heatHazard === "high" &&
-        (state.month === "July" || state.month === "August")
-      ) {
+      if (profile.heatHazard === "high" && (state.month === "July" || state.month === "August")) {
+        tempC += 1.2;
+        pRain *= 0.9;
+        pStorm *= 1.15;
+      }
+    }
+
+    pRain = clamp(pRain, 0, 0.95);
+    pStorm = clamp(pStorm, 0, 0.65);
+
+    const precipHit = rng() < pRain;
+    const stormHit = precipHit && rng() < pStorm;
+    let precip = "none";
+    if (precipHit) {
+      const isSnow = tempC <= 1 || (state.altitude || 0) >= 1900;
+      precip = isSnow ? "snow" : "rain";
+    }
+    return { pRain: 0.2, pStorm: 0.08, tMin: 4, tMax: 20, windKph: [8, 22] };
+  }
+
+  function updateWeatherHistory(weather) {
+    if (!Array.isArray(gameState.weatherHistory)) {
+      gameState.weatherHistory = [];
+    }
+    gameState.weatherHistory.push({
+      ...weather,
+      loggedAt: new Date(gameState.date.getTime()),
+    });
+    const maxLen = 48;
+    if (gameState.weatherHistory.length > maxLen) {
+      gameState.weatherHistory.splice(0, gameState.weatherHistory.length - maxLen);
+    }
+  }
+
+  function getWeather(state) {
+    ensureWeatherRuntime();
+    const ws = gameState.weatherSystem || {};
+    const noise3 = ws.noise || ((x, y, t) => 0);
+    const rng = ws.rng || Math.random;
+    const climate = getClimateBaseline(state.region, state.month);
+    const tScale = (state.dayOfYear + state.hour / 24) * 0.05;
+    const sx = (state.x || 0) * 0.005;
+    const sy = (state.y || 0) * 0.003;
+
+    const profile =
+      gameState.startProfile || START_PROFILES[gameState.startProfileId];
+
+    const tempNoise = noise3(sx, sy, tScale);
+    const diurnal = Math.cos(((state.hour - 15) / 24) * 2 * Math.PI) * 5.2;
+    let tempC = lerp(climate.tMin, climate.tMax, 0.5 + 0.35 * tempNoise) + diurnal;
+    tempC -= 0.006 * (state.altitude || 0);
+    if (profile) {
+      if (profile.heatHazard === "high") tempC += 2.2;
+      else if (profile.heatHazard === "low") tempC -= 1.2;
+      if (profile.riverHazard === "high" && state.month === "April") {
+        tempC -= 0.8;
+      }
+    }
+  }
+
+  function getWeather(state) {
+    ensureWeatherRuntime();
+    const ws = gameState.weatherSystem || {};
+    const noise3 = ws.noise || ((x, y, t) => 0);
+    const rng = ws.rng || Math.random;
+    const climate = getClimateBaseline(state.region, state.month);
+    const tScale = (state.dayOfYear + state.hour / 24) * 0.05;
+    const sx = (state.x || 0) * 0.005;
+    const sy = (state.y || 0) * 0.003;
+
+    const profile =
+      gameState.startProfile || START_PROFILES[gameState.startProfileId];
+
+    const tempNoise = noise3(sx, sy, tScale);
+    const diurnal = Math.cos(((state.hour - 15) / 24) * 2 * Math.PI) * 5.2;
+    let tempC = lerp(climate.tMin, climate.tMax, 0.5 + 0.35 * tempNoise) + diurnal;
+    tempC -= 0.006 * (state.altitude || 0);
+    if (profile) {
+      if (profile.heatHazard === "high") tempC += 2.2;
+      else if (profile.heatHazard === "low") tempC -= 1.2;
+      if (profile.riverHazard === "high" && state.month === "April") {
+        tempC -= 0.8;
+      }
+    }
+
+    const cloudBase = noise3(sx + 12, sy - 5, tScale * 0.7);
+    const frontDrift = noise3(sx + state.dayOfYear * 0.02, sy, tScale * 0.35);
+    const clouds = clamp(0.55 + 0.35 * cloudBase + 0.15 * frontDrift, 0, 1);
+
+    let pRain = climate.pRain * (0.6 + 0.8 * clouds) * (0.75 + 0.5 * frontDrift);
+    let pStorm = climate.pStorm * (0.55 + 0.8 * Math.max(frontDrift, 0));
+
+    const cloudBase = noise3(sx + 12, sy - 5, tScale * 0.7);
+    const frontDrift = noise3(sx + state.dayOfYear * 0.02, sy, tScale * 0.35);
+    const clouds = clamp(0.55 + 0.35 * cloudBase + 0.15 * frontDrift, 0, 1);
+
+    let pRain = climate.pRain * (0.6 + 0.8 * clouds) * (0.75 + 0.5 * frontDrift);
+    let pStorm = climate.pStorm * (0.55 + 0.8 * Math.max(frontDrift, 0));
+
+    if (profile) {
+      if (profile.riverHazard === "high" && (state.month === "April" || state.month === "May")) {
+        pRain *= 1.1;
+      }
+      if (profile.heatHazard === "high" && (state.month === "July" || state.month === "August")) {
         tempC += 1.2;
         pRain *= 0.9;
         pStorm *= 1.15;
@@ -3879,11 +4004,11 @@
     }
 
     const windSample = noise3(sx + 5, sy - 7, tScale * 1.3);
-    let windKph = lerp(
-      climate.windKph[0],
-      climate.windKph[1],
-      0.5 + 0.35 * windSample
-    );
+    let windKph = lerp(climate.windKph[0], climate.windKph[1], 0.5 + 0.35 * windSample);
+    if (stormHit) windKph += 6;
+
+    const windSample = noise3(sx + 5, sy - 7, tScale * 1.3);
+    let windKph = lerp(climate.windKph[0], climate.windKph[1], 0.5 + 0.35 * windSample);
     if (stormHit) windKph += 6;
 
     return {
@@ -4242,6 +4367,270 @@
       );
       person.thirst = clamp(person.thirst + 30, 0, 100);
       person.morale = clamp(person.morale + 1, 0, 100);
+    }
+  }
+
+  function isCholeraCorridor(region, miles) {
+    if (region === "central_plains" || region === "plains") {
+      return miles >= 260 && miles <= 620;
+    }
+    return false;
+  }
+
+  function afflictionSeverityLabel(sev) {
+    if (sev >= 3) return "severe";
+    if (sev >= 2) return "moderate";
+    return "mild";
+  }
+
+  function logAfflictionStageChange(person, aff, prevStage) {
+    if (!person || !aff) return;
+    if (aff.stage === "acute" && prevStage !== "acute") {
+      if (aff.id === "dysentery") {
+        addLog(
+          "After drinking from a stagnant pool along the Platte, " +
+            person.name +
+            " is struck with violent cramps and diarrhea."
+        );
+      } else if (aff.id === "camp_fever") {
+        addLog(
+          person.name +
+            " is shivering with fever and complains of aching bones."
+        );
+      } else if (aff.id === "sprain") {
+        addLog(person.name + " is laid up by a sprained ankle.");
+      }
+    } else if (aff.stage === "recovery" && prevStage !== "recovery") {
+      addLog(
+        person.name +
+          " seems to be past the worst of " +
+          aff.label.toLowerCase() +
+          " and is slowly regaining strength."
+      );
+    } else if (aff.resolved && prevStage !== "resolved") {
+      addLog(
+        person.name +
+          " is finally able to keep food down and rest; the illness lifts."
+      );
+    }
+  }
+
+  function tickAfflictionsForHour() {
+    const doctor = getBestDoctor();
+    const hasMedicine = (gameState.supplies && gameState.supplies.med_kits) > 0;
+    const docSkill = doctor && doctor.skills ? doctor.skills.doctoring || 0 : 0;
+    const treatBonusBase = 1 + docSkill * 0.2 + (hasMedicine ? 0.5 : 0);
+    const rng =
+      (gameState.weatherSystem && gameState.weatherSystem.rng) || Math.random;
+
+    getAllPeople().forEach(function (person) {
+      if (!person || !person.alive) return;
+      ensureAfflictions(person);
+      person.afflictions.forEach(function (aff) {
+        if (!aff || aff.resolved) return;
+        aff.hoursActive += 1;
+
+        if (aff.stage === "acute" && treatBonusBase > 1) {
+          aff.reliefHours = (aff.reliefHours || 0) + 0.05 * (treatBonusBase - 1);
+          if (hasMedicine && !aff.medicineUsed && aff.severity >= 2) {
+            gameState.supplies.med_kits = Math.max(
+              0,
+              (gameState.supplies.med_kits || 0) - 1
+            );
+            aff.medicineUsed = true;
+            if (doctor) {
+              addLog(
+                doctor.name +
+                  " tends to " +
+                  person.name +
+                  " with medicines, easing the worst of the sickness."
+              );
+            }
+          }
+        }
+
+        const progress = aff.hoursActive + (aff.reliefHours || 0);
+        const incubationEnd = aff.hoursIncubation || 0;
+        const acuteEnd = incubationEnd + (aff.hoursAcute || 0);
+        const recoveryEnd = acuteEnd + (aff.recoveryBuffer || 24);
+
+        let stageBefore = aff.stage;
+        if (aff.stage === "incubation" && progress >= incubationEnd) {
+          aff.stage = "acute";
+          logAfflictionStageChange(person, aff, stageBefore);
+          stageBefore = aff.stage;
+        }
+        if (aff.stage === "acute" && progress >= acuteEnd) {
+          stageBefore = aff.stage;
+          aff.stage = "recovery";
+          aff.lastNotified = aff.hoursActive;
+          logAfflictionStageChange(person, aff, stageBefore);
+        }
+        if (aff.stage === "recovery" && progress >= recoveryEnd) {
+          stageBefore = aff.stage;
+          aff.stage = "resolved";
+          aff.resolved = true;
+          logAfflictionStageChange(person, aff, stageBefore);
+          return;
+        }
+
+        let conditionLoss = 0;
+        const treatDivisor = aff.stage === "acute" ? treatBonusBase : 1.0;
+
+        if (aff.id === "dysentery") {
+          if (aff.stage === "incubation") {
+            person.morale = clamp(person.morale - 0.5, 0, 100);
+          } else if (aff.stage === "acute") {
+            person.hunger = clamp(
+              person.hunger - (6 * aff.severity) / treatDivisor,
+              0,
+              100
+            );
+            person.thirst = clamp(
+              person.thirst - (9 * aff.severity) / treatDivisor,
+              0,
+              100
+            );
+            person.energy = clamp(
+              person.energy - (5 * aff.severity) / treatDivisor,
+              0,
+              110
+            );
+            person.morale = clamp(person.morale - 4, 0, 100);
+            conditionLoss += (1.3 * aff.severity) / treatDivisor;
+          } else if (aff.stage === "recovery") {
+            person.energy = clamp(person.energy + 0.5, 0, 110);
+            person.morale = clamp(person.morale + 0.5, 0, 100);
+            conditionLoss += 0.2;
+          }
+        } else if (aff.id === "camp_fever") {
+          if (aff.stage === "incubation") {
+            person.energy = clamp(person.energy - 1.2, 0, 110);
+          } else if (aff.stage === "acute") {
+            person.energy = clamp(
+              person.energy - (4 * aff.severity) / treatDivisor,
+              0,
+              110
+            );
+            person.warmth = clamp(
+              person.warmth - (3 + aff.severity),
+              0,
+              100
+            );
+            person.morale = clamp(person.morale - 2.5, 0, 100);
+            person.thirst = clamp(person.thirst - 2, 0, 100);
+            conditionLoss += (0.9 * aff.severity) / treatDivisor;
+          } else if (aff.stage === "recovery") {
+            person.warmth = clamp(person.warmth + 0.4, 0, 100);
+            person.morale = clamp(person.morale + 0.4, 0, 100);
+            conditionLoss += 0.25;
+          }
+        } else if (aff.id === "sprain") {
+          if (aff.stage === "acute") {
+            person.energy = clamp(person.energy - 1, 0, 110);
+            person.morale = clamp(person.morale - 0.8, 0, 100);
+            conditionLoss += 0.35 / treatDivisor;
+          } else if (aff.stage === "recovery") {
+            person.energy = clamp(person.energy - 0.25, 0, 110);
+          }
+        }
+
+        person.condition = clamp(person.condition - conditionLoss, 0, 100);
+
+        const needsProgressLog =
+          aff.stage === "acute" &&
+          (aff.lastNotified == null || aff.hoursActive - aff.lastNotified >= 12);
+        if (needsProgressLog) {
+          aff.lastNotified = aff.hoursActive;
+          if (aff.id === "dysentery") {
+            addLog(
+              person.name +
+                " is too weak to walk and rides in the wagon while the illness grips them."
+            );
+          } else if (aff.id === "camp_fever") {
+            addLog(
+              person.name +
+                " burns with fever and needs tending; travel slows while they rest."
+            );
+          } else if (aff.id === "sprain") {
+            addLog(person.name + " keeps weight off a swollen ankle.");
+          }
+        }
+
+
+        if (person.condition <= 0 && person.alive) {
+          person.alive = false;
+          addLog(
+            person.name +
+              " dies after a brutal bout of " +
+              aff.label.toLowerCase() +
+              " on the trail."
+          );
+        }
+      });
+    });
+  }
+
+  function maybeTriggerIllnessForHour() {
+    const rng =
+      (gameState.weatherSystem && gameState.weatherSystem.rng) || Math.random;
+    const region = gameState.region;
+    const w = gameState.weatherState || {};
+    const tempC = typeof w.tempC === "number" ? w.tempC : 15;
+    const hot = tempC >= 24;
+    const wetRecently = w.precip === "rain" || gameState.recentRainHours > 24;
+    const mouths = mouthsCount();
+    const s = gameState.supplies || {};
+    const waterGal = s.water || 0;
+    const miles = gameState.milesTraveled || 0;
+    const people = getAllPeople().filter(function (p) {
+      return p && p.alive;
+    });
+    const avgConditionEnergy = people.length
+      ?
+          people.reduce(function (sum, p) {
+            return sum + ((p.condition || 0) + (p.energy || 0)) / 2;
+          }, 0) / people.length
+      : 100;
+
+    if (isCholeraCorridor(region, miles)) {
+      let base = 0.0005;
+      if (hot && wetRecently) base *= 1.5;
+      if (waterGal < mouths * 0.4) base *= 1.5;
+      if (avgConditionEnergy < 50) base *= 1.5;
+
+      let newCase = false;
+      people.some(function (p) {
+        if (hasAffliction(p, "dysentery")) return false;
+        if (rng() < base) {
+          addAffliction(p, "dysentery", { severity: rng() < 0.35 ? 2 : 1 });
+          newCase = true;
+          return true;
+        }
+        return false;
+      });
+      if (newCase) return; // avoid multiple clustered cases in one hour
+    }
+
+    const coldWet =
+      tempC <= 5 || ((w.precip === "rain" && tempC < 10) || w.precip === "snow");
+    if (gameState.mode === "camp" && coldWet) {
+      const roughCamp =
+        gameState.dayRhythm &&
+        gameState.dayRhythm.eveningCampChoice === "rushed";
+      people.forEach(function (p) {
+        if (!p || hasAffliction(p, "camp_fever")) return;
+        const warmthLow = p.warmth < 30;
+        const energyLow = p.energy < 30;
+        if (!warmthLow && !energyLow) return;
+        let risk = 0.0003;
+        if (warmthLow) risk *= 1.6;
+        if (energyLow) risk *= 1.6;
+        if (roughCamp) risk *= 1.3;
+        if (rng() < risk) {
+          addAffliction(p, "camp_fever", { severity: tempC <= 0 ? 2 : 1 });
+        }
+      });
     }
   }
 
@@ -6795,6 +7184,7 @@
       );
     }
     if (dom.campOverlay) dom.campOverlay.classList.add("ot-show");
+    dom.campOverlay.classList.add("ot-show");
   }
 
   function closeCampOverlay() {
