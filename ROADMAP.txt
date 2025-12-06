@@ -10,12 +10,6 @@
   - Quarantine or delay events when an epidemic sweeps through the camp.
 - Refine numbers and probabilities using historical cholera-corridor research and playtesting.
 
-CAMP & CRAFTING – V0.2 (IMPLEMENTED)
-- Added Camp Tasks overlay planner with selectable chores and hour budgeting.
-- Integrated simple crafting grid with recipes that draw from wagon supplies.
-- Replaced placeholder Trail Log rendering with live event-driven widget entries.
-- Added rotating Companion Thoughts bubble tied to party condition and mood.
-- Basic camp auto-plan helper that reacts to food, water, wagon condition, and fatigue.
 
 CAMP & CRAFTING – FUTURE TODO
 - Per-companion chore assignment with visible roles and timing.
