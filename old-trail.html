@@ -3804,33 +3804,6 @@
     return { pRain: 0.2, pStorm: 0.08, tMin: 4, tMax: 20, windKph: [8, 22] };
   }
 
-    }
-  }
-
-  function ensureWeatherRuntime() {
-    if (!gameState.weatherSystem || !gameState.weatherSystem.seed) {
-      const year = gameState.date ? gameState.date.getFullYear() : 1848;
-      initWeatherSystem(year, gameState.partyId || "party");
-    }
-    if (!gameState.weatherSystem.rng) {
-      const seed = gameState.weatherSystem.seed || gameState.weatherSeed || 1;
-      gameState.weatherSystem.rng = mulberry32(seed);
-    }
-    if (!gameState.weatherSystem.noise) {
-      const seed = gameState.weatherSystem.seed || gameState.weatherSeed || 1;
-      gameState.weatherSystem.noise = makeNoise3D(seed);
-    }
-  }
-
-  function getClimateBaseline(regionKey, monthName) {
-    const monthly = CLIMATE[regionKey] && CLIMATE[regionKey].monthly;
-    if (monthly && monthly[monthName]) return monthly[monthName];
-    if (monthly) {
-      const first = Object.keys(monthly)[0];
-      if (first) return monthly[first];
-    }
-    return { pRain: 0.2, pStorm: 0.08, tMin: 4, tMax: 20, windKph: [8, 22] };
-  }
 
   function updateWeatherHistory(weather) {
     if (!Array.isArray(gameState.weatherHistory)) {
@@ -3900,20 +3873,6 @@
       precip = isSnow ? "snow" : "rain";
     }
     return { pRain: 0.2, pStorm: 0.08, tMin: 4, tMax: 20, windKph: [8, 22] };
-  }
-
-  function updateWeatherHistory(weather) {
-    if (!Array.isArray(gameState.weatherHistory)) {
-      gameState.weatherHistory = [];
-    }
-    gameState.weatherHistory.push({
-      ...weather,
-      loggedAt: new Date(gameState.date.getTime()),
-    });
-    const maxLen = 48;
-    if (gameState.weatherHistory.length > maxLen) {
-      gameState.weatherHistory.splice(0, gameState.weatherHistory.length - maxLen);
-    }
   }
 
   function getWeather(state) {
@@ -4002,10 +3961,6 @@
       const isSnow = tempC <= 1 || (state.altitude || 0) >= 1900;
       precip = isSnow ? "snow" : "rain";
     }
-
-    const windSample = noise3(sx + 5, sy - 7, tScale * 1.3);
-    let windKph = lerp(climate.windKph[0], climate.windKph[1], 0.5 + 0.35 * windSample);
-    if (stormHit) windKph += 6;
 
     const windSample = noise3(sx + 5, sy - 7, tScale * 1.3);
     let windKph = lerp(climate.windKph[0], climate.windKph[1], 0.5 + 0.35 * windSample);
