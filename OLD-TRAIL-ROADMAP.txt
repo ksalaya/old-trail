@@ -179,5 +179,11 @@ Expanded plan:
    * Respects mobile browser constraints (user gesture, iOS quirks) per fullscreen PDF guidance.
    4. Mobile-friendly tweaks
    * Make sure touch targets (buttons, dropdowns) are sized & spaced for phones.
-   * Optionally auto-suggest fullscreen when user taps “Begin journey” on mobile for more immersive play, with an easy exit toggle.
-   *
+    * Optionally auto-suggest fullscreen when user taps “Begin journey” on mobile for more immersive play, with an easy exit toggle.
+    *
+=== Weather & Start-Date System – TODO / FUTURE HOOKS ===
+- Flesh out applyWeatherToParty(...) to translate storms, heat, mud, wind, and snow into travel speed, illness, and morale modifiers.
+- Use recent precipitation history to influence river depth and bogging risk at fords and ferries.
+- Tie hot/dry weather to dehydration, dust-related illness, and oxen fatigue events across the Platte and Snake River country.
+- Tie cold/wet weather to hypothermia, pneumonia, and morale penalties in camp, especially in the Rockies and Blues.
+- Add region-specific event variants keyed off weather (prairie fire, white-out blizzard, dust storm) and feed them into the viewport mood system.
