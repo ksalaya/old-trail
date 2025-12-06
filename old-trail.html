@@ -763,12 +763,17 @@
             <div class="ot-field">
               <div class="ot-label">Departure date</div>
               <select id="ot-departure-season" class="ot-select">
-                <option value="late_april">Late April – balanced rivers & grass</option>
-                <option value="early_april">Early April – colder, high rivers</option>
-                <option value="mid_may">Mid May – good grass, milder</option>
-                <option value="early_june">Early June – hotter plains</option>
-                <option value="mid_july">Mid July – intense heat, late passes</option>
+                <option value="early_april">Early April – swollen rivers, cold nights, sparse grass</option>
+                <option value="late_april">Late April – historically ideal window (rivers falling, grass growing)</option>
+                <option value="mid_may">Mid May – good grass, some storms, still safe for passes</option>
+                <option value="early_june">Early June – hotter plains, stronger storms, still OK if you move well</option>
+                <option value="mid_july">Mid July – high heat & dust, late for mountain passes</option>
               </select>
+              <div
+                id="ot-departure-season-desc"
+                class="ot-panel-body-sm ot-text-muted"
+                style="margin-top: 4px;"
+              ></div>
             </div>
 
             <div class="ot-field">
@@ -926,6 +931,8 @@
             <div>Rations: <span id="ot-ontrail-rations">Full rations</span></div>
             <div>Mode: <span id="ot-ontrail-mode">In camp</span></div>
             <div>Daily block: <span id="ot-ontrail-block">Morning</span></div>
+            <div>Weather: <span id="ot-weather-summary">—</span></div>
+            <div class="ot-text-muted" id="ot-weather-note"></div>
           </div>
         </div>
 
@@ -1432,59 +1439,53 @@
   /* --- Monthly climate baselines by region (rough, era-appropriate) ------- */
 
   const CLIMATE = {
-    plains: {
-      default: { pRain: 0.30, pStorm: 0.08, tMin: 3, tMax: 24, windMin: 8, windMax: 24, snowLine: 1700 },
-      4: { pRain: 0.28, pStorm: 0.06, tMin: 2, tMax: 16, windMin: 8, windMax: 24, snowLine: 1400 },
-      5: { pRain: 0.34, pStorm: 0.10, tMin: 8, tMax: 22, windMin: 8, windMax: 28, snowLine: 1700 },
-      6: { pRain: 0.30, pStorm: 0.14, tMin: 13, tMax: 29, windMin: 10, windMax: 32, snowLine: 1900 },
-      7: { pRain: 0.25, pStorm: 0.18, tMin: 17, tMax: 32, windMin: 10, windMax: 32, snowLine: 2200 },
-      8: { pRain: 0.22, pStorm: 0.16, tMin: 16, tMax: 31, windMin: 8, windMax: 28, snowLine: 2300 },
-      9: { pRain: 0.20, pStorm: 0.10, tMin: 11, tMax: 26, windMin: 8, windMax: 24, snowLine: 1900 },
+    GreatPlains: {
+      monthly: {
+        April: { pRain: 0.28, pStorm: 0.06, tMin: 2, tMax: 16, windKph: [8, 24] },
+        May: { pRain: 0.34, pStorm: 0.1, tMin: 8, tMax: 22, windKph: [8, 28] },
+        June: { pRain: 0.3, pStorm: 0.14, tMin: 13, tMax: 29, windKph: [10, 32] },
+        July: { pRain: 0.25, pStorm: 0.12, tMin: 15, tMax: 33, windKph: [12, 36] },
+        August: { pRain: 0.22, pStorm: 0.1, tMin: 14, tMax: 32, windKph: [10, 30] },
+        September: { pRain: 0.2, pStorm: 0.08, tMin: 10, tMax: 27, windKph: [9, 26] },
+      },
     },
-    central_plains: {
-      default: { pRain: 0.26, pStorm: 0.10, tMin: 4, tMax: 25, windMin: 10, windMax: 30, snowLine: 1800 },
-      4: { pRain: 0.27, pStorm: 0.08, tMin: 1, tMax: 15, windMin: 10, windMax: 30, snowLine: 1500 },
-      5: { pRain: 0.32, pStorm: 0.12, tMin: 7, tMax: 21, windMin: 10, windMax: 32, snowLine: 1700 },
-      6: { pRain: 0.30, pStorm: 0.16, tMin: 12, tMax: 28, windMin: 10, windMax: 34, snowLine: 1900 },
-      7: { pRain: 0.23, pStorm: 0.18, tMin: 16, tMax: 32, windMin: 10, windMax: 34, snowLine: 2200 },
-      8: { pRain: 0.20, pStorm: 0.14, tMin: 15, tMax: 30, windMin: 8, windMax: 30, snowLine: 2300 },
-      9: { pRain: 0.19, pStorm: 0.10, tMin: 10, tMax: 24, windMin: 8, windMax: 26, snowLine: 2000 },
+    HighPlains: {
+      monthly: {
+        April: { pRain: 0.24, pStorm: 0.07, tMin: -1, tMax: 14, windKph: [10, 28] },
+        May: { pRain: 0.28, pStorm: 0.1, tMin: 4, tMax: 19, windKph: [10, 30] },
+        June: { pRain: 0.26, pStorm: 0.14, tMin: 9, tMax: 24, windKph: [12, 32] },
+        July: { pRain: 0.22, pStorm: 0.12, tMin: 12, tMax: 29, windKph: [12, 34] },
+        August: { pRain: 0.18, pStorm: 0.1, tMin: 10, tMax: 28, windKph: [10, 30] },
+        September: { pRain: 0.18, pStorm: 0.08, tMin: 6, tMax: 23, windKph: [9, 28] },
+      },
     },
-    high_plains: {
-      default: { pRain: 0.22, pStorm: 0.10, tMin: 0, tMax: 22, windMin: 10, windMax: 32, snowLine: 1900 },
-      5: { pRain: 0.28, pStorm: 0.10, tMin: 2, tMax: 18, windMin: 10, windMax: 32, snowLine: 1700 },
-      6: { pRain: 0.26, pStorm: 0.14, tMin: 6, tMax: 22, windMin: 12, windMax: 34, snowLine: 1900 },
-      7: { pRain: 0.20, pStorm: 0.13, tMin: 8, tMax: 26, windMin: 12, windMax: 34, snowLine: 2100 },
-      8: { pRain: 0.18, pStorm: 0.12, tMin: 7, tMax: 24, windMin: 10, windMax: 30, snowLine: 2200 },
-      9: { pRain: 0.20, pStorm: 0.10, tMin: 3, tMax: 20, windMin: 10, windMax: 28, snowLine: 2000 },
+    Rockies: {
+      monthly: {
+        April: { pRain: 0.26, pStorm: 0.1, tMin: -6, tMax: 11, windKph: [10, 32] },
+        May: { pRain: 0.26, pStorm: 0.12, tMin: -2, tMax: 15, windKph: [10, 34] },
+        June: { pRain: 0.24, pStorm: 0.16, tMin: 2, tMax: 20, windKph: [12, 36] },
+        July: { pRain: 0.2, pStorm: 0.14, tMin: 6, tMax: 23, windKph: [12, 36] },
+        August: { pRain: 0.18, pStorm: 0.12, tMin: 5, tMax: 22, windKph: [10, 32] },
+        September: { pRain: 0.22, pStorm: 0.14, tMin: 0, tMax: 17, windKph: [10, 30] },
+      },
     },
-    mountains: {
-      default: { pRain: 0.22, pStorm: 0.14, tMin: -4, tMax: 18, windMin: 10, windMax: 36, snowLine: 1600 },
-      6: { pRain: 0.24, pStorm: 0.18, tMin: -2, tMax: 16, windMin: 12, windMax: 36, snowLine: 1600 },
-      7: { pRain: 0.20, pStorm: 0.18, tMin: 1, tMax: 19, windMin: 12, windMax: 36, snowLine: 1700 },
-      8: { pRain: 0.19, pStorm: 0.14, tMin: 1, tMax: 18, windMin: 10, windMax: 34, snowLine: 1800 },
-      9: { pRain: 0.23, pStorm: 0.16, tMin: -2, tMax: 14, windMin: 10, windMax: 34, snowLine: 1600 },
+    SnakePlain: {
+      monthly: {
+        May: { pRain: 0.18, pStorm: 0.08, tMin: 7, tMax: 24, windKph: [8, 26] },
+        June: { pRain: 0.14, pStorm: 0.1, tMin: 10, tMax: 30, windKph: [10, 30] },
+        July: { pRain: 0.12, pStorm: 0.12, tMin: 13, tMax: 34, windKph: [10, 32] },
+        August: { pRain: 0.1, pStorm: 0.1, tMin: 12, tMax: 33, windKph: [10, 30] },
+        September: { pRain: 0.12, pStorm: 0.08, tMin: 8, tMax: 27, windKph: [8, 26] },
+      },
     },
-    snake_plain: {
-      default: { pRain: 0.16, pStorm: 0.08, tMin: 6, tMax: 29, windMin: 8, windMax: 28, snowLine: 1900 },
-      6: { pRain: 0.16, pStorm: 0.08, tMin: 8, tMax: 30, windMin: 8, windMax: 30, snowLine: 1900 },
-      7: { pRain: 0.14, pStorm: 0.10, tMin: 11, tMax: 33, windMin: 8, windMax: 30, snowLine: 2100 },
-      8: { pRain: 0.12, pStorm: 0.10, tMin: 10, tMax: 32, windMin: 8, windMax: 28, snowLine: 2200 },
-      9: { pRain: 0.14, pStorm: 0.08, tMin: 6, tMax: 26, windMin: 8, windMax: 26, snowLine: 2000 },
-    },
-    blue_mountains: {
-      default: { pRain: 0.24, pStorm: 0.12, tMin: 2, tMax: 22, windMin: 8, windMax: 28, snowLine: 1600 },
-      8: { pRain: 0.22, pStorm: 0.10, tMin: 4, tMax: 23, windMin: 8, windMax: 28, snowLine: 1700 },
-      9: { pRain: 0.26, pStorm: 0.12, tMin: 1, tMax: 18, windMin: 8, windMax: 26, snowLine: 1500 },
-    },
-    columbia: {
-      default: { pRain: 0.20, pStorm: 0.12, tMin: 6, tMax: 23, windMin: 8, windMax: 26, snowLine: 1400 },
-      8: { pRain: 0.18, pStorm: 0.10, tMin: 8, tMax: 25, windMin: 8, windMax: 26, snowLine: 1500 },
-      9: { pRain: 0.24, pStorm: 0.12, tMin: 5, tMax: 21, windMin: 8, windMax: 24, snowLine: 1400 },
-    },
-    willamette: {
-      default: { pRain: 0.20, pStorm: 0.08, tMin: 7, tMax: 24, windMin: 4, windMax: 18, snowLine: 1200 },
-      9: { pRain: 0.23, pStorm: 0.10, tMin: 6, tMax: 22, windMin: 4, windMax: 18, snowLine: 1200 },
+    Columbia: {
+      monthly: {
+        June: { pRain: 0.18, pStorm: 0.08, tMin: 9, tMax: 24, windKph: [8, 24] },
+        July: { pRain: 0.16, pStorm: 0.08, tMin: 11, tMax: 27, windKph: [8, 24] },
+        August: { pRain: 0.18, pStorm: 0.08, tMin: 11, tMax: 26, windKph: [8, 22] },
+        September: { pRain: 0.22, pStorm: 0.12, tMin: 8, tMax: 22, windKph: [8, 22] },
+        October: { pRain: 0.28, pStorm: 0.14, tMin: 5, tMax: 18, windKph: [8, 20] },
+      },
     },
   };
 
@@ -1911,6 +1912,99 @@
     },
   };
 
+  const START_PROFILES = {
+    early_april: {
+      id: "early_april",
+      label: "Early April – high rivers & cold",
+      summary:
+        "Snowmelt keeps the Missouri and Platte swollen; nights are cold and grass is weak.",
+      riverHazard: "high",
+      heatHazard: "low",
+      forageBonus: "low",
+      lateSeasonRisk: "low",
+      startMonth: 3,
+      startDay: 10,
+    },
+    late_april: {
+      id: "late_april",
+      label: "Late April – balanced window",
+      summary:
+        "Classic departure window as rivers fall and new grass appears across the plains.",
+      riverHazard: "medium",
+      heatHazard: "medium",
+      forageBonus: "medium",
+      lateSeasonRisk: "medium",
+      startMonth: 3,
+      startDay: 25,
+    },
+    mid_may: {
+      id: "mid_may",
+      label: "Mid May – good grass, some storms",
+      summary:
+        "Plenty of grass and milder nights, but spring storms can still sweep the prairie.",
+      riverHazard: "medium",
+      heatHazard: "medium",
+      forageBonus: "high",
+      lateSeasonRisk: "medium",
+      startMonth: 4,
+      startDay: 15,
+    },
+    early_june: {
+      id: "early_june",
+      label: "Early June – hot plains ahead",
+      summary:
+        "Most rivers have crested. Expect hotter days, stronger thunderstorms, and dusty drives.",
+      riverHazard: "low",
+      heatHazard: "high",
+      forageBonus: "high",
+      lateSeasonRisk: "medium",
+      startMonth: 5,
+      startDay: 5,
+    },
+    mid_july: {
+      id: "mid_july",
+      label: "Mid July – late for the passes",
+      summary:
+        "Heat and dust on the Platte and Snake, and an anxious race to beat autumn snows in the mountains.",
+      riverHazard: "low",
+      heatHazard: "high",
+      forageBonus: "medium",
+      lateSeasonRisk: "high",
+      startMonth: 6,
+      startDay: 10,
+    },
+  };
+
+  const AFFLICTION_DEFS = {
+    dysentery: {
+      id: "dysentery",
+      label: "Dysentery",
+      type: "disease",
+      baseHoursIncubation: [6, 24],
+      baseHoursAcute: [24, 96],
+      severityRange: [1, 2],
+      cause: "bad water in cholera corridor",
+    },
+    camp_fever: {
+      id: "camp_fever",
+      label: "Camp fever",
+      type: "disease",
+      baseHoursIncubation: [24, 72],
+      baseHoursAcute: [48, 144],
+      severityRange: [1, 3],
+      cause: "weeks of poor rest and damp camps",
+    },
+    sprain: {
+      id: "sprain",
+      label: "Sprained ankle",
+      type: "injury",
+      baseHoursIncubation: [0, 1],
+      baseHoursAcute: [24, 72],
+      severityRange: [1, 1],
+      cause: "misstep on rough ground",
+    },
+  };
+
   /* ========= STATE ========================================================= */
 
   const dom = {};
@@ -1932,6 +2026,8 @@
     weather: "Mild",
     weatherState: null,
     weatherSeed: null,
+    weatherSystem: null,
+    weatherHistory: [],
     recentRainHours: 0,
     locationName: "Independence",
     region: "plains",
@@ -1940,6 +2036,11 @@
     log: [],
     lastHourMiles: 0,
     seasonStart: "late_april",
+    startProfileId: "late_april",
+    startProfile: null,
+    startDayOfYear: null,
+    highRiverRisk: false,
+    partyId: null,
     mapListVisible: false,
     dayRhythm: null,
     lastDayRhythmBonus: 0,
@@ -1964,6 +2065,104 @@
 
   function choice(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  function ensureAfflictions(person) {
+    if (!person.afflictions) person.afflictions = [];
+    return person.afflictions;
+  }
+
+  function hasAffliction(person, id) {
+    if (!person || !person.afflictions) return false;
+    return person.afflictions.some(function (a) {
+      return a && a.id === id && !a.resolved;
+    });
+  }
+
+  function hashToInt(str) {
+    let h = 1779033703 ^ str.length;
+    for (let i = 0; i < str.length; i++) {
+      h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+      h = (h << 13) | (h >>> 19);
+    }
+    return h >>> 0;
+  }
+
+  function mulberry32(a) {
+    return function () {
+      let t = (a += 0x6d2b79f5);
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function makeNoise3D(seed) {
+    const rng = mulberry32(seed || 1);
+
+    const gradients = {};
+    function getGradient(ix, iy, iz) {
+      const key = ix + "," + iy + "," + iz;
+      if (!gradients[key]) {
+        const theta = rng() * 2 * Math.PI;
+        const phi = Math.acos(2 * rng() - 1);
+        gradients[key] = [
+          Math.sin(phi) * Math.cos(theta),
+          Math.sin(phi) * Math.sin(theta),
+          Math.cos(phi),
+        ];
+      }
+      return gradients[key];
+    }
+
+    function fade(t) {
+      return t * t * t * (t * (t * 6 - 15) + 10);
+    }
+
+    function dotGrid(ix, iy, iz, x, y, z) {
+      const g = getGradient(ix, iy, iz);
+      const dx = x - ix;
+      const dy = y - iy;
+      const dz = z - iz;
+      return dx * g[0] + dy * g[1] + dz * g[2];
+    }
+
+    return function (x, y, z) {
+      const x0 = Math.floor(x);
+      const x1 = x0 + 1;
+      const y0 = Math.floor(y);
+      const y1 = y0 + 1;
+      const z0 = Math.floor(z);
+      const z1 = z0 + 1;
+
+      const sx = fade(x - x0);
+      const sy = fade(y - y0);
+      const sz = fade(z - z0);
+
+      const n000 = dotGrid(x0, y0, z0, x, y, z);
+      const n100 = dotGrid(x1, y0, z0, x, y, z);
+      const n010 = dotGrid(x0, y1, z0, x, y, z);
+      const n110 = dotGrid(x1, y1, z0, x, y, z);
+      const n001 = dotGrid(x0, y0, z1, x, y, z);
+      const n101 = dotGrid(x1, y0, z1, x, y, z);
+      const n011 = dotGrid(x0, y1, z1, x, y, z);
+      const n111 = dotGrid(x1, y1, z1, x, y, z);
+
+      const nx00 = lerp(n000, n100, sx);
+      const nx10 = lerp(n010, n110, sx);
+      const nx01 = lerp(n001, n101, sx);
+      const nx11 = lerp(n011, n111, sx);
+
+      const nxy0 = lerp(nx00, nx10, sy);
+      const nxy1 = lerp(nx01, nx11, sy);
+
+      const nxyz = lerp(nxy0, nxy1, sz);
+      return nxyz; // roughly -1..1
+    };
   }
 
   function formatMoney(n) {
@@ -1999,6 +2198,25 @@
     if (hour === 0) hour = 12;
     const mm = mins.toString().padStart(2, "0");
     return month + " " + day + ", " + year + " · " + hour + ":" + mm + " " + ampm;
+  }
+
+  function getMonthName(date) {
+    if (!(date instanceof Date)) return "";
+    const months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+    return months[date.getMonth()];
   }
 
   function isNight(date) {
@@ -2349,18 +2567,23 @@
   function regionAltitude(region) {
     switch (region) {
       case "plains":
+      case "GreatPlains":
         return 300;
       case "central_plains":
         return 500;
       case "high_plains":
+      case "HighPlains":
         return 1200;
       case "mountains":
+      case "Rockies":
         return 2100;
       case "snake_plain":
+      case "SnakePlain":
         return 1500;
       case "blue_mountains":
         return 1700;
       case "columbia":
+      case "Columbia":
         return 400;
       case "willamette":
         return 150;
@@ -2396,6 +2619,78 @@
     return label;
   }
 
+  function formatWeatherSummary(w) {
+    if (!w) return "Unknown";
+    const parts = [];
+    if (typeof w.tempC === "number") parts.push(tempCtoF(w.tempC) + "°F");
+    if (w.precip && w.precip !== "none") parts.push(w.precip === "snow" ? "snow" : "rain");
+    else parts.push("dry");
+    if (w.storm) parts.push("storm");
+    if (typeof w.windKph === "number") parts.push("wind " + w.windKph + " km/h");
+    return parts.join(", ");
+  }
+
+  function describeWeatherFlavor(region, weather) {
+    if (!weather) return "";
+    const hot = weather.tempC >= 30;
+    const cold = weather.tempC <= -2;
+    const cloudy = weather.clouds >= 0.6;
+    if (weather.storm && region === "GreatPlains") {
+      return "Black anvil clouds boil over the prairie; lightning flickers on the horizon.";
+    }
+    if (weather.storm && region === "SnakePlain") {
+      return "Heat lightning pulses above distant buttes while dust devils tear across the plain.";
+    }
+    if (hot && region === "SnakePlain") {
+      return "Heat shimmer and dust haze blur the Snake River plain.";
+    }
+    if (cold && region === "Rockies") {
+      return "Thin mountain air bites at fingers and cheeks; snow lingers in the shadows.";
+    }
+    if (cloudy && region === "Columbia") {
+      return "Low gray clouds hang over the gorge, the air damp with river spray.";
+    }
+    if (cloudy) {
+      return "High clouds veil the sun, softening the light on the trail ahead.";
+    }
+    return "The sky feels vast and clear, wagon tracks stretching toward the horizon.";
+  }
+
+  function describeSeasonRisk(region, date, profile) {
+    if (!date) return "";
+    const month = date.getMonth();
+    const lateSeason = month >= 8; // September or later
+    if (!profile) {
+      profile = START_PROFILES[gameState.startProfileId];
+    }
+    if (
+      profile &&
+      profile.riverHazard === "high" &&
+      (region === "GreatPlains" || region === "HighPlains") &&
+      gameState.highRiverRisk
+    ) {
+      return "High water from spring runoff makes crossings treacherous.";
+    }
+    if (
+      profile &&
+      profile.heatHazard === "high" &&
+      (region === "GreatPlains" || region === "SnakePlain") &&
+      month >= 5 &&
+      month <= 7
+    ) {
+      return "Heat and dust grind at the stock; keep water and rest in mind.";
+    }
+    if (
+      profile &&
+      profile.lateSeasonRisk === "high" &&
+      lateSeason &&
+      (region === "Rockies" || region === "Columbia")
+    ) {
+      return "Snow threatens early on the passes; you are running late for the season.";
+    }
+    return "";
+  }
+
   function getAllPeople() {
     const arr = [];
     if (gameState.leader) arr.push(gameState.leader);
@@ -2405,6 +2700,90 @@
       });
     }
     return arr;
+  }
+
+  function addAffliction(person, afflictionId, opts) {
+    const def = AFFLICTION_DEFS[afflictionId];
+    if (!person || !def) return null;
+    ensureAfflictions(person);
+
+    const existing = person.afflictions.find(function (a) {
+      return a.id === afflictionId && !a.resolved;
+    });
+    if (existing) {
+      existing.severity = Math.max(
+        existing.severity || 1,
+        (opts && typeof opts.severity === "number" ? opts.severity : 1) || 1
+      );
+      return existing;
+    }
+
+    const rng =
+      (gameState.weatherSystem && gameState.weatherSystem.rng) || Math.random;
+    function pickRange(range) {
+      const min = range[0];
+      const max = range[1];
+      return min + (max - min) * rng();
+    }
+
+    const severity =
+      opts && typeof opts.severity === "number"
+        ? opts.severity
+        : Math.round(pickRange(def.severityRange));
+
+    const incubation = pickRange(def.baseHoursIncubation);
+    const acute = pickRange(def.baseHoursAcute);
+    const recoveryBuffer = 24 + severity * 12 + rng() * 18;
+
+    const aff = {
+      id: def.id,
+      label: def.label,
+      type: def.type,
+      stage: "incubation",
+      severity: severity,
+      hoursActive: 0,
+      hoursIncubation: incubation,
+      hoursAcute: acute,
+      recoveryBuffer: recoveryBuffer,
+      cause: def.cause,
+      startedAt: new Date(gameState.date.getTime()),
+      resolved: false,
+      reliefHours: 0,
+      lastNotified: 0,
+    };
+
+    person.afflictions.push(aff);
+
+    const onsetText =
+      def.id === "sprain"
+        ? person.name +
+          " favors an injured ankle and knows it will be painful to walk for a while."
+        :
+          person.name +
+          " doesn’t feel quite right: stomach cramps and unease set in.";
+    addLog(onsetText);
+    return aff;
+  }
+
+  function getBestDoctor() {
+    const people = getAllPeople().filter(function (p) {
+      return p && p.alive;
+    });
+    if (!people.length) return null;
+    return people.reduce(function (best, p) {
+      const skill = p.skills && p.skills.doctoring ? p.skills.doctoring : 0;
+      if (!best) return p;
+      const bestSkill =
+        best.skills && best.skills.doctoring ? best.skills.doctoring : 0;
+      return skill > bestSkill ? p : best;
+    }, null);
+  }
+
+  function activeAfflictions(person) {
+    if (!person || !person.afflictions) return [];
+    return person.afflictions.filter(function (a) {
+      return a && !a.resolved;
+    });
   }
 
   function ensurePersonDelegationFields(person) {
@@ -2701,6 +3080,9 @@
     dom.backgroundDesc = document.getElementById("ot-background-desc");
     dom.departureSelect = document.getElementById("ot-departure");
     dom.departureSeason = document.getElementById("ot-departure-season");
+    dom.departureSeasonDesc = document.getElementById(
+      "ot-departure-season-desc"
+    );
     dom.companionInputs = [
       document.getElementById("ot-companion-0"),
       document.getElementById("ot-companion-1"),
@@ -2726,6 +3108,8 @@
     dom.ontrailRations = document.getElementById("ot-ontrail-rations");
     dom.ontrailMode = document.getElementById("ot-ontrail-mode");
     dom.ontrailBlock = document.getElementById("ot-ontrail-block");
+    dom.weatherSummary = document.getElementById("ot-weather-summary");
+    dom.weatherNote = document.getElementById("ot-weather-note");
     dom.leaderStatus = document.getElementById("ot-leader-status");
     dom.partyManifest = document.getElementById("ot-party-manifest");
     dom.hourTasks = document.getElementById("ot-hour-tasks");
@@ -2809,6 +3193,7 @@
         woodcutting: 0,
         doctoring: 0,
       },
+      afflictions: [],
     };
     if (bias) {
       Object.keys(bias).forEach(function (k) {
@@ -2819,29 +3204,33 @@
   }
 
   function pickStartDateFromSeason() {
-    const val = dom.departureSeason
+    const profileId = dom.departureSeason
       ? dom.departureSeason.value
       : "late_april";
-    gameState.seasonStart = val;
-    let month = 3; // April
-    let day = 25;
-    if (val === "early_april") {
-      month = 3;
-      day = 5;
-    } else if (val === "late_april") {
-      month = 3;
-      day = 25;
-    } else if (val === "mid_may") {
-      month = 4;
-      day = 15;
-    } else if (val === "early_june") {
-      month = 5;
-      day = 5;
-    } else if (val === "mid_july") {
-      month = 6;
-      day = 10;
-    }
-    return new Date(1848, month, day, 16, 0, 0);
+    const profile = START_PROFILES[profileId] || START_PROFILES.late_april;
+    gameState.seasonStart = profileId;
+    gameState.startProfileId = profileId;
+    gameState.startProfile = profile;
+    const startDate = new Date(
+      1848,
+      profile.startMonth,
+      profile.startDay,
+      16,
+      0,
+      0
+    );
+    gameState.startDayOfYear = getDayOfYear(startDate);
+    gameState.highRiverRisk = profile.riverHazard === "high";
+    return startDate;
+  }
+
+  function renderDepartureSeasonDesc() {
+    if (!dom.departureSeasonDesc) return;
+    const profileId = dom.departureSeason
+      ? dom.departureSeason.value
+      : "late_april";
+    const profile = START_PROFILES[profileId] || START_PROFILES.late_april;
+    dom.departureSeasonDesc.textContent = profile.summary;
   }
 
   function startNewGameFromForm() {
@@ -2874,6 +3263,14 @@
     resetSupplies();
 
     gameState.date = pickStartDateFromSeason();
+    const partyKey =
+      (leaderName + "-" + dom.departureSelect.value + "-" + gameState.startProfileId)
+        .replace(/\s+/g, "-")
+        .toLowerCase();
+    gameState.partyId = partyKey;
+    gameState.weatherSeed = hashToInt(partyKey + "-" + gameState.date.getFullYear());
+    initWeatherSystem(gameState.date.getFullYear(), partyKey);
+    gameState.weatherHistory = [];
     gameState.milesTraveled = 0;
     gameState.pace = "steady";
     gameState.rations = "filling";
@@ -2881,7 +3278,6 @@
     gameState.wagonCondition = 100;
     gameState.guardLevel = 0;
     gameState.log = [];
-    gameState.weatherSeed = Math.floor(Math.random() * 1000000) + 1;
     gameState.recentRainHours = 0;
     gameState.mapListVisible = false;
 
@@ -2908,87 +3304,210 @@
 
   /* ========= REGION, WEATHER, LOG ========================================= */
 
-  function refreshWeather() {
-    if (!gameState.weatherSeed) {
-      gameState.weatherSeed = Math.floor(Math.random() * 1000000) + 1;
+  function regionToWeatherRegion(region) {
+    switch (region) {
+      case "plains":
+      case "central_plains":
+        return "GreatPlains";
+      case "high_plains":
+        return "HighPlains";
+      case "mountains":
+        return "Rockies";
+      case "snake_plain":
+        return "SnakePlain";
+      case "blue_mountains":
+        return "Rockies";
+      case "columbia":
+      case "willamette":
+        return "Columbia";
+      default:
+        return "GreatPlains";
     }
-    const d = gameState.date;
-    const month = d.getMonth() + 1;
-    const doy = getDayOfYear(d);
-    const hour = d.getHours() + d.getMinutes() / 60;
-    const region = gameState.region || "plains";
+  }
 
-    const climateRegion = CLIMATE[region] || CLIMATE.plains;
-    const base =
-      climateRegion[month] || climateRegion.default || CLIMATE.plains.default;
+  function initWeatherSystem(year, partyId) {
+    const baseSeed =
+      gameState.weatherSeed || hashToInt(`${year || 1848}-${partyId || "party"}`);
+    gameState.weatherSeed = baseSeed;
+    gameState.weatherSystem = {
+      seed: baseSeed,
+      rng: mulberry32(baseSeed),
+      noise: makeNoise3D(baseSeed),
+    };
+    if (!Array.isArray(gameState.weatherHistory)) {
+      gameState.weatherHistory = [];
+    }
+  }
 
-    function noise(val, offset) {
-      const s = gameState.weatherSeed;
-      const x = val * 0.17 + offset * 12.9898 + s * 0.00013;
-      const y = val * 0.11 + offset * 78.233 + s * 0.00021;
-      const n = Math.sin(x) + Math.sin(y);
-      return 0.5 + 0.25 * n;
+  function ensureWeatherRuntime() {
+    if (!gameState.weatherSystem || !gameState.weatherSystem.seed) {
+      const year = gameState.date ? gameState.date.getFullYear() : 1848;
+      initWeatherSystem(year, gameState.partyId || "party");
+    }
+    if (!gameState.weatherSystem.rng) {
+      const seed = gameState.weatherSystem.seed || gameState.weatherSeed || 1;
+      gameState.weatherSystem.rng = mulberry32(seed);
+    }
+    if (!gameState.weatherSystem.noise) {
+      const seed = gameState.weatherSystem.seed || gameState.weatherSeed || 1;
+      gameState.weatherSystem.noise = makeNoise3D(seed);
+    }
+  }
+
+  function getClimateBaseline(regionKey, monthName) {
+    const monthly = CLIMATE[regionKey] && CLIMATE[regionKey].monthly;
+    if (monthly && monthly[monthName]) return monthly[monthName];
+    if (monthly) {
+      const first = Object.keys(monthly)[0];
+      if (first) return monthly[first];
+    }
+    return { pRain: 0.2, pStorm: 0.08, tMin: 4, tMax: 20, windKph: [8, 22] };
+  }
+
+  function updateWeatherHistory(weather) {
+    if (!Array.isArray(gameState.weatherHistory)) {
+      gameState.weatherHistory = [];
+    }
+    gameState.weatherHistory.push({
+      ...weather,
+      loggedAt: new Date(gameState.date.getTime()),
+    });
+    const maxLen = 48;
+    if (gameState.weatherHistory.length > maxLen) {
+      gameState.weatherHistory.splice(0, gameState.weatherHistory.length - maxLen);
+    }
+  }
+
+  function getWeather(state) {
+    ensureWeatherRuntime();
+    const ws = gameState.weatherSystem || {};
+    const noise3 = ws.noise || ((x, y, t) => 0);
+    const rng = ws.rng || Math.random;
+    const climate = getClimateBaseline(state.region, state.month);
+    const tScale = (state.dayOfYear + state.hour / 24) * 0.05;
+    const sx = (state.x || 0) * 0.005;
+    const sy = (state.y || 0) * 0.003;
+
+    const profile =
+      gameState.startProfile || START_PROFILES[gameState.startProfileId];
+
+    const tempNoise = noise3(sx, sy, tScale);
+    const diurnal = Math.cos(((state.hour - 15) / 24) * 2 * Math.PI) * 5.2;
+    let tempC = lerp(climate.tMin, climate.tMax, 0.5 + 0.35 * tempNoise) + diurnal;
+    tempC -= 0.006 * (state.altitude || 0);
+    if (profile) {
+      if (profile.heatHazard === "high") tempC += 2.2;
+      else if (profile.heatHazard === "low") tempC -= 1.2;
+      if (profile.riverHazard === "high" && state.month === "April") {
+        tempC -= 0.8;
+      }
     }
 
-    const tVal = doy + hour / 24;
-    const nCloud = noise(tVal, 0.3);
-    const nTemp = noise(tVal, 1.7);
-    const nWind = noise(tVal, 3.1);
-    const front = noise(doy * 0.5, 4.4) * 2 - 1;
+    const cloudBase = noise3(sx + 12, sy - 5, tScale * 0.7);
+    const frontDrift = noise3(sx + state.dayOfYear * 0.02, sy, tScale * 0.35);
+    const clouds = clamp(0.55 + 0.35 * cloudBase + 0.15 * frontDrift, 0, 1);
 
-    const diurnal =
-      Math.cos(((hour - 14) / 24) * 2 * Math.PI) * 6;
-    const altitude = regionAltitude(region);
-    const lapse = -0.0065 * altitude;
+    let pRain = climate.pRain * (0.6 + 0.8 * clouds) * (0.75 + 0.5 * frontDrift);
+    let pStorm = climate.pStorm * (0.55 + 0.8 * Math.max(frontDrift, 0));
 
-    const tempBase = base.tMin + (base.tMax - base.tMin) * nTemp;
-    const tempC = tempBase + diurnal + lapse;
+    if (profile) {
+      if (profile.riverHazard === "high" && (state.month === "April" || state.month === "May")) {
+        pRain *= 1.1;
+      }
+      if (profile.heatHazard === "high" && (state.month === "July" || state.month === "August")) {
+        tempC += 1.2;
+        pRain *= 0.9;
+        pStorm *= 1.15;
+      }
+    }
 
-    const cloudiness = clamp(0.3 + 0.7 * nCloud, 0, 1);
-    let pRain = base.pRain * (0.5 + 0.9 * cloudiness) * (0.9 + 0.3 * front);
-    pRain = clamp(pRain, 0, 0.96);
-    let pStorm = base.pStorm * (0.5 + 1.3 * Math.max(front, 0));
-    pStorm = clamp(pStorm, 0, 0.7);
+    pRain = clamp(pRain, 0, 0.95);
+    pStorm = clamp(pStorm, 0, 0.65);
 
-    const nPrecip = noise(tVal, 7.7);
-    const precipHit = nPrecip < pRain;
-    const stormHit = precipHit && noise(tVal, 9.1) < pStorm;
-
-    let precipType = "none";
-    const snowLine = base.snowLine || 1900;
+    const precipHit = rng() < pRain;
+    const stormHit = precipHit && rng() < pStorm;
+    let precip = "none";
     if (precipHit) {
-      const isSnow = tempC <= 0 || altitude >= snowLine;
-      precipType = isSnow ? "snow" : "rain";
+      const isSnow = tempC <= 1 || (state.altitude || 0) >= 1900;
+      precip = isSnow ? "snow" : "rain";
     }
 
-    const windKph =
-      base.windMin +
-      (base.windMax - base.windMin) * nWind +
-      (stormHit ? 6 : 0);
+    const windSample = noise3(sx + 5, sy - 7, tScale * 1.3);
+    let windKph = lerp(climate.windKph[0], climate.windKph[1], 0.5 + 0.35 * windSample);
+    if (stormHit) windKph += 6;
 
-    if (!gameState.recentRainHours) gameState.recentRainHours = 0;
-    if (precipType === "rain" || precipType === "snow") {
-      gameState.recentRainHours = Math.min(
-        72,
-        gameState.recentRainHours + 1
-      );
-    } else {
-      gameState.recentRainHours = Math.max(
-        0,
-        gameState.recentRainHours - 0.5
-      );
-    }
-
-    const label = describeWeatherLabel(tempC, precipType, stormHit, cloudiness);
-
-    gameState.weatherState = {
+    return {
       tempC: Math.round(tempC * 10) / 10,
       windKph: Math.round(windKph),
-      clouds: cloudiness,
-      precip: precipType,
+      clouds: clouds,
+      precip: precip,
       storm: !!stormHit,
     };
-    gameState.weather = label;
+  }
+
+  function applyWeatherToParty(party, weather, history) {
+    // TODO: Hook future survival effects here (speed, illness, morale, river depth).
+    if (!weather) return;
+    const recent = history && history[history.length - 1];
+    if (!recent) return;
+    if (weather.storm && Math.random() < 0.05) {
+      addLog("Storm gusts batter the wagon covers and everyone hunches against the rain.");
+    }
+    if (weather.tempC >= 32 && Math.random() < 0.04) {
+      addLog("The heat and dust leave the oxen lathered and thirsty.");
+    }
+    if (weather.tempC <= -5 && Math.random() < 0.03) {
+      addLog("Biting cold makes the party huddle close to share warmth.");
+    }
+  }
+
+  function refreshWeather() {
+    ensureWeatherRuntime();
+    const d = gameState.date;
+    const doy = getDayOfYear(d);
+    const hour = d.getHours() + d.getMinutes() / 60;
+    const weatherRegion = regionToWeatherRegion(gameState.region || "plains");
+    const altitude = regionAltitude(gameState.region || weatherRegion);
+    const monthName = getMonthName(d) || "April";
+
+    const weather = getWeather({
+      x: gameState.milesTraveled || 0,
+      y: altitude || 0,
+      dayOfYear: doy,
+      hour: hour,
+      region: weatherRegion,
+      month: monthName,
+      altitude: altitude,
+    });
+
+    if (!gameState.recentRainHours) gameState.recentRainHours = 0;
+    if (weather.precip === "rain" || weather.precip === "snow") {
+      gameState.recentRainHours = Math.min(72, gameState.recentRainHours + 1);
+    } else {
+      gameState.recentRainHours = Math.max(0, gameState.recentRainHours - 0.5);
+    }
+
+    gameState.weatherState = weather;
+    gameState.weather = describeWeatherLabel(
+      weather.tempC,
+      weather.precip,
+      weather.storm,
+      weather.clouds
+    );
+
+    const daysSinceStart =
+      gameState.startDayOfYear != null
+        ? Math.max(0, doy - gameState.startDayOfYear)
+        : 0;
+    const plainsPhase =
+      gameState.region === "plains" || gameState.region === "central_plains";
+    const profile =
+      gameState.startProfile || START_PROFILES[gameState.startProfileId];
+    gameState.highRiverRisk =
+      profile && profile.riverHazard === "high" && plainsPhase && daysSinceStart < 45;
+
+    updateWeatherHistory(weather);
+    applyWeatherToParty(getAllPeople(), weather, gameState.weatherHistory);
   }
 
   function updateRegionAndLocation() {
@@ -3204,7 +3723,20 @@
 
     const baseMiles = paceCfg.milesPerHour * conditionFactor * weatherFactor;
     const rhythmBonus = gameState.lastDayRhythmBonus || 0;
-    const finalMiles = baseMiles * (1 + rhythmBonus);
+    let mobilityPenalty = 1;
+    const people = getAllPeople().filter(function (p) {
+      return p && p.alive;
+    });
+    people.forEach(function (p) {
+      activeAfflictions(p).forEach(function (aff) {
+        if (aff.id === "sprain") {
+          if (aff.stage === "acute") mobilityPenalty *= 0.9;
+          else if (aff.stage === "recovery") mobilityPenalty *= 0.97;
+        }
+      });
+    });
+
+    const finalMiles = baseMiles * (1 + rhythmBonus) * mobilityPenalty;
     return finalMiles;
   }
 
@@ -3246,6 +3778,269 @@
       );
       person.thirst = clamp(person.thirst + 30, 0, 100);
       person.morale = clamp(person.morale + 1, 0, 100);
+    }
+  }
+
+  function isCholeraCorridor(region, miles) {
+    if (region === "central_plains" || region === "plains") {
+      return miles >= 260 && miles <= 620;
+    }
+    return false;
+  }
+
+  function afflictionSeverityLabel(sev) {
+    if (sev >= 3) return "severe";
+    if (sev >= 2) return "moderate";
+    return "mild";
+  }
+
+  function logAfflictionStageChange(person, aff, prevStage) {
+    if (!person || !aff) return;
+    if (aff.stage === "acute" && prevStage !== "acute") {
+      if (aff.id === "dysentery") {
+        addLog(
+          "After drinking from a stagnant pool along the Platte, " +
+            person.name +
+            " is struck with violent cramps and diarrhea."
+        );
+      } else if (aff.id === "camp_fever") {
+        addLog(
+          person.name +
+            " is shivering with fever and complains of aching bones."
+        );
+      } else if (aff.id === "sprain") {
+        addLog(person.name + " is laid up by a sprained ankle.");
+      }
+    } else if (aff.stage === "recovery" && prevStage !== "recovery") {
+      addLog(
+        person.name +
+          " seems to be past the worst of " +
+          aff.label.toLowerCase() +
+          " and is slowly regaining strength."
+      );
+    } else if (aff.resolved && prevStage !== "resolved") {
+      addLog(
+        person.name +
+          " is finally able to keep food down and rest; the illness lifts."
+      );
+    }
+  }
+
+  function tickAfflictionsForHour() {
+    const doctor = getBestDoctor();
+    const hasMedicine = (gameState.supplies && gameState.supplies.med_kits) > 0;
+    const docSkill = doctor && doctor.skills ? doctor.skills.doctoring || 0 : 0;
+    const treatBonusBase = 1 + docSkill * 0.2 + (hasMedicine ? 0.5 : 0);
+    const rng =
+      (gameState.weatherSystem && gameState.weatherSystem.rng) || Math.random;
+
+    getAllPeople().forEach(function (person) {
+      if (!person || !person.alive) return;
+      ensureAfflictions(person);
+      person.afflictions.forEach(function (aff) {
+        if (!aff || aff.resolved) return;
+        aff.hoursActive += 1;
+
+        if (aff.stage === "acute" && treatBonusBase > 1) {
+          aff.reliefHours = (aff.reliefHours || 0) + 0.05 * (treatBonusBase - 1);
+          if (hasMedicine && !aff.medicineUsed && aff.severity >= 2) {
+            gameState.supplies.med_kits = Math.max(
+              0,
+              (gameState.supplies.med_kits || 0) - 1
+            );
+            aff.medicineUsed = true;
+            if (doctor) {
+              addLog(
+                doctor.name +
+                  " tends to " +
+                  person.name +
+                  " with medicines, easing the worst of the sickness."
+              );
+            }
+          }
+        }
+
+        const progress = aff.hoursActive + (aff.reliefHours || 0);
+        const incubationEnd = aff.hoursIncubation || 0;
+        const acuteEnd = incubationEnd + (aff.hoursAcute || 0);
+        const recoveryEnd = acuteEnd + (aff.recoveryBuffer || 24);
+
+        let stageBefore = aff.stage;
+        if (aff.stage === "incubation" && progress >= incubationEnd) {
+          aff.stage = "acute";
+          logAfflictionStageChange(person, aff, stageBefore);
+          stageBefore = aff.stage;
+        }
+        if (aff.stage === "acute" && progress >= acuteEnd) {
+          stageBefore = aff.stage;
+          aff.stage = "recovery";
+          aff.lastNotified = aff.hoursActive;
+          logAfflictionStageChange(person, aff, stageBefore);
+        }
+        if (aff.stage === "recovery" && progress >= recoveryEnd) {
+          stageBefore = aff.stage;
+          aff.stage = "resolved";
+          aff.resolved = true;
+          logAfflictionStageChange(person, aff, stageBefore);
+          return;
+        }
+
+        let conditionLoss = 0;
+        const treatDivisor = aff.stage === "acute" ? treatBonusBase : 1.0;
+
+        if (aff.id === "dysentery") {
+          if (aff.stage === "incubation") {
+            person.morale = clamp(person.morale - 0.5, 0, 100);
+          } else if (aff.stage === "acute") {
+            person.hunger = clamp(
+              person.hunger - (6 * aff.severity) / treatDivisor,
+              0,
+              100
+            );
+            person.thirst = clamp(
+              person.thirst - (9 * aff.severity) / treatDivisor,
+              0,
+              100
+            );
+            person.energy = clamp(
+              person.energy - (5 * aff.severity) / treatDivisor,
+              0,
+              110
+            );
+            person.morale = clamp(person.morale - 4, 0, 100);
+            conditionLoss += (1.3 * aff.severity) / treatDivisor;
+          } else if (aff.stage === "recovery") {
+            person.energy = clamp(person.energy + 0.5, 0, 110);
+            person.morale = clamp(person.morale + 0.5, 0, 100);
+            conditionLoss += 0.2;
+          }
+        } else if (aff.id === "camp_fever") {
+          if (aff.stage === "incubation") {
+            person.energy = clamp(person.energy - 1.2, 0, 110);
+          } else if (aff.stage === "acute") {
+            person.energy = clamp(
+              person.energy - (4 * aff.severity) / treatDivisor,
+              0,
+              110
+            );
+            person.warmth = clamp(
+              person.warmth - (3 + aff.severity),
+              0,
+              100
+            );
+            person.morale = clamp(person.morale - 2.5, 0, 100);
+            person.thirst = clamp(person.thirst - 2, 0, 100);
+            conditionLoss += (0.9 * aff.severity) / treatDivisor;
+          } else if (aff.stage === "recovery") {
+            person.warmth = clamp(person.warmth + 0.4, 0, 100);
+            person.morale = clamp(person.morale + 0.4, 0, 100);
+            conditionLoss += 0.25;
+          }
+        } else if (aff.id === "sprain") {
+          if (aff.stage === "acute") {
+            person.energy = clamp(person.energy - 1, 0, 110);
+            person.morale = clamp(person.morale - 0.8, 0, 100);
+            conditionLoss += 0.35 / treatDivisor;
+          } else if (aff.stage === "recovery") {
+            person.energy = clamp(person.energy - 0.25, 0, 110);
+          }
+        }
+
+        person.condition = clamp(person.condition - conditionLoss, 0, 100);
+
+        const needsProgressLog =
+          aff.stage === "acute" &&
+          (aff.lastNotified == null || aff.hoursActive - aff.lastNotified >= 12);
+        if (needsProgressLog) {
+          aff.lastNotified = aff.hoursActive;
+          if (aff.id === "dysentery") {
+            addLog(
+              person.name +
+                " is too weak to walk and rides in the wagon while the illness grips them."
+            );
+          } else if (aff.id === "camp_fever") {
+            addLog(
+              person.name +
+                " burns with fever and needs tending; travel slows while they rest."
+            );
+          } else if (aff.id === "sprain") {
+            addLog(person.name + " keeps weight off a swollen ankle.");
+          }
+        }
+
+        if (person.condition <= 0 && person.alive) {
+          person.alive = false;
+          addLog(
+            person.name +
+              " dies after a brutal bout of " +
+              aff.label.toLowerCase() +
+              " on the trail."
+          );
+        }
+      });
+    });
+  }
+
+  function maybeTriggerIllnessForHour() {
+    const rng =
+      (gameState.weatherSystem && gameState.weatherSystem.rng) || Math.random;
+    const region = gameState.region;
+    const w = gameState.weatherState || {};
+    const tempC = typeof w.tempC === "number" ? w.tempC : 15;
+    const hot = tempC >= 24;
+    const wetRecently = w.precip === "rain" || gameState.recentRainHours > 24;
+    const mouths = mouthsCount();
+    const s = gameState.supplies || {};
+    const waterGal = s.water || 0;
+    const miles = gameState.milesTraveled || 0;
+    const people = getAllPeople().filter(function (p) {
+      return p && p.alive;
+    });
+    const avgConditionEnergy = people.length
+      ?
+          people.reduce(function (sum, p) {
+            return sum + ((p.condition || 0) + (p.energy || 0)) / 2;
+          }, 0) / people.length
+      : 100;
+
+    if (isCholeraCorridor(region, miles)) {
+      let base = 0.0005;
+      if (hot && wetRecently) base *= 1.5;
+      if (waterGal < mouths * 0.4) base *= 1.5;
+      if (avgConditionEnergy < 50) base *= 1.5;
+
+      let newCase = false;
+      people.some(function (p) {
+        if (hasAffliction(p, "dysentery")) return false;
+        if (rng() < base) {
+          addAffliction(p, "dysentery", { severity: rng() < 0.35 ? 2 : 1 });
+          newCase = true;
+          return true;
+        }
+        return false;
+      });
+      if (newCase) return; // avoid multiple clustered cases in one hour
+    }
+
+    const coldWet =
+      tempC <= 5 || ((w.precip === "rain" && tempC < 10) || w.precip === "snow");
+    if (gameState.mode === "camp" && coldWet) {
+      const roughCamp =
+        gameState.dayRhythm &&
+        gameState.dayRhythm.eveningCampChoice === "rushed";
+      people.forEach(function (p) {
+        if (!p || hasAffliction(p, "camp_fever")) return;
+        const warmthLow = p.warmth < 30;
+        const energyLow = p.energy < 30;
+        if (!warmthLow && !energyLow) return;
+        let risk = 0.0003;
+        if (warmthLow) risk *= 1.6;
+        if (energyLow) risk *= 1.6;
+        if (roughCamp) risk *= 1.3;
+        if (rng() < risk) {
+          addAffliction(p, "camp_fever", { severity: tempC <= 0 ? 2 : 1 });
+        }
+      });
     }
   }
 
@@ -3738,8 +4533,11 @@
 
     const injuryChance = clamp(0.08 - skill * 0.012, 0.02, 0.08);
     if (Math.random() < injuryChance) {
-      person.condition = clamp(person.condition - 15, 0, 100);
-      addLog(person.name + " twists an ankle scrambling over rough ground.");
+      person.condition = clamp(person.condition - 8, 0, 100);
+      addAffliction(person, "sprain", { severity: 1 });
+      addLog(
+        person.name + " twists an ankle scrambling over rough ground and limps back to camp."
+      );
     }
   }
 
@@ -4007,6 +4805,8 @@
     }
 
     updateRegionAndLocation();
+    tickAfflictionsForHour();
+    maybeTriggerIllnessForHour();
     maybeRandomEvent();
 
     if (gameState.milesTraveled >= gameState.targetMiles) {
@@ -4041,7 +4841,8 @@
       (loc.indexOf("river") >= 0 || loc.indexOf("ford") >= 0) &&
       (w.precip === "rain" || gameState.recentRainHours > 18)
     ) {
-      if (r < 0.07) {
+      const riverRisk = gameState.highRiverRisk ? 0.12 : 0.07;
+      if (r < riverRisk) {
         const lost = Math.min(gameState.lastHourMiles || 0, 1.5);
         gameState.milesTraveled = clamp(
           gameState.milesTraveled - lost,
@@ -4051,7 +4852,10 @@
         addLog(
           "High water at " +
             gameState.locationName +
-            " forces you to wait and scout for a safer crossing."
+            " forces you to wait and scout for a safer crossing." +
+            (gameState.highRiverRisk
+              ? " Spring runoff from the early start keeps the current fierce."
+              : "")
         );
         return;
       }
@@ -4198,6 +5002,19 @@
     dom.leaderStatus.innerHTML = "";
     if (!gameState.leader) return;
     renderBars(dom.leaderStatus, gameState.leader);
+    const acute = [];
+    getAllPeople().forEach(function (p) {
+      activeAfflictions(p).forEach(function (a) {
+        if (a.stage === "acute") acute.push(a.label + " (" + p.name + ")");
+      });
+    });
+    if (acute.length) {
+      const div = document.createElement("div");
+      div.className = "ot-panel-body-sm ot-text-warning";
+      div.style.marginTop = "4px";
+      div.textContent = "Illness in camp: " + acute.slice(0, 3).join(", ");
+      dom.leaderStatus.appendChild(div);
+    }
   }
 
   function renderPartyManifest() {
@@ -4224,6 +5041,12 @@
       const role = document.createElement("div");
       role.className = "ot-manifest-role";
       role.textContent = idx === 0 ? "Leader" : "Companion";
+      const affs = activeAfflictions(p);
+      if (affs.length) {
+        name.textContent = p.name + " ✶";
+        name.classList.add("ot-text-warning");
+        role.textContent += " · sick";
+      }
       left.appendChild(role);
 
       row.appendChild(left);
@@ -4305,35 +5128,60 @@
       s.url +
       "')";
     const w = gameState.weatherState || {};
-    const tempPart =
-      w.tempC != null ? " · " + tempCtoF(w.tempC) + "°F" : "";
-    const windPart =
-      w.windKph != null ? " · Wind: " + w.windKph + " km/h" : "";
-    dom.sceneCaption.textContent =
-      formatDateTime(gameState.date) +
-      " · " +
-      gameState.locationName +
-      " · Weather: " +
-      gameState.weather +
-      tempPart +
-      windPart +
-      " · " +
-      s.label;
+    const regionKey = regionToWeatherRegion(gameState.region || "plains");
+    const flavor = describeWeatherFlavor(regionKey, w) || s.label;
+    const seasonRisk = describeSeasonRisk(
+      regionKey,
+      gameState.date,
+      gameState.startProfile
+    );
+    const captionLines = [
+      formatDateTime(gameState.date) + " · " + gameState.locationName,
+      "Weather: " + formatWeatherSummary(w),
+      seasonRisk,
+      flavor,
+      s.label !== flavor ? s.label : "",
+    ].filter(Boolean);
+    dom.sceneCaption.innerHTML = captionLines
+      .map(function (line) {
+        return "<div>" + line + "</div>";
+      })
+      .join("");
   }
 
   function renderTrailHeader() {
     const mouths = mouthsCount();
     const w = gameState.weatherState || {};
-    const tempStr =
-      w.tempC != null ? " · " + tempCtoF(w.tempC) + "°F" : "";
-    dom.trailHeader.textContent =
+    const regionKey = regionToWeatherRegion(gameState.region || "plains");
+    const fallbackProfile =
+      START_PROFILES[gameState.startProfileId || "late_april"] ||
+      START_PROFILES.late_april;
+    const profileLabel = gameState.startProfile
+      ? gameState.startProfile.label
+      : fallbackProfile.label;
+    const seasonal = describeSeasonRisk(regionKey, gameState.date, gameState.startProfile);
+    const mainLine =
       formatDateTime(gameState.date) +
       " · " +
       gameState.locationName +
-      tempStr +
+      " · Region: " +
+      regionKey;
+    const subLine =
+      formatWeatherSummary(w) +
+      " · Departure: " +
+      profileLabel +
       " · " +
       mouths +
-      " people in your party";
+      " people";
+    dom.trailHeader.innerHTML =
+      "<div>" +
+      mainLine +
+      "</div><div class=\"ot-text-muted\">" +
+      subLine +
+      "</div>" +
+      (seasonal
+        ? "<div class=\"ot-text-warning\">" + seasonal + "</div>"
+        : "");
   }
 
   function updateMapListVisibility() {
@@ -4408,6 +5256,20 @@
       " · Doctoring: " +
       (skills.doctoring || 0);
     dom.companionDetail.appendChild(skillsLine);
+
+    const affs = activeAfflictions(person);
+    if (affs.length) {
+      const affDiv = document.createElement("div");
+      affDiv.className = "ot-panel-body-sm ot-text-warning";
+      affDiv.style.marginTop = "4px";
+      affDiv.textContent = affs
+        .map(function (a) {
+          const sev = afflictionSeverityLabel(a.severity || 1);
+          return a.label + " (" + a.stage + ", " + sev + ")";
+        })
+        .join(" · ");
+      dom.companionDetail.appendChild(affDiv);
+    }
   }
 
   function renderTrailLog() {
@@ -4672,6 +5534,19 @@
       else if (block === "evening") label = "Evening (camp chores)";
       dom.ontrailBlock.textContent = label;
     }
+
+    const w = gameState.weatherState || {};
+    if (dom.weatherSummary) {
+      dom.weatherSummary.textContent =
+        (gameState.weather ? gameState.weather + " · " : "") +
+        formatWeatherSummary(w);
+    }
+    if (dom.weatherNote) {
+      const regionKey = regionToWeatherRegion(gameState.region || "plains");
+      const seasonal = describeSeasonRisk(regionKey, gameState.date, gameState.startProfile);
+      const flavor = describeWeatherFlavor(regionKey, w);
+      dom.weatherNote.textContent = seasonal || flavor;
+    }
   }
 
 
@@ -4775,6 +5650,7 @@
       const bgId = dom.backgroundSelect.value;
       const bg = BACKGROUNDS[bgId] || BACKGROUNDS.farmer;
       dom.backgroundDesc.textContent = bg.desc;
+      renderDepartureSeasonDesc();
       updateStartArt();
       return;
     }
@@ -4859,6 +5735,34 @@
         gameState.nutritionStatus = null;
       }
 
+      if (!gameState.startProfileId) {
+        gameState.startProfileId = gameState.seasonStart || "late_april";
+      }
+      if (!gameState.startProfile) {
+        gameState.startProfile =
+          START_PROFILES[gameState.startProfileId] || START_PROFILES.late_april;
+      }
+      if (gameState.startDayOfYear == null && gameState.date) {
+        gameState.startDayOfYear = getDayOfYear(gameState.date);
+      }
+      if (!gameState.partyId) {
+        gameState.partyId =
+          (gameState.leader && gameState.leader.name
+            ? gameState.leader.name
+            : "party") +
+          "-" +
+          gameState.startProfileId;
+      }
+      if (!gameState.weatherSeed) {
+        gameState.weatherSeed = hashToInt(
+          `${gameState.partyId}-${gameState.date.getFullYear()}`
+        );
+      }
+      initWeatherSystem(gameState.date.getFullYear(), gameState.partyId);
+      if (!Array.isArray(gameState.weatherHistory)) {
+        gameState.weatherHistory = [];
+      }
+
 
       // Rehydrate log entry dates
       gameState.log = gameState.log
@@ -4899,6 +5803,10 @@
           eveningSuggestionShown: !!dr.eveningSuggestionShown,
         };
       }
+
+      getAllPeople().forEach(function (p) {
+        ensureAfflictions(p);
+      });
 
       normalizeLegacyMeals();
       ensureDelegationState();
@@ -4970,6 +5878,12 @@
       const bg = BACKGROUNDS[bgId] || BACKGROUNDS.farmer;
       dom.backgroundDesc.textContent = bg.desc;
     });
+
+    if (dom.departureSeason) {
+      dom.departureSeason.addEventListener("change", function () {
+        renderDepartureSeasonDesc();
+      });
+    }
 
     dom.departureSelect.addEventListener("change", updateStartArt);
     dom.btnBeginOutfit.addEventListener("click", startNewGameFromForm);
@@ -5084,6 +5998,7 @@
       const bgId = dom.backgroundSelect.value;
       const bg = BACKGROUNDS[bgId] || BACKGROUNDS.farmer;
       dom.backgroundDesc.textContent = bg.desc;
+      renderDepartureSeasonDesc();
       updateStartArt();
       showScreen("start");
     } else {
