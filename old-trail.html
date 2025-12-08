@@ -290,6 +290,50 @@
   min-height: 170px;
 }
 
+.ot-travel-view-toggle {
+  display: inline-flex;
+  gap: 4px;
+  margin-bottom: 6px;
+  font-size: 10px;
+}
+
+.ot-view-toggle-btn {
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 3px 8px;
+  background: rgba(10, 10, 16, 0.8);
+  color: #f5ead2;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 9px;
+  opacity: 0.78;
+  cursor: pointer;
+}
+
+.ot-view-toggle-btn-active {
+  background: radial-gradient(circle at top, #f5cf8b, #f0b463);
+  color: #291608;
+  opacity: 1;
+}
+
+.ot-trail-canvas {
+  display: block;
+  width: 100%;
+  height: 180px;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+
+/* View mode visibility helpers */
+.ot-view-mode-journal #ot-trail-canvas {
+  display: none;
+}
+
+.ot-view-mode-explorer #ot-scene,
+.ot-view-mode-explorer #ot-scene-caption {
+  display: none;
+}
+
 /* Temporal viewport overlays (scene + map) */
 
 .ot-viewport-window {
@@ -477,6 +521,11 @@
 
 .ot-trail-dot-current {
   background: #f5d28b;
+}
+
+.ot-trail-dot-seen {
+  background: rgba(245, 210, 139, 0.5);
+  box-shadow: 0 0 0 1px rgba(245, 210, 139, 0.12);
 }
 
 /* Trail log */
@@ -1154,7 +1203,24 @@
       </div>
 
       <div>
+        <div class="ot-travel-view-toggle">
+          <button
+            id="ot-btn-view-journal"
+            class="ot-view-toggle-btn ot-view-toggle-btn-active"
+          >
+            Journal view
+          </button>
+          <button id="ot-btn-view-explorer" class="ot-view-toggle-btn">
+            Explorer view
+          </button>
+        </div>
+
         <div class="ot-travel-scene-wrapper ot-viewport-window">
+          <canvas
+            id="ot-trail-canvas"
+            class="ot-trail-canvas"
+            aria-hidden="true"
+          ></canvas>
           <div id="ot-scene" class="ot-travel-scene"></div>
           <div class="ot-travel-scene-overlay" id="ot-scene-caption"></div>
         </div>
@@ -2469,7 +2535,46 @@
     nutritionHistory: [],
     currentNutrition: null,
     nutritionStatus: null,
+    travelView: "journal",
+    traillines: {
+      visualMiles: 0,
+      laneOffset: 0,
+      fogMaxMile: 0,
+      lastFrameTime: null,
+    },
   };
+
+  function defaultTraillinesState() {
+    return {
+      visualMiles: gameState.milesTraveled || 0,
+      laneOffset: 0,
+      fogMaxMile: gameState.milesTraveled || 0,
+      lastFrameTime: null,
+    };
+  }
+
+  function ensureTraillinesState() {
+    if (!gameState.travelView) {
+      gameState.travelView = "journal";
+    }
+    if (!gameState.traillines) {
+      gameState.traillines = defaultTraillinesState();
+    } else {
+      gameState.traillines.visualMiles =
+        typeof gameState.traillines.visualMiles === "number"
+          ? gameState.traillines.visualMiles
+          : gameState.milesTraveled || 0;
+      if (typeof gameState.traillines.laneOffset !== "number") {
+        gameState.traillines.laneOffset = 0;
+      }
+      if (typeof gameState.traillines.fogMaxMile !== "number") {
+        gameState.traillines.fogMaxMile = gameState.milesTraveled || 0;
+      }
+      if (!gameState.traillines.lastFrameTime) {
+        gameState.traillines.lastFrameTime = null;
+      }
+    }
+  }
 
   /* ========= UTILITIES ===================================================== */
 
@@ -3543,6 +3648,9 @@
     dom.hourTasks = document.getElementById("ot-hour-tasks");
     dom.scene = document.getElementById("ot-scene");
     dom.sceneCaption = document.getElementById("ot-scene-caption");
+    dom.trailCanvas = document.getElementById("ot-trail-canvas");
+    dom.btnViewJournal = document.getElementById("ot-btn-view-journal");
+    dom.btnViewExplorer = document.getElementById("ot-btn-view-explorer");
     dom.trailHeader = document.getElementById("ot-trail-header");
     dom.trailMap = document.getElementById("ot-trail-map");
     dom.mapViewport = document.getElementById("ot-map-viewport");
@@ -3596,6 +3704,10 @@
       dom.screens[name].classList.add("ot-screen-active");
     }
     gameState.phase = name;
+
+    if (name === "travel") {
+      setTravelView(gameState.travelView || "journal");
+    }
   }
 
   function resetSupplies() {
@@ -3720,6 +3832,8 @@
     gameState.log = [];
     gameState.recentRainHours = 0;
     gameState.mapListVisible = false;
+    gameState.travelView = "journal";
+    gameState.traillines = defaultTraillinesState();
 
     updateRegionAndLocation();
     refreshWeather();
@@ -5613,6 +5727,12 @@
     }
 
     updateRegionAndLocation();
+    if (gameState.traillines) {
+      gameState.traillines.fogMaxMile = Math.max(
+        gameState.traillines.fogMaxMile || 0,
+        gameState.milesTraveled || 0
+      );
+    }
     tickAfflictionsForHour();
     maybeTriggerIllnessForHour();
     showCompanionThoughtForHour();
@@ -6010,6 +6130,7 @@
 
     dom.trailMap.innerHTML = "";
     const miles = gameState.milesTraveled;
+    const seenMile = (gameState.traillines && gameState.traillines.fogMaxMile) || 0;
 
     ROUTE_MILESTONES.forEach(function (m) {
       const row = document.createElement("div");
@@ -6019,6 +6140,9 @@
       if (miles >= m.mile && miles < m.mile + 80) {
         dot.classList.add("ot-trail-dot-current");
       }
+      if (seenMile >= m.mile) {
+        dot.classList.add("ot-trail-dot-seen");
+      }
       row.appendChild(dot);
       const label = document.createElement("div");
       label.textContent = m.name;
@@ -6027,6 +6151,247 @@
     });
 
     updateMapListVisibility();
+  }
+
+  /* ========= TRAILLINES EXPLORER MODE (PHASE 1) =============================== */
+
+  const TRAILLINES_CONFIG = {
+    pixelsPerMile: 2.0,
+    laneBaseY: 150,
+    laneAmplitude: 6,
+    wagonY: -8,
+  };
+
+  const traillinesRuntime = {
+    rafId: null,
+    canvas: null,
+    ctx: null,
+  };
+
+  function resizeTrailCanvas() {
+    if (!traillinesRuntime.canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const rect = traillinesRuntime.canvas.getBoundingClientRect();
+    traillinesRuntime.canvas.width = rect.width * dpr;
+    traillinesRuntime.canvas.height = rect.height * dpr;
+    if (traillinesRuntime.ctx) {
+      traillinesRuntime.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+  }
+
+  function initTraillinesExplorerIfNeeded() {
+    if (!dom.trailCanvas) return;
+    ensureTraillinesState();
+
+    if (!traillinesRuntime.canvas) {
+      traillinesRuntime.canvas = dom.trailCanvas;
+      traillinesRuntime.ctx = dom.trailCanvas.getContext("2d");
+      window.addEventListener("resize", resizeTrailCanvas);
+      resizeTrailCanvas();
+      gameState.traillines.visualMiles = gameState.milesTraveled || 0;
+      gameState.traillines.fogMaxMile = gameState.milesTraveled || 0;
+    }
+
+    if (!traillinesRuntime.rafId) {
+      traillinesRuntime.rafId = requestAnimationFrame(traillinesFrame);
+    }
+  }
+
+  function traillinesFrame(timestamp) {
+    traillinesRuntime.rafId = requestAnimationFrame(traillinesFrame);
+    const tState = gameState.traillines;
+    if (!traillinesRuntime.ctx || !tState) return;
+
+    if (!tState.lastFrameTime) tState.lastFrameTime = timestamp;
+    const dt = (timestamp - tState.lastFrameTime) / 1000;
+    tState.lastFrameTime = timestamp;
+
+    const targetMiles = gameState.milesTraveled || 0;
+    const currentMiles = tState.visualMiles || 0;
+    const diff = targetMiles - currentMiles;
+
+    const maxStep = 80 * dt;
+    const step = Math.max(-maxStep, Math.min(maxStep, diff * 0.12));
+    tState.visualMiles = currentMiles + step;
+
+    if (tState.visualMiles > tState.fogMaxMile) {
+      tState.fogMaxMile = tState.visualMiles;
+    }
+
+    tState.laneOffset = (tState.laneOffset || 0) * 0.96;
+
+    drawTraillinesScene();
+  }
+
+  function drawTraillinesScene() {
+    if (!traillinesRuntime.canvas || !traillinesRuntime.ctx) return;
+
+    const canvas = traillinesRuntime.canvas;
+    const ctx = traillinesRuntime.ctx;
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const width = rect.width;
+    const height = rect.height;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, width, height);
+
+    const exploring =
+      gameState.phase === "travel" && gameState.travelView === "explorer";
+    if (!exploring) return;
+
+    const region = gameState.region || "plains";
+    const w = gameState.weatherState || {};
+    const palette = {
+      plains: { sky: "#324f7d", ground: "#5d4732", trail: "#c29f71" },
+      central_plains: { sky: "#3c5c87", ground: "#6a5038", trail: "#cbb27f" },
+      high_plains: { sky: "#2f4e75", ground: "#5a4b3b", trail: "#c7a16c" },
+      mountains: { sky: "#2d3f63", ground: "#4b3f3a", trail: "#b39976" },
+      snake: { sky: "#34506d", ground: "#514234", trail: "#c2a175" },
+      blue_mountains: { sky: "#243553", ground: "#4d4036", trail: "#b29472" },
+      columbia: { sky: "#2c3f5c", ground: "#3f3a33", trail: "#a88a65" },
+      willamette: { sky: "#2a4f53", ground: "#324136", trail: "#9d8f6e" },
+    };
+
+    const regionPalette = palette[region] || palette.plains;
+    const skyTop = regionPalette.sky;
+    const skyBottom = w.tempC && w.tempC > 28 ? "#5b3d2a" : regionPalette.sky;
+
+    const gradient = ctx.createLinearGradient(0, 0, 0, height);
+    gradient.addColorStop(0, skyTop);
+    gradient.addColorStop(1, skyBottom);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+
+    const haze = Math.min(Math.max((w.clouds || 0) / 100, 0), 1);
+    if (haze > 0) {
+      ctx.fillStyle = `rgba(120, 140, 170, ${0.18 * haze})`;
+      ctx.fillRect(0, 0, width, height);
+    }
+
+    // Far terrain silhouette
+    ctx.fillStyle = "rgba(20, 24, 38, 0.6)";
+    ctx.beginPath();
+    ctx.moveTo(0, height * 0.62);
+    ctx.lineTo(width * 0.18, height * 0.54);
+    ctx.lineTo(width * 0.38, height * 0.58);
+    ctx.lineTo(width * 0.58, height * 0.5);
+    ctx.lineTo(width * 0.74, height * 0.55);
+    ctx.lineTo(width * 0.95, height * 0.52);
+    ctx.lineTo(width, height * 0.56);
+    ctx.lineTo(width, height);
+    ctx.lineTo(0, height);
+    ctx.closePath();
+    ctx.fill();
+
+    // Ground and trail band
+    ctx.fillStyle = regionPalette.ground;
+    ctx.fillRect(0, height * 0.58, width, height * 0.42);
+
+    const laneBaseY = Math.min(
+      height - 20,
+      TRAILLINES_CONFIG.laneBaseY +
+        Math.sin((gameState.traillines.visualMiles || 0) * 0.05) *
+          TRAILLINES_CONFIG.laneAmplitude
+    );
+
+    const laneWidth = 70;
+    ctx.fillStyle = regionPalette.trail;
+    ctx.beginPath();
+    ctx.moveTo(0, laneBaseY - 10);
+    ctx.lineTo(width, laneBaseY + 10);
+    ctx.lineTo(width, laneBaseY + laneWidth * 0.2 + 18);
+    ctx.lineTo(0, laneBaseY + laneWidth * 0.2);
+    ctx.closePath();
+    ctx.fill();
+
+    const midMiles = gameState.traillines.visualMiles || 0;
+    const baseX = width * 0.42 + (gameState.traillines.laneOffset || 0) * 18;
+    const pixelsPerMile = TRAILLINES_CONFIG.pixelsPerMile;
+
+    // Landmarks
+    (ROUTE_MILESTONES || []).forEach(function (m) {
+      if (!m || typeof m.mile !== "number") return;
+      const x = baseX + (m.mile - midMiles) * pixelsPerMile;
+      if (x < -80 || x > width + 140) return;
+      const seen = (gameState.traillines.fogMaxMile || 0) >= m.mile;
+      ctx.strokeStyle = seen ? "#f6d48a" : "rgba(255, 255, 255, 0.25)";
+      ctx.fillStyle = seen ? "#f6d48a" : "rgba(255, 255, 255, 0.25)";
+      ctx.beginPath();
+      ctx.moveTo(x, laneBaseY - 8);
+      ctx.lineTo(x, laneBaseY + 22);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(x, laneBaseY - 10, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.font = "10px 'Segoe UI', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillStyle = seen ? "#f5e9d4" : "rgba(245, 233, 212, 0.6)";
+      ctx.fillText(m.name, x, laneBaseY - 20);
+    });
+
+    // Fog of war ahead
+    const fogStart = width * 0.62;
+    const fogGradient = ctx.createLinearGradient(fogStart, 0, width, 0);
+    fogGradient.addColorStop(0, "rgba(4, 5, 8, 0)");
+    fogGradient.addColorStop(1, "rgba(4, 5, 8, 0.52)");
+    ctx.fillStyle = fogGradient;
+    ctx.fillRect(fogStart, 0, width - fogStart, height);
+
+    // Wagon placeholder
+    const wagonX = baseX;
+    const wagonY = laneBaseY + TRAILLINES_CONFIG.wagonY;
+    ctx.fillStyle = "#cdb89a";
+    ctx.strokeStyle = "#4a321a";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(wagonX - 24, wagonY - 18, 48, 26, 8);
+    } else {
+      ctx.rect(wagonX - 24, wagonY - 18, 48, 26);
+    }
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#7a5a3c";
+    ctx.fillRect(wagonX - 28, wagonY + 4, 56, 10);
+    ctx.strokeRect(wagonX - 28, wagonY + 4, 56, 10);
+    ctx.fillStyle = "#f7e7cb";
+    ctx.beginPath();
+    ctx.ellipse(wagonX - 14, wagonY + 16, 8, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(wagonX + 14, wagonY + 16, 8, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Weather overlays
+    if (w.precip === "rain") {
+      ctx.strokeStyle = "rgba(160, 200, 255, 0.65)";
+      ctx.lineWidth = 1.2;
+      for (let i = 0; i < width / 6; i++) {
+        const x = (i * 11 + (Date.now() / 20) % 11) % width;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x + 4, 14);
+        ctx.stroke();
+      }
+    } else if (w.precip === "snow") {
+      ctx.fillStyle = "rgba(240, 240, 255, 0.8)";
+      for (let i = 0; i < width / 10; i++) {
+        const x = (i * 13 + (Date.now() / 40) % 13) % width;
+        const y = (i * 17 + (Date.now() / 30) % 17) % height;
+        ctx.beginPath();
+        ctx.arc(x, y, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if ((w.tempC || 0) > 28) {
+      ctx.fillStyle = "rgba(210, 160, 80, 0.15)";
+      ctx.fillRect(0, 0, width, height);
+    }
+
+    if (gameState.pace === "grueling" && gameState.mode === "travel") {
+      ctx.fillStyle = "rgba(180, 130, 70, 0.12)";
+      ctx.fillRect(0, laneBaseY, width, 40);
+    }
   }
 
   function renderCompanionDetail() {
@@ -6472,6 +6837,9 @@
     }
 
     if (gameState.phase === "travel") {
+      if (gameState.travelView === "explorer") {
+        initTraillinesExplorerIfNeeded();
+      }
       renderOnTrailHeader();
       renderLeaderStatus();
       renderPartyManifest();
@@ -6574,6 +6942,8 @@
         gameState.weatherHistory = [];
       }
 
+      ensureTraillinesState();
+
 
       // Rehydrate log entry dates
       gameState.log = gameState.log
@@ -6634,6 +7004,38 @@
   function resetGame() {
     localStorage.removeItem(SAVE_KEY);
     location.reload();
+  }
+
+  function setTravelView(view) {
+    if (view !== "journal" && view !== "explorer") view = "journal";
+    gameState.travelView = view;
+
+    if (dom.btnViewJournal && dom.btnViewExplorer) {
+      dom.btnViewJournal.classList.toggle(
+        "ot-view-toggle-btn-active",
+        view === "journal"
+      );
+      dom.btnViewExplorer.classList.toggle(
+        "ot-view-toggle-btn-active",
+        view === "explorer"
+      );
+    }
+
+    const travelScreen = dom.screens && dom.screens.travel;
+    if (travelScreen) {
+      travelScreen.classList.toggle("ot-view-mode-journal", view === "journal");
+      travelScreen.classList.toggle(
+        "ot-view-mode-explorer",
+        view === "explorer"
+      );
+    }
+
+    if (view === "explorer") {
+      initTraillinesExplorerIfNeeded();
+    }
+
+    saveGame();
+    renderAll();
   }
 
   /* ========= EVENT WIRING ================================================== */
@@ -6706,6 +7108,16 @@
     dom.btnAdvance4.addEventListener("click", function () {
       advanceHours(4);
     });
+    if (dom.btnViewJournal) {
+      dom.btnViewJournal.addEventListener("click", function () {
+        setTravelView("journal");
+      });
+    }
+    if (dom.btnViewExplorer) {
+      dom.btnViewExplorer.addEventListener("click", function () {
+        setTravelView("explorer");
+      });
+    }
     dom.btnToggleMode.addEventListener("click", function () {
       gameState.mode = gameState.mode === "travel" ? "camp" : "travel";
       resetTasksForCurrentMode();
@@ -6818,6 +7230,42 @@
     if (dom.btnCampAuto) {
       dom.btnCampAuto.addEventListener("click", autoPlanCampTasks);
     }
+
+    document.addEventListener("keydown", function (evt) {
+      if (evt.key === "Escape") {
+        hideModal(dom.inventoryModal);
+        hideModal(dom.prioritiesModal);
+        hideModal(dom.campOverlay);
+      }
+
+      const isExplorer =
+        gameState.phase === "travel" && gameState.travelView === "explorer";
+      if (!isExplorer) return;
+
+      if (evt.key === "ArrowLeft" || evt.key === "a" || evt.key === "A") {
+        gameState.traillines.laneOffset = clamp(
+          (gameState.traillines.laneOffset || 0) - 0.2,
+          -1,
+          1
+        );
+        evt.preventDefault();
+      } else if (
+        evt.key === "ArrowRight" ||
+        evt.key === "d" ||
+        evt.key === "D"
+      ) {
+        gameState.traillines.laneOffset = clamp(
+          (gameState.traillines.laneOffset || 0) + 0.2,
+          -1,
+          1
+        );
+        evt.preventDefault();
+      } else if (evt.key === "v" || evt.key === "V") {
+        setTravelView(
+          gameState.travelView === "explorer" ? "journal" : "explorer"
+        );
+      }
+    });
 
     dom.btnReset.addEventListener("click", resetGame);
   }

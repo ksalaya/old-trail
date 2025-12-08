@@ -187,3 +187,12 @@ Expanded plan:
 - Tie hot/dry weather to dehydration, dust-related illness, and oxen fatigue events across the Platte and Snake River country.
 - Tie cold/wet weather to hypothermia, pneumonia, and morale penalties in camp, especially in the Rockies and Blues.
 - Add region-specific event variants keyed off weather (prairie fire, white-out blizzard, dust storm) and feed them into the viewport mood system.
+
+Traillines Explorer – Phase 2+
+- Replace placeholder wagon drawing with real wagon sprite (and oxen) with painterly style matching Remington/Bierstadt/Maggiori reference PDFs.
+- Add distinct parallax background layers and biome-specific tiles for each region (plains, central plains, high plains, mountains, Snake plain, Blue Mountains, Columbia, Willamette).
+- Implement walkable camp scenes on their own mini-maps (fire, wagons, foraging, water, wood) instead of menu-only decisions.
+- Implement tactical mini-maps for raider attacks, rescues, and dangerous crossings (light squad-tactics feel, using existing delegation and hourly sim).
+- Externalize trail geometry / world chunks into JSON data files that can be streamed and extended (supports cutoffs and alternate routes).
+- Add mobile tilt/swipe integration for steering along the trail lane.
+- Add companion sprites and simple formation logic on the explorer map (ties into delegation priorities and hourly tasks).
