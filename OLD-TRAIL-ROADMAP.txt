@@ -198,6 +198,11 @@ Traillines Explorer – Phase 2+
 - Add companion sprites and simple formation logic on the explorer map (ties into delegation priorities and hourly tasks).
 
 STORYTELLER – FUTURE WORK
+* Expansion Phase 2+
+  * Add a fuller storyteller preset picker polish pass (tooltips, mid-run toggle, save/load label).
+  * Expand multi-step romance/feud arcs with choices and camp tasks that respond to them.
+  * Build richer cascade analytics for the end screen so late-run summaries call out key turning points.
+  * Add multi-step mental break resolutions with player agency instead of auto-resolving beats.
 - Broaden the data-driven event library (river dramas, illness cascades, romance/rival showdowns) and tune tension curves for difficulty presets.
 - Introduce major mental breaks (refusing to travel for a day, storming off to hunt, leadership disputes) with resolution paths.
 - Expand relationship arcs beyond simple tags (romance, rescue loyalty shifts, gratitude chains from lifeline events).
