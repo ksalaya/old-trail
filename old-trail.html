@@ -155,6 +155,17 @@
   box-shadow: 0 0 0 1px rgba(245, 210, 139, 0.4);
 }
 
+.ot-narrator-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.ot-narrator-picker select {
+  width: 100%;
+}
+
 /* ==== BUTTONS ============================================================== */
 
 .ot-btn,
@@ -1019,12 +1030,9 @@
 
             <div class="ot-field">
               <div class="ot-label">Trail narrator</div>
-              <select id="ot-storyteller-preset" class="ot-select">
-                <option value="gentle">Calm Narrator (gentler swings)</option>
-                <option value="classic" selected>Classic Trail</option>
-                <option value="harsh">Harsh Frontier (sharp turns)</option>
-              </select>
+              <select id="ot-storyteller-preset" class="ot-select"></select>
               <div
+                id="ot-storyteller-desc"
                 class="ot-panel-body-sm ot-text-muted"
                 style="margin-top: 4px;"
               >
@@ -1189,6 +1197,22 @@
             <div>Daily block: <span id="ot-ontrail-block">Morning</span></div>
             <div>Weather: <span id="ot-weather-summary">—</span></div>
             <div class="ot-text-muted" id="ot-weather-note"></div>
+          </div>
+        </div>
+
+        <div class="ot-panel">
+          <div class="ot-panel-header">Narrator</div>
+          <div class="ot-panel-body ot-panel-body-sm">
+            <div class="ot-narrator-row">
+              <div id="ot-narrator-label" class="ot-text-muted"></div>
+              <button id="ot-btn-toggle-narrator" class="ot-link-button" type="button">
+                Change narrator
+              </button>
+            </div>
+            <div id="ot-narrator-picker" class="ot-narrator-picker" style="display: none; margin-top: 6px;">
+              <select id="ot-storyteller-midrun" class="ot-select"></select>
+              <div id="ot-narrator-hint" class="ot-panel-body-sm ot-text-muted" style="margin-top: 4px;"></div>
+            </div>
           </div>
         </div>
 
@@ -2560,7 +2584,7 @@
       lastFrameTime: null,
     },
     storyState: null,
-    storytellerPresetId: null,
+    storytellerPresetId: "classic",
   };
 
   function defaultTraillinesState() {
@@ -2624,18 +2648,24 @@
     gentle: {
       id: "gentle",
       label: "Calm Narrator",
+      description:
+        "Emphasizes breathers and lifelines; brutal cascades are rarer and shorter.",
+      hint: "Gentler swings, more hope.",
       tensionBaseDrift: 0.03,
-      tensionRiskScale: 0.18,
-      tensionAfterMajorDrop: 28,
-      tensionAfterMinorDrop: 14,
-      minHoursBetweenMajor: 30,
-      minHoursBetweenMinor: 6,
-      breatherBias: 1.4,
-      lifelineBias: 1.3,
+      tensionRiskScale: 0.2,
+      tensionAfterMajorDrop: 30,
+      tensionAfterMinorDrop: 15,
+      minHoursBetweenMajor: 32,
+      minHoursBetweenMinor: 7,
+      breatherBias: 1.45,
+      lifelineBias: 1.35,
     },
     classic: {
       id: "classic",
       label: "Classic Trail",
+      description:
+        "Balanced hardships and breathers with the familiar Oregon Trail rhythm.",
+      hint: "Balanced tension and drama.",
       tensionBaseDrift: 0.06,
       tensionRiskScale: 0.25,
       tensionAfterMajorDrop: 35,
@@ -2648,13 +2678,16 @@
     harsh: {
       id: "harsh",
       label: "Harsh Frontier",
+      description:
+        "Pushes risk flags harder with shorter breathers and sharper cascades.",
+      hint: "Unforgiving, for experienced players.",
       tensionBaseDrift: 0.1,
-      tensionRiskScale: 0.35,
-      tensionAfterMajorDrop: 45,
+      tensionRiskScale: 0.38,
+      tensionAfterMajorDrop: 46,
       tensionAfterMinorDrop: 22,
-      minHoursBetweenMajor: 20,
+      minHoursBetweenMajor: 19,
       minHoursBetweenMinor: 3,
-      breatherBias: 0.7,
+      breatherBias: 0.68,
       lifelineBias: 0.7,
     },
   };
@@ -3826,6 +3859,13 @@
     dom.craftingWidget = document.getElementById("oldtrail-crafting-widget");
     dom.thoughtsBubble = document.getElementById("oldtrail-thoughts-bubble");
 
+    dom.storytellerDesc = document.getElementById("ot-storyteller-desc");
+    dom.storytellerMidrun = document.getElementById("ot-storyteller-midrun");
+    dom.narratorLabel = document.getElementById("ot-narrator-label");
+    dom.narratorPicker = document.getElementById("ot-narrator-picker");
+    dom.narratorHint = document.getElementById("ot-narrator-hint");
+    dom.btnToggleNarrator = document.getElementById("ot-btn-toggle-narrator");
+
   }
 
   function showScreen(name) {
@@ -3987,6 +4027,35 @@
       : "late_april";
     const profile = START_PROFILES[profileId] || START_PROFILES.late_april;
     dom.departureSeasonDesc.textContent = profile.summary;
+  }
+
+  function renderStorytellerOptions(selectEl, selectedId) {
+    if (!selectEl) return;
+    selectEl.innerHTML = "";
+    Object.keys(STORYTELLER_PRESETS).forEach(function (key) {
+      const preset = STORYTELLER_PRESETS[key];
+      const opt = document.createElement("option");
+      opt.value = preset.id;
+      opt.textContent =
+        preset.label + " – " + (preset.hint || "Narrator mood");
+      if (preset.hint) opt.title = preset.hint;
+      if (preset.id === selectedId) opt.selected = true;
+      selectEl.appendChild(opt);
+    });
+  }
+
+  function renderStorytellerDescription(presetId) {
+    const preset = STORYTELLER_PRESETS[presetId] || STORYTELLER_PRESETS.classic;
+    if (dom.storytellerDesc) {
+      dom.storytellerDesc.textContent = preset.description || "";
+    }
+    if (dom.narratorLabel) {
+      dom.narratorLabel.textContent = "Narrator: " + preset.label;
+      dom.narratorLabel.title = preset.hint || preset.description || "";
+    }
+    if (dom.narratorHint) {
+      dom.narratorHint.textContent = preset.description || "";
+    }
   }
 
   function startNewGameFromForm() {
@@ -7976,6 +8045,7 @@
       if (gameState.travelView === "explorer") {
         initTraillinesExplorerIfNeeded();
       }
+      renderStorytellerDescription(gameState.storytellerPresetId || "classic");
       renderOnTrailHeader();
       renderLeaderStatus();
       renderPartyManifest();
@@ -8250,6 +8320,47 @@
     dom.btnBeginOutfit.addEventListener("click", startNewGameFromForm);
     dom.btnAddRecommended.addEventListener("click", addRecommendedLoad);
     dom.btnBeginJourney.addEventListener("click", beginJourney);
+    renderStorytellerOptions(
+      dom.storytellerPreset,
+      gameState.storytellerPresetId || "classic"
+    );
+    renderStorytellerDescription(gameState.storytellerPresetId || "classic");
+    if (dom.storytellerPreset) {
+      dom.storytellerPreset.addEventListener("change", function () {
+        const presetId = dom.storytellerPreset.value || "classic";
+        gameState.storytellerPresetId = presetId;
+        renderStorytellerDescription(presetId);
+        saveGame();
+      });
+    }
+
+    renderStorytellerOptions(
+      dom.storytellerMidrun,
+      gameState.storytellerPresetId || "classic"
+    );
+    if (dom.btnToggleNarrator) {
+      dom.btnToggleNarrator.addEventListener("click", function () {
+        if (!dom.narratorPicker) return;
+        const visible = dom.narratorPicker.style.display !== "none";
+        dom.narratorPicker.style.display = visible ? "none" : "block";
+      });
+    }
+    if (dom.storytellerMidrun) {
+      dom.storytellerMidrun.addEventListener("change", function () {
+        const presetId = dom.storytellerMidrun.value || "classic";
+        const oldPreset = gameState.storytellerPresetId || "classic";
+        if (presetId === oldPreset) return;
+        gameState.storytellerPresetId = presetId;
+        ensureStoryState().presetId = presetId;
+        renderStorytellerDescription(presetId);
+        const tone = presetId === "harsh"
+          ? "You brace for a harsher chapter of the journey. The trail's narrator grows less forgiving."
+          : "You ask for mercy from the trail. Hardships should ease a little.";
+        addLog(tone, { tone: "meta" });
+        saveGame();
+        renderStorytellerOptions(dom.storytellerPreset, presetId);
+      });
+    }
     dom.btnAdvance1.addEventListener("click", function () {
       advanceHours(1);
     });
