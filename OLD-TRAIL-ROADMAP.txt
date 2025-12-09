@@ -196,3 +196,9 @@ Traillines Explorer – Phase 2+
 - Externalize trail geometry / world chunks into JSON data files that can be streamed and extended (supports cutoffs and alternate routes).
 - Add mobile tilt/swipe integration for steering along the trail lane.
 - Add companion sprites and simple formation logic on the explorer map (ties into delegation priorities and hourly tasks).
+
+STORYTELLER – FUTURE WORK
+- Broaden the data-driven event library (river dramas, illness cascades, romance/rival showdowns) and tune tension curves for difficulty presets.
+- Introduce major mental breaks (refusing to travel for a day, storming off to hunt, leadership disputes) with resolution paths.
+- Expand relationship arcs beyond simple tags (romance, rescue loyalty shifts, gratitude chains from lifeline events).
+- Add richer risk cascades (extended shortages, long snow exposure, chained wagon failures) with end-screen summaries.
