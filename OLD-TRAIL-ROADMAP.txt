@@ -207,3 +207,8 @@ STORYTELLER – FUTURE WORK
 - Introduce major mental breaks (refusing to travel for a day, storming off to hunt, leadership disputes) with resolution paths.
 - Expand relationship arcs beyond simple tags (romance, rescue loyalty shifts, gratitude chains from lifeline events).
 - Add richer risk cascades (extended shortages, long snow exposure, chained wagon failures) with end-screen summaries.
+
+STORYTELLER – FUTURE WORK (Phase 3+)
+* Complete romance and rivalry multi-step arcs with contextual camp tasks and closing beats.
+* Add lifeline and illness cascade analytics to the end screen, grouped as a mini timeline.
+* Expand major mental break resolution trees, including rare departures or leadership changes.
