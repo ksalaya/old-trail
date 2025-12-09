@@ -2497,6 +2497,8 @@
 
   const dom = {};
 
+  let PERSON_ID_COUNTER = 1;
+
   const gameState = {
     phase: "start",
     leader: null,
@@ -2542,6 +2544,7 @@
       fogMaxMile: 0,
       lastFrameTime: null,
     },
+    storyState: null,
   };
 
   function defaultTraillinesState() {
@@ -2576,6 +2579,25 @@
     }
   }
 
+  function ensureStoryState() {
+    if (!gameState.storyState) {
+      gameState.storyState = {
+        tension: 12,
+        hoursSinceMajorEvent: 0,
+        hoursSinceMinorEvent: 0,
+        eventFlags: {},
+        risk: {},
+      };
+    }
+    const ss = gameState.storyState;
+    if (typeof ss.tension !== "number") ss.tension = 12;
+    if (typeof ss.hoursSinceMajorEvent !== "number") ss.hoursSinceMajorEvent = 0;
+    if (typeof ss.hoursSinceMinorEvent !== "number") ss.hoursSinceMinorEvent = 0;
+    if (!ss.eventFlags) ss.eventFlags = {};
+    if (!ss.risk) ss.risk = {};
+    return ss;
+  }
+
   /* ========= UTILITIES ===================================================== */
 
   function clamp(v, min, max) {
@@ -2607,6 +2629,27 @@
   function ensureAfflictions(person) {
     if (!person.afflictions) person.afflictions = [];
     return person.afflictions;
+  }
+
+  function ensurePersonStoryFields(person) {
+    if (!person) return person;
+    if (!person.id) {
+      person.id = "p" + PERSON_ID_COUNTER++;
+    } else {
+      const numeric = parseInt(String(person.id).replace(/\D/g, ""), 10);
+      if (!isNaN(numeric)) {
+        PERSON_ID_COUNTER = Math.max(PERSON_ID_COUNTER, numeric + 1);
+      }
+    }
+    if (!Array.isArray(person.thoughts)) person.thoughts = [];
+    if (!person.moodState) person.moodState = "Upbeat";
+    if (typeof person.optimism !== "number") person.optimism = 55;
+    if (typeof person.lowMoraleHours !== "number") person.lowMoraleHours = 0;
+    if (!person.relationships) person.relationships = {};
+    if (!person.traits) person.traits = [];
+    if (typeof person.morale !== "number") person.morale = 60;
+    if (typeof person.lastBreakHour !== "number") person.lastBreakHour = 0;
+    return person;
   }
 
   function hasAffliction(person, id) {
@@ -3075,6 +3118,7 @@
     if (block !== "evening" && block !== "night") return;
 
     const people = getAllPeople();
+    const ss = ensureStoryState();
     if (quality === "proper") {
       // Proper camp: small comfort & rest boost
       people.forEach(function (p) {
@@ -3082,7 +3126,15 @@
         p.energy = clamp(p.energy + 1.2, 0, 110);
         p.morale = clamp(p.morale + 1.2, 0, 100);
         p.warmth = clamp(p.warmth + 0.8, 0, 100);
+        addThought(p, {
+          id: "camp_rest",
+          label: "Rested by the fire",
+          value: 5,
+          hoursLeft: 12,
+          source: "camp",
+        });
       });
+      ss.eventFlags.rushedCampChain = 0;
     } else if (quality === "rough") {
       // Rushed camp: more ragged
       people.forEach(function (p) {
@@ -3090,6 +3142,18 @@
         p.energy = clamp(p.energy - 0.8, 0, 100);
         p.warmth = clamp(p.warmth - 0.8, 0, 100);
       });
+      ss.eventFlags.rushedCampChain = (ss.eventFlags.rushedCampChain || 0) + 1;
+      if (ss.eventFlags.rushedCampChain > 1) {
+        people.forEach(function (p) {
+          addThought(p, {
+            id: "rough_camp_chain",
+            label: "Rushed camps",
+            value: -3,
+            hoursLeft: 8,
+            source: "camp",
+          });
+        });
+      }
     }
   }
 
@@ -3226,10 +3290,16 @@
 
   function getAllPeople() {
     const arr = [];
-    if (gameState.leader) arr.push(gameState.leader);
+    if (gameState.leader) {
+      ensurePersonStoryFields(gameState.leader);
+      arr.push(gameState.leader);
+    }
     if (gameState.companions && gameState.companions.length) {
       gameState.companions.forEach(function (p) {
-        if (p) arr.push(p);
+        if (p) {
+          ensurePersonStoryFields(p);
+          arr.push(p);
+        }
       });
     }
     return arr;
@@ -3728,6 +3798,13 @@
       warmth: 85,
       energy: 95,
       morale: 85,
+      moodState: "Upbeat",
+      thoughts: [],
+      optimism: 58,
+      lowMoraleHours: 0,
+      relationships: {},
+      traits: [],
+      id: "p" + PERSON_ID_COUNTER++,
       skills: {
         travel: 1,
         hunting: 1,
@@ -3746,6 +3823,7 @@
         doctoring: 0,
       },
       afflictions: [],
+      lastBreakHour: 0,
     };
     if (bias) {
       Object.keys(bias).forEach(function (k) {
@@ -3774,6 +3852,45 @@
     gameState.startDayOfYear = getDayOfYear(startDate);
     gameState.highRiverRisk = profile.riverHazard === "high";
     return startDate;
+  }
+
+  function setRelationship(a, b, opinion, tags) {
+    if (!a || !b) return;
+    ensurePersonStoryFields(a);
+    ensurePersonStoryFields(b);
+    if (!a.relationships) a.relationships = {};
+    if (!b.relationships) b.relationships = {};
+    a.relationships[b.id] = {
+      opinion: clamp(typeof opinion === "number" ? opinion : 0, -100, 100),
+      tags: tags ? tags.slice() : [],
+    };
+    b.relationships[a.id] = {
+      opinion: clamp(typeof opinion === "number" ? opinion : 0, -100, 100),
+      tags: tags ? tags.slice() : [],
+    };
+  }
+
+  function seedTraitsAndRelationships() {
+    const people = getAllPeople();
+    if (!people.length) return;
+    people.forEach(ensurePersonStoryFields);
+
+    const companions = gameState.companions || [];
+    if (companions.length >= 2) {
+      setRelationship(companions[0], companions[1], 55, ["sibling"]);
+    } else if (companions.length >= 1) {
+      setRelationship(companions[0], gameState.leader, 48, ["fellow_traveler"]);
+    }
+
+    if (people[0] && people[0].traits.indexOf("Steady") < 0) {
+      people[0].traits.push("Steady");
+    }
+    if (people[1] && people[1].traits.indexOf("Cheerful") < 0) {
+      people[1].traits.push("Cheerful");
+    }
+    if (people[2] && people[2].traits.indexOf("Argumentative") < 0) {
+      people[2].traits.push("Argumentative");
+    }
   }
 
   function renderDepartureSeasonDesc() {
@@ -3809,6 +3926,8 @@
     gameState.companions.forEach(function (c) {
       c.task = "auto";
     });
+
+    seedTraitsAndRelationships();
 
     gameState.startingMoney = bg.startingMoney;
     gameState.money = bg.startingMoney;
@@ -4088,7 +4207,15 @@
   }
 
   function addLog(text, meta) {
-    const entry = { date: new Date(gameState.date.getTime()), text: text };
+    const opts = meta || {};
+    const entry = {
+      date: new Date(gameState.date.getTime()),
+      text: text,
+      tone: opts.tone,
+      tag: opts.tag,
+      location: opts.location,
+      characters: opts.characters || [],
+    };
     gameState.log.push(entry);
     if (gameState.log.length > 120) {
       gameState.log.splice(0, gameState.log.length - 120);
@@ -4100,10 +4227,36 @@
           ? Math.max(1, getDayOfYear(gameState.date) - gameState.startDayOfYear + 1)
           : getDayOfYear(gameState.date);
       ksOldTrailLog.add(text, {
-        tag: "DAY " + dayTag,
-        location: gameState.locationName || "On the trail",
-        tone: meta && meta.tone,
+        tag: opts.tag || "DAY " + dayTag,
+        location: opts.location || gameState.locationName || "On the trail",
+        tone: opts.tone,
         day: dayTag,
+        characters: opts.characters,
+      });
+    }
+  }
+
+  function addThought(person, cfg) {
+    if (!person || !cfg) return;
+    ensurePersonStoryFields(person);
+    const id = cfg.id || "thought_" + Date.now();
+    const value = clamp(cfg.value || 0, -20, 20);
+    const hoursLeft = cfg.hoursLeft != null ? cfg.hoursLeft : 8;
+    const existing = person.thoughts.find(function (t) {
+      return t && t.id === id;
+    });
+    if (existing) {
+      existing.hoursLeft = Math.max(existing.hoursLeft || 0, hoursLeft);
+      existing.value = value;
+      existing.source = cfg.source || existing.source;
+      existing.label = cfg.label || existing.label;
+    } else {
+      person.thoughts.push({
+        id: id,
+        label: cfg.label || id,
+        value: value,
+        hoursLeft: hoursLeft,
+        source: cfg.source || "",
       });
     }
   }
@@ -4558,6 +4711,7 @@
               aff.label.toLowerCase() +
               " on the trail."
           );
+          onPersonDeath(person);
         }
       });
     });
@@ -4821,6 +4975,7 @@
               aff.label.toLowerCase() +
               " on the trail."
           );
+          onPersonDeath(person);
         }
       });
     });
@@ -4941,11 +5096,24 @@
         person.morale + cfg.moraleGain,
         0,
         100
-      );
+    );
     } else if (cfg.isPrepared) {
       person.morale = clamp(person.morale + 3, 0, 100);
     } else {
       person.morale = clamp(person.morale + 1, 0, 100);
+    }
+    if (
+      cfg.isPrepared &&
+      (itemId === "meal_hearty" || itemId === "meal_feast") &&
+      Math.random() < 0.45
+    ) {
+      addThought(person, {
+        id: "hearty_meal",
+        label: "Hearty meal",
+        value: 5,
+        hoursLeft: 12,
+        source: "meal",
+      });
     }
     return true;
   }
@@ -5608,12 +5776,14 @@
     if (person.condition <= 0 && person.alive) {
       person.alive = false;
       addLog(person.name + " dies on the trail.");
+      onPersonDeath(person);
     }
   }
 
 
 
   function advanceOneHour(context) {
+    ensureStoryState();
     gameState.date = new Date(gameState.date.getTime() + 60 * 60 * 1000);
 
     // Track daily rhythm and diet per calendar day
@@ -5658,8 +5828,9 @@
     }
     tickAfflictionsForHour();
     maybeTriggerIllnessForHour();
+    updateNeedsAndMoodForHour();
     showCompanionThoughtForHour();
-    maybeRandomEvent();
+    eventDirectorTick();
 
     if (gameState.milesTraveled >= gameState.targetMiles) {
       addLog(
@@ -5816,6 +5987,426 @@
         );
       }
     }
+  }
+
+  /* ========= STORYTELLER / MOOD SYSTEM ==================================== */
+
+  function updateRiskFlags() {
+    const ss = ensureStoryState();
+    const s = gameState.supplies || {};
+    const mouths = mouthsCount();
+    const cookedMeals =
+      (s.meal_simple || 0) + (s.meal_hearty || 0) + (s.meal_feast || 0);
+    ss.risk.water_shortage = (s.water || 0) < mouths * 0.4;
+    ss.risk.starvation = cookedMeals < Math.max(1, mouths * 1.2);
+
+    const ratio = computeDraftPower() > 0
+      ? computeTotalWeight() / computeDraftPower()
+      : 2;
+    ss.risk.overloaded_wagon = ratio > 0.95;
+
+    const w = gameState.weatherState || {};
+    const avgWarmth = getAllPeople().reduce(function (sum, p) {
+      return sum + (p && p.warmth ? p.warmth : 0);
+    }, 0) / Math.max(1, getAllPeople().length);
+    ss.risk.cold_exposure = (w.tempC || 0) < -2 && avgWarmth < 55;
+    ss.risk.soaked = w.storm || gameState.recentRainHours > 18;
+
+    const dayKeyStart = gameState.startDayOfYear || getDayOfYear(gameState.date);
+    const daysOut = Math.max(0, getDayOfYear(gameState.date) - dayKeyStart);
+    const expectedMiles = daysOut * 11.5;
+    ss.risk.behind_schedule = gameState.milesTraveled < expectedMiles - 60;
+
+    const block = getScheduleBlock(gameState.date);
+    ss.risk.no_guard =
+      block === "night" && gameState.mode === "camp" && gameState.guardLevel < 1;
+
+    ss.risk.low_morale = (gameState.lastAvgMorale || 60) < 35;
+  }
+
+  function updateNeedsAndMoodForHour() {
+    const ss = ensureStoryState();
+    const people = getAllPeople().filter(function (p) {
+      return p && p.alive;
+    });
+    if (!people.length) return;
+
+    let totalMorale = 0;
+    let totalNeedScore = 0;
+
+    people.forEach(function (p) {
+      ensurePersonStoryFields(p);
+      p.thoughts = (p.thoughts || [])
+        .map(function (t) {
+          if (!t) return null;
+          t.hoursLeft = (t.hoursLeft || 0) - 1;
+          return t.hoursLeft > 0 ? t : null;
+        })
+        .filter(Boolean);
+
+      const needsScore =
+        (p.hunger + p.thirst + p.warmth + p.energy + p.condition) / 5;
+      totalNeedScore += needsScore;
+
+      let thoughtBonus = 0;
+      (p.thoughts || []).forEach(function (t) {
+        thoughtBonus += t && t.value ? t.value : 0;
+      });
+
+      Object.keys(p.relationships || {}).forEach(function (key) {
+        const rel = p.relationships[key];
+        if (!rel) return;
+        const other = people.find(function (x) {
+          return x && x.id === key && x.alive;
+        });
+        if (other && rel.opinion >= 50) {
+          thoughtBonus += 1.5;
+        }
+      });
+
+      let morale =
+        needsScore * 0.6 +
+        (p.morale || 50) * 0.25 +
+        thoughtBonus * 1.5;
+
+      const optimismFactor = clamp((p.optimism || 0) / 100, 0.25, 0.85);
+      const deficit = Math.max(0, 70 - needsScore);
+      morale -= deficit * (1 - optimismFactor * 0.7);
+      morale = clamp(morale, 0, 100);
+
+      p.morale = morale;
+      p.optimism = clamp((p.optimism || 0) - 0.06 - (needsScore < 45 ? 0.08 : 0), 0, 85);
+      p.moodState =
+        morale > 70
+          ? "Upbeat"
+          : morale >= 35
+          ? "Uneasy"
+          : morale >= 15
+          ? "Worn"
+          : "Broken";
+
+      if (morale < 25) {
+        p.lowMoraleHours = (p.lowMoraleHours || 0) + 1;
+      } else {
+        p.lowMoraleHours = Math.max(0, (p.lowMoraleHours || 0) - 0.5);
+      }
+      if (p.lowMoraleHours > 8 && !ss.eventFlags["pending_break_" + p.id]) {
+        ss.eventFlags["pending_break_" + p.id] = true;
+      }
+
+      totalMorale += morale;
+    });
+
+    gameState.lastAvgMorale = totalMorale / Math.max(1, people.length);
+    gameState.lastAvgNeeds = totalNeedScore / Math.max(1, people.length);
+
+    updateRiskFlags();
+  }
+
+  function onPersonDeath(person) {
+    if (!person) return;
+    const others = getAllPeople().filter(function (p) {
+      return p && p.alive && p.id !== person.id;
+    });
+    others.forEach(function (p) {
+      const rel = p.relationships && p.relationships[person.id];
+      if (rel && rel.opinion >= 50) {
+        addThought(p, {
+          id: "loss_" + person.id,
+          label: "Lost a loved one",
+          value: -15,
+          hoursLeft: 48,
+          source: "loss",
+        });
+      }
+    });
+  }
+
+  const EVENT_DEFS = [
+    {
+      id: "clear_skies_breather",
+      kind: "breather",
+      minTension: 15,
+      condition: function (ctx) {
+        return (
+          ctx.storyState.tension > 25 &&
+          ctx.avgMorale < 65 &&
+          ctx.weather.precip === "none"
+        );
+      },
+      weight: function (ctx) {
+        return 6 + (ctx.risk.low_morale ? 3 : 0);
+      },
+      run: function (ctx) {
+        addLog(
+          "A clear stretch of trail and calm weather steadies everyone's nerves.",
+          {
+            tone: "morale",
+            tag: "DAY " + ctx.dayTag,
+            location: ctx.location,
+          }
+        );
+        ctx.people.forEach(function (p) {
+          addThought(p, {
+            id: "calm_weather",
+            label: "Calm weather",
+            value: 4,
+            hoursLeft: 12,
+            source: "weather",
+          });
+        });
+        ctx.storyState.tension = clamp(ctx.storyState.tension - 10, 0, 100);
+        ctx.storyState.hoursSinceMinorEvent = 0;
+      },
+    },
+    {
+      id: "soaked_shivers",
+      kind: "minor",
+      maxTension: 90,
+      condition: function (ctx) {
+        return ctx.risk.soaked || ctx.risk.cold_exposure;
+      },
+      weight: function (ctx) {
+        return 8 + (ctx.risk.cold_exposure ? 4 : 0);
+      },
+      run: function (ctx) {
+        const target = ctx.people.length ? choice(ctx.people) : null;
+        if (target) {
+          target.warmth = clamp(target.warmth - 6, 0, 100);
+          addThought(target, {
+            id: "chilled",
+            label: "Chilled and soaked",
+            value: -6,
+            hoursLeft: 10,
+            source: "weather",
+          });
+          addLog(
+            target.name +
+              " can't shake the cold after marching in the wet. Spirits dip as everyone tries to dry gear by the fire.",
+            {
+              tone: "warning",
+              characters: [target.id],
+              tag: "DAY " + ctx.dayTag,
+              location: ctx.location,
+            }
+          );
+        }
+        ctx.storyState.tension = clamp(ctx.storyState.tension + 4, 0, 100);
+        ctx.storyState.hoursSinceMinorEvent = 0;
+      },
+    },
+    {
+      id: "rival_snapping",
+      kind: "minor",
+      condition: function (ctx) {
+        return ctx.rivalPair && ctx.risk.low_morale;
+      },
+      weight: function () {
+        return 7;
+      },
+      run: function (ctx) {
+        const pair = ctx.rivalPair;
+        if (!pair) return;
+        addLog(
+          pair[0].name +
+            " snaps at " +
+            pair[1].name +
+            " over chores, fraying tempers for the evening.",
+          {
+            tone: "social",
+            characters: [pair[0].id, pair[1].id],
+            tag: "DAY " + ctx.dayTag,
+            location: ctx.location,
+          }
+        );
+        addThought(pair[0], {
+          id: "argument",
+          label: "Argument at camp",
+          value: -4,
+          hoursLeft: 12,
+          source: "social",
+        });
+        addThought(pair[1], {
+          id: "argument",
+          label: "Argument at camp",
+          value: -4,
+          hoursLeft: 12,
+          source: "social",
+        });
+        const relA = pair[0].relationships[pair[1].id];
+        const relB = pair[1].relationships[pair[0].id];
+        if (relA) relA.opinion = clamp((relA.opinion || 0) - 4, -100, 100);
+        if (relB) relB.opinion = clamp((relB.opinion || 0) - 4, -100, 100);
+        ctx.storyState.hoursSinceMinorEvent = 0;
+        ctx.storyState.tension = clamp(ctx.storyState.tension + 6, 0, 100);
+      },
+    },
+    {
+      id: "lifeline_water",
+      kind: "minor",
+      condition: function (ctx) {
+        return (
+          (ctx.risk.water_shortage || ctx.risk.starvation) &&
+          !ctx.storyState.eventFlags.lifelineUsed
+        );
+      },
+      weight: function (ctx) {
+        return ctx.risk.water_shortage ? 12 : 4;
+      },
+      run: function (ctx) {
+        gameState.supplies.water = (gameState.supplies.water || 0) + 6;
+        gameState.supplies.meal_simple = (gameState.supplies.meal_simple || 0) + 2;
+        ctx.storyState.eventFlags.lifelineUsed = true;
+        addLog(
+          "A fellow traveler shares a keg of water and a little food after seeing your state.",
+          {
+            tone: "event",
+            tag: "DAY " + ctx.dayTag,
+            location: ctx.location,
+          }
+        );
+        ctx.storyState.hoursSinceMinorEvent = 0;
+        ctx.storyState.tension = clamp(ctx.storyState.tension - 6, 0, 100);
+      },
+    },
+    {
+      id: "minor_break",
+      kind: "minor",
+      condition: function (ctx) {
+        return !!ctx.pendingBreakPerson;
+      },
+      weight: function () {
+        return 10;
+      },
+      run: function (ctx) {
+        const p = ctx.pendingBreakPerson;
+        if (!p) return;
+        ctx.storyState.eventFlags["pending_break_" + p.id] = false;
+        addLog(
+          p.name + " begs off chores, too worn in spirit to help for a while.",
+          {
+            tone: "morale",
+            characters: [p.id],
+            tag: "DAY " + ctx.dayTag,
+            location: ctx.location,
+          }
+        );
+        addThought(p, {
+          id: "minor_break",
+          label: "Shaken nerves",
+          value: -5,
+          hoursLeft: 10,
+          source: "morale",
+        });
+        ctx.storyState.tension = clamp(ctx.storyState.tension + 4, 0, 100);
+        ctx.storyState.hoursSinceMinorEvent = 0;
+      },
+    },
+  ];
+
+  function weightedPick(items) {
+    const total = items.reduce(function (sum, item) {
+      return sum + (item.weight || 1);
+    }, 0);
+    let roll = Math.random() * total;
+    for (let i = 0; i < items.length; i++) {
+      roll -= items[i].weight;
+      if (roll <= 0) return items[i];
+    }
+    return items[items.length - 1];
+  }
+
+  function buildStoryContext() {
+    const ss = ensureStoryState();
+    const weather = gameState.weatherState || {};
+    const people = getAllPeople().filter(function (p) {
+      return p && p.alive;
+    });
+    const rivalPair = (function () {
+      for (let i = 0; i < people.length; i++) {
+        for (let j = i + 1; j < people.length; j++) {
+          const a = people[i];
+          const b = people[j];
+          const rel = a.relationships && a.relationships[b.id];
+          if (rel && rel.opinion <= -30) return [a, b];
+        }
+      }
+      return null;
+    })();
+    const pendingKey = Object.keys(ss.eventFlags).find(function (k) {
+      return k.indexOf("pending_break_") === 0 && ss.eventFlags[k];
+    });
+    const pendingBreakPerson = pendingKey
+      ? people.find(function (p) {
+          return p && "pending_break_" + p.id === pendingKey;
+        })
+      : null;
+    const dayTag =
+      gameState.startDayOfYear != null
+        ? Math.max(1, getDayOfYear(gameState.date) - gameState.startDayOfYear + 1)
+        : getDayOfYear(gameState.date);
+
+    const riskKeys = Object.keys(ss.risk || {}).filter(function (k) {
+      return ss.risk[k];
+    });
+
+    return {
+      gameState: gameState,
+      storyState: ss,
+      risk: ss.risk || {},
+      riskCount: riskKeys.length,
+      weather: weather,
+      people: people,
+      location: gameState.locationName || "On the trail",
+      avgMorale: gameState.lastAvgMorale || 60,
+      rivalPair: rivalPair,
+      pendingBreakPerson: pendingBreakPerson,
+      dayTag: dayTag,
+    };
+  }
+
+  function eventDirectorTick() {
+    const ss = ensureStoryState();
+    ss.hoursSinceMajorEvent += 1;
+    ss.hoursSinceMinorEvent += 1;
+    updateRiskFlags();
+
+    const ctx = buildStoryContext();
+    ss.tension = clamp(ss.tension + ctx.riskCount * 0.35 - 0.2, 0, 100);
+
+    const eligible = EVENT_DEFS.map(function (def) {
+      const okMin = def.minTension == null || ss.tension >= def.minTension;
+      const okMax = def.maxTension == null || ss.tension <= def.maxTension;
+      const cond = def.condition ? def.condition(ctx) : true;
+      return okMin && okMax && cond
+        ? {
+            def: def,
+            weight: def.weight ? def.weight(ctx) : 1,
+          }
+        : null;
+    })
+      .filter(Boolean)
+      .filter(function (obj) {
+        return obj.weight > 0;
+      });
+
+    if (eligible.length) {
+      const pick = weightedPick(eligible);
+      if (pick && pick.def && pick.def.run) {
+        pick.def.run(ctx);
+        if (pick.def.kind === "major") {
+          ss.hoursSinceMajorEvent = 0;
+          ss.tension = clamp(ss.tension + 6, 0, 100);
+        } else if (pick.def.kind === "breather") {
+          ss.hoursSinceMinorEvent = 0;
+        } else {
+          ss.hoursSinceMinorEvent = 0;
+        }
+        return;
+      }
+    }
+
+    maybeRandomEvent();
   }
 
   /* ========= RENDERING ===================================================== */
@@ -6375,11 +6966,18 @@
     (gameState.log || []).slice(-6).forEach(function (entry) {
       if (!entry) return;
       ksOldTrailLog.add(entry.text, {
-        tag: "DAY " +
-          (gameState.startDayOfYear != null
-            ? Math.max(1, getDayOfYear(entry.date) - gameState.startDayOfYear + 1)
-            : getDayOfYear(entry.date)),
-        location: gameState.locationName || "On the trail",
+        tag:
+          entry.tag ||
+          ("DAY " +
+            (gameState.startDayOfYear != null
+              ? Math.max(
+                  1,
+                  getDayOfYear(entry.date) - gameState.startDayOfYear + 1
+                )
+              : getDayOfYear(entry.date))),
+        location: entry.location || gameState.locationName || "On the trail",
+        tone: entry.tone,
+        characters: entry.characters,
       });
     });
   }
@@ -6866,6 +7464,11 @@
       }
 
       ensureTraillinesState();
+      ensureStoryState();
+
+      getAllPeople().forEach(function (p) {
+        ensurePersonStoryFields(p);
+      });
 
 
       // Rehydrate log entry dates
@@ -6874,7 +7477,14 @@
           if (!entry) return null;
           const d =
             entry.date instanceof Date ? entry.date : new Date(entry.date);
-          return { date: d, text: entry.text || "" };
+          return {
+            date: d,
+            text: entry.text || "",
+            tone: entry.tone,
+            tag: entry.tag,
+            location: entry.location,
+            characters: entry.characters || [],
+          };
         })
         .filter(Boolean);
 
@@ -7756,7 +8366,11 @@
       textEl.textContent = '"' + text + '"';
       fillEl.style.width = Math.round(Math.max(0, Math.min(1, mood0to1)) * 100) + "%";
       fillEl.style.backgroundImage = moodColor(mood0to1);
-      labelEl.textContent = mood0to1 > 0.66 ? "Upbeat" : mood0to1 > 0.35 ? "Uneasy" : "Worn";
+      labelEl.textContent = companion.moodState || (mood0to1 > 0.66
+        ? "Upbeat"
+        : mood0to1 > 0.35
+        ? "Uneasy"
+        : "Worn");
     }
     function hide() {
       root.style.display = "none";
@@ -7768,11 +8382,19 @@
 
   function companionThoughtLine(person) {
     if (!person) return "";
+    const risk = (gameState.storyState && gameState.storyState.risk) || {};
+    if (person.moodState === "Broken")
+      return "I don't know how much longer I can keep this up.";
+    if (risk.water_shortage) return "We need good water soon or trouble will find us.";
+    if (risk.starvation) return "Meals are thin; a hearty supper would lift spirits.";
+    if (risk.cold_exposure) return "My fingers still feel numb from the cold.";
     if (person.hunger < 40) return "I could use a warm meal.";
     if (person.thirst < 40) return "Water skins feel light; hope the next creek runs clear.";
     if (person.energy < 35) return "My legs ache; a long rest would do me good.";
-    if (person.morale > 70) return "The sky tonight almost makes me forget the miles.";
-    if (gameState.highRiverRisk) return "The rivers run high—we must take care at crossings.";
+    if (person.moodState === "Upbeat")
+      return "The sky tonight almost makes me forget the miles.";
+    if (gameState.highRiverRisk)
+      return "The rivers run high—we must take care at crossings.";
     return "Quietly watching the firelight dance on the wagon hoops.";
   }
 
@@ -7783,8 +8405,7 @@
     if (!people.length || !window.oldTrailThoughts) return;
     const p = people[thoughtIndex % people.length];
     thoughtIndex += 1;
-    const mood =
-      (p.condition + p.energy + p.morale + p.warmth + p.hunger + p.thirst) / 600;
+    const mood = clamp((p.morale || 50) / 100, 0, 1);
     const line = companionThoughtLine(p);
     window.oldTrailThoughts.show(p, mood, line);
   }
