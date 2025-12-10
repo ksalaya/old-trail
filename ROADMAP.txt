@@ -44,3 +44,11 @@ Already Implemented / Notes
 ---------------------------
 - Hourly simulation, delegation, nutrition tracking, and daily rhythm blocks are live; future items above extend those systems.
 - Explorer world camera now advances real time and shares the survival HUD/log widgets; future items cover content and polish expansions.
+
+Illness & Medical – future work
+-------------------------------
+- Expand contagion modeling so camp fever and cholera spread between companions instead of isolated rolls (AFFLICTION_DEFS, maybeTriggerIllnessForHour).
+- Add richer treatment options and medicine crafting to support the doctor job (performDoctoring, SUPPLY_ITEMS, AFFLICTION_DEFS).
+- Wire more granular water planning UI (boil vs. filter vs. raw) directly into water risk weighting and storyteller events.
+- Extend fort/mission care into interactive choice events with costs, time delays, and partial recoveries (EVENT_DEFS fort_hospital_care).
+- Add visual affordances for improving/declining afflictions in the alerts strip (renderAfflictionAlerts) and companion detail.
