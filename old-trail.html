@@ -168,17 +168,21 @@
 
 .ot-preset-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
 }
 
 .ot-preset-card {
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  padding: 10px;
-  background: rgba(10, 10, 16, 0.7);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(10, 10, 16, 0.8);
   cursor: pointer;
-  transition: border-color 0.1s ease, transform 0.1s ease;
+  transition: border-color 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 8px;
+  min-height: 86px;
 }
 
 .ot-preset-card:hover,
@@ -186,16 +190,25 @@
   border-color: rgba(245, 210, 139, 0.65);
   transform: translateY(-1px);
   outline: none;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
 }
 
 .ot-preset-card.ot-selected {
   border-color: rgba(245, 210, 139, 0.95);
-  box-shadow: 0 0 0 1px rgba(245, 210, 139, 0.3);
+  box-shadow: 0 0 0 1px rgba(245, 210, 139, 0.3), 0 8px 22px rgba(0, 0, 0, 0.45);
 }
 
 .ot-preset-icon {
-  font-size: 16px;
+  font-size: 18px;
   color: #f4d68e;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(247, 207, 127, 0.12);
+  border: 1px solid rgba(247, 207, 127, 0.3);
 }
 
 .ot-preset-tagline {
@@ -212,6 +225,27 @@
   font-size: 11px;
   color: #dcd8ce;
   min-height: 32px;
+}
+
+.ot-preset-card .ot-preset-meta {
+  font-size: 11px;
+  color: #cfc7b5;
+  margin-top: 4px;
+}
+
+@media (max-width: 760px) {
+  .ot-preset-cards {
+    grid-template-columns: 1fr;
+  }
+  .ot-preset-card {
+    grid-template-columns: 56px 1fr;
+  }
+}
+
+@media (min-width: 980px) {
+  .ot-preset-cards {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
 }
 
 /* ==== BUTTONS ============================================================== */
@@ -1541,6 +1575,8 @@
 (function () {
   "use strict";
 
+  // STORYTELLER + MEDICAL + CAMP batch: romance/feud arcs, water quality, doctoring, camp mishaps (2024-05-07)
+
   /* ========= CONSTANTS & DATA ============================================= */
 
   const SAVE_KEY = "oldtrail_hourly_v2";
@@ -2712,8 +2748,13 @@
     storyState: null,
     storytellerPresetId: "classic",
     waterQuality: "safe",
+    lastWaterSourceType: "well",
+    lastWaterBoiled: true,
+    waterPlan: null,
     cascadeEvents: [],
     tensionDebug: false,
+    showStorytellerDebug: false,
+    spoilage: null,
   };
 
   function defaultTraillinesState() {
@@ -4203,6 +4244,33 @@
     renderStorytellerCards(selectedId || (selectEl && selectEl.value));
   }
 
+  function setStorytellerPreset(presetId, opts) {
+    const preset = STORYTELLER_PRESETS[presetId] || STORYTELLER_PRESETS.classic;
+    const ss = ensureStoryState();
+    gameState.storytellerPresetId = preset.id;
+    ss.presetId = preset.id;
+    if (opts && opts.resetTimers) {
+      ss.hoursSinceMajorEvent = Math.min(
+        ss.hoursSinceMajorEvent || 0,
+        preset.minHoursBetweenMajor || 0
+      );
+      ss.hoursSinceMinorEvent = Math.min(
+        ss.hoursSinceMinorEvent || 0,
+        preset.minHoursBetweenMinor || 0
+      );
+    } else {
+      ss.hoursSinceMajorEvent = Math.max(
+        ss.hoursSinceMajorEvent || 0,
+        Math.floor((preset.minHoursBetweenMajor || 0) / 2)
+      );
+      ss.hoursSinceMinorEvent = Math.max(
+        ss.hoursSinceMinorEvent || 0,
+        Math.floor((preset.minHoursBetweenMinor || 0) / 2)
+      );
+    }
+    return preset;
+  }
+
   function storytellerIcon(key) {
     switch (key) {
       case "steady":
@@ -4225,12 +4293,17 @@
       const preset = STORYTELLER_PRESETS[key];
       const card = document.createElement("div");
       card.className = "ot-preset-card";
+      card.dataset.presetId = preset.id;
+      if (preset.iconKey) card.dataset.iconKey = preset.iconKey;
       card.setAttribute("tabindex", "0");
       card.setAttribute("role", "button");
       if (preset.id === selectedId) card.classList.add("ot-selected");
       const icon = document.createElement("div");
       icon.className = "ot-preset-icon";
       icon.textContent = storytellerIcon(preset.iconKey);
+      if (preset.iconClass) icon.classList.add(preset.iconClass);
+
+      const body = document.createElement("div");
       const title = document.createElement("div");
       title.style.fontWeight = "bold";
       title.textContent = preset.label;
@@ -4238,12 +4311,15 @@
       tagline.className = "ot-preset-tagline";
       tagline.textContent = preset.tagline || preset.hint || "";
       const hint = document.createElement("div");
-      hint.className = "ot-panel-body-sm";
-      hint.textContent = preset.hint || "";
+      hint.className = "ot-panel-body-sm ot-preset-meta";
+      hint.textContent = preset.exampleStory || preset.description || preset.hint || "";
+
+      body.appendChild(title);
+      body.appendChild(tagline);
+      body.appendChild(hint);
+
       card.appendChild(icon);
-      card.appendChild(title);
-      card.appendChild(tagline);
-      card.appendChild(hint);
+      card.appendChild(body);
       const showExample = function () {
         if (dom.storytellerExample) {
           dom.storytellerExample.textContent = exampleFor(preset);
@@ -4252,11 +4328,12 @@
       card.addEventListener("mouseenter", showExample);
       card.addEventListener("focus", showExample);
       card.addEventListener("click", function () {
+        setStorytellerPreset(preset.id, { resetTimers: true });
         if (dom.storytellerPreset) dom.storytellerPreset.value = preset.id;
         renderStorytellerDescription(preset.id);
         renderStorytellerOptions(dom.storytellerMidrun, preset.id);
         renderStorytellerCards(preset.id);
-        gameState.storytellerPresetId = preset.id;
+        saveGame();
       });
       dom.storytellerCards.appendChild(card);
     });
@@ -5140,6 +5217,8 @@
       return p && p.alive;
     });
     const waterQuality = gameState.waterQuality || "safe";
+    const waterSource = gameState.lastWaterSourceType || waterQuality;
+    const boiled = !!gameState.lastWaterBoiled;
     const avgConditionEnergy = people.length
       ?
           people.reduce(function (sum, p) {
@@ -5150,13 +5229,16 @@
     if (isCholeraCorridor(region, miles)) {
       let base = 0.0005;
       const badWaterFactor =
-        waterQuality === "alkali"
+        waterSource === "alkali"
           ? 2.4
-          : waterQuality === "stagnant"
+          : waterSource === "stagnant"
           ? 1.8
-          : waterQuality === "running"
+          : waterSource === "running"
           ? 0.75
           : 1.0;
+      if (boiled) {
+        base *= 0.5;
+      }
       if (hot && wetRecently) base *= 1.5;
       if (waterGal < mouths * 0.4) base *= 1.5;
       if (avgConditionEnergy < 50) base *= 1.5;
@@ -5181,11 +5263,11 @@
       if (newCase) return; // avoid multiple clustered cases in one hour
     }
 
-    if (
-      waterQuality === "alkali" &&
-      !isCholeraCorridor(region, miles) &&
-      Math.random() < 0.00025
-    ) {
+      if (
+        waterSource === "alkali" &&
+        !isCholeraCorridor(region, miles) &&
+        Math.random() < 0.00025
+      ) {
       const target = choice(people);
       if (target && !hasAffliction(target, "dysentery")) {
         addAffliction(target, "dysentery", { severity: 1 });
@@ -6072,10 +6154,54 @@
       quality = "cold_stream";
     }
 
+    const dayKey = getDayKey(gameState.date || new Date());
+    if (!gameState.waterPlan || gameState.waterPlan.dayKey !== dayKey) {
+      const wantsBoil =
+        typeof window !== "undefined"
+          ? window.confirm(
+              "Fetch water: OK to boil (safer, uses fuel/time) / Cancel for risky quick draw?"
+            )
+          : true;
+      gameState.waterPlan = { dayKey: dayKey, mode: wantsBoil ? "boil" : "raw" };
+    }
+
+    const boil = gameState.waterPlan && gameState.waterPlan.mode === "boil";
+    if (boil) {
+      factor *= 0.85;
+      if (gameState.supplies.firewood && gameState.supplies.firewood > 0) {
+        gameState.supplies.firewood = Math.max(0, gameState.supplies.firewood - 0.25);
+      }
+      gameState.lastWaterBoiled = true;
+      addThought(person, {
+        id: "water_boiled",
+        label: "Boiled water",
+        value: 2,
+        hoursLeft: 8,
+      });
+      addLog(
+        person.name +
+          " boils water despite the late hour; the camp breathes easier knowing illness risk drops."
+      );
+    } else {
+      factor *= 1.05;
+      gameState.lastWaterBoiled = false;
+      addThought(person, {
+        id: "water_risky",
+        label: "Drank questionable water",
+        value: -2,
+        hoursLeft: 6,
+      });
+      addLog(
+        person.name +
+          " draws water quickly from a questionable source, hoping to save time and fuel."
+      );
+    }
+
     const gallons = 3 * factor;
     if (!gameState.supplies.water) gameState.supplies.water = 0;
     gameState.supplies.water += gallons;
     gameState.waterQuality = quality;
+    gameState.lastWaterSourceType = quality;
     addLog(
       person.name +
         " hauls water for camp — about " +
@@ -6653,9 +6779,9 @@
     storyState.tension = clamp(next, 0, 100);
   }
 
-  function renderTensionDebug(storyState) {
+  function renderTensionDebug(storyState, ctx) {
     if (!dom.tensionReadout) return;
-    if (!gameState.tensionDebug) {
+    if (!gameState.showStorytellerDebug && !gameState.tensionDebug) {
       dom.tensionReadout.textContent = "";
       return;
     }
@@ -6665,8 +6791,27 @@
         return e.id || e.kind || "?";
       })
       .join(", ");
-    dom.tensionReadout.textContent =
-      "Tension " + Math.round(storyState.tension) + (label ? " · " + label : "");
+    const preset =
+      STORYTELLER_PRESETS[storyState.presetId || gameState.storytellerPresetId] ||
+      STORYTELLER_PRESETS.classic;
+    const sinceMinor = storyState.hoursSinceMinorEvent || 0;
+    const sinceMajor = storyState.hoursSinceMajorEvent || 0;
+    const riskCount = ctx && ctx.riskCount != null ? ctx.riskCount : 0;
+    const lastId = recent.length ? recent[recent.length - 1].id : "—";
+    dom.tensionReadout.innerHTML =
+      "<div><strong>" +
+      preset.label +
+      "</strong> · tension " +
+      Math.round(storyState.tension) +
+      "</div><div>hrs since minor/major: " +
+      sinceMinor +
+      " / " +
+      sinceMajor +
+      "; risk " +
+      riskCount +
+      "; last: " +
+      lastId +
+      (label ? "</div><div>recent: " + label + "</div>" : "");
   }
 
   const EVENT_DEFS = [
@@ -7393,7 +7538,7 @@
 
     const ctx = buildStoryContext();
     updateStoryTension(ss, ctx);
-    renderTensionDebug(ss);
+    renderTensionDebug(ss, ctx);
 
     const preset =
       STORYTELLER_PRESETS[ss.presetId || gameState.storytellerPresetId] ||
@@ -7449,7 +7594,7 @@
             100
           );
         }
-        renderTensionDebug(ss);
+        renderTensionDebug(ss, buildStoryContext());
         return;
       }
     }
@@ -8514,8 +8659,14 @@
       }
 
       if (!gameState.waterQuality) gameState.waterQuality = "safe";
+      if (!gameState.lastWaterSourceType) gameState.lastWaterSourceType = "well";
+      if (gameState.lastWaterBoiled == null) gameState.lastWaterBoiled = true;
+      if (!gameState.waterPlan) gameState.waterPlan = null;
       if (!Array.isArray(gameState.cascadeEvents)) gameState.cascadeEvents = [];
       if (gameState.tensionDebug == null) gameState.tensionDebug = false;
+      if (gameState.showStorytellerDebug == null)
+        gameState.showStorytellerDebug = false;
+      if (!gameState.spoilage) gameState.spoilage = { lastDayKey: null };
 
       ensureTraillinesState();
       ensureStoryState();
@@ -8698,13 +8849,14 @@
       dom.tensionDebug.checked = !!gameState.tensionDebug;
       dom.tensionDebug.addEventListener("change", function () {
         gameState.tensionDebug = dom.tensionDebug.checked;
-        renderTensionDebug(ensureStoryState());
+        gameState.showStorytellerDebug = dom.tensionDebug.checked;
+        renderTensionDebug(ensureStoryState(), buildStoryContext());
       });
     }
     if (dom.storytellerPreset) {
       dom.storytellerPreset.addEventListener("change", function () {
         const presetId = dom.storytellerPreset.value || "classic";
-        gameState.storytellerPresetId = presetId;
+        setStorytellerPreset(presetId, { resetTimers: true });
         renderStorytellerDescription(presetId);
         saveGame();
       });
@@ -8726,8 +8878,7 @@
         const presetId = dom.storytellerMidrun.value || "classic";
         const oldPreset = gameState.storytellerPresetId || "classic";
         if (presetId === oldPreset) return;
-        gameState.storytellerPresetId = presetId;
-        ensureStoryState().presetId = presetId;
+        setStorytellerPreset(presetId, { resetTimers: false });
         renderStorytellerDescription(presetId);
         const tone = presetId === "harsh"
           ? "You brace for a harsher chapter of the journey. The trail's narrator grows less forgiving."
@@ -8871,6 +9022,17 @@
         hideModal(dom.inventoryModal);
         hideModal(dom.prioritiesModal);
         hideModal(dom.campOverlay);
+      }
+
+      if (
+        (evt.key === "d" || evt.key === "D") &&
+        !evt.metaKey &&
+        !evt.ctrlKey &&
+        !(evt.target && evt.target.tagName && evt.target.tagName.match(/input|textarea/i))
+      ) {
+        gameState.showStorytellerDebug = !gameState.showStorytellerDebug;
+        if (dom.tensionDebug) dom.tensionDebug.checked = gameState.showStorytellerDebug;
+        renderTensionDebug(ensureStoryState(), buildStoryContext());
       }
 
       const isExplorer =
