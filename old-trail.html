@@ -493,6 +493,36 @@
   z-index: 5;
 }
 
+.ot-affliction-alerts {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  z-index: 6;
+}
+
+.ot-affliction-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(160, 48, 48, 0.85);
+  color: #fff;
+  font-size: 11px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.ot-affliction-pill.severe {
+  background: rgba(191, 39, 39, 0.9);
+}
+
+.ot-affliction-pill.moderate {
+  background: rgba(194, 106, 47, 0.9);
+}
+
 .ot-bar-row {
   display: flex;
   justify-content: space-between;
@@ -1366,6 +1396,7 @@
           ></canvas>
           <div id="ot-scene" class="ot-travel-scene"></div>
           <div class="ot-travel-scene-overlay" id="ot-scene-caption"></div>
+          <div id="ot-affliction-alerts" class="ot-affliction-alerts"></div>
         </div>
 
         <div class="ot-panel">
@@ -2454,10 +2485,25 @@
       id: "dysentery",
       label: "Dysentery",
       type: "disease",
-      baseHoursIncubation: [6, 24],
-      baseHoursAcute: [24, 96],
+      baseHoursIncubation: [6, 20],
+      baseHoursAcute: [32, 90],
+      baseHoursRecovery: [40, 80],
       severityRange: [1, 2],
       cause: "bad water in cholera corridor",
+      tags: ["waterborne"],
+      crisisThreshold: 25,
+    },
+    cholera: {
+      id: "cholera",
+      label: "Cholera",
+      type: "disease",
+      baseHoursIncubation: [4, 14],
+      baseHoursAcute: [26, 80],
+      baseHoursRecovery: [60, 110],
+      severityRange: [2, 3],
+      cause: "contaminated river water through the corridor",
+      tags: ["waterborne", "contagious"],
+      crisisThreshold: 30,
     },
     camp_fever: {
       id: "camp_fever",
@@ -2465,38 +2511,35 @@
       type: "disease",
       baseHoursIncubation: [24, 72],
       baseHoursAcute: [48, 144],
+      baseHoursRecovery: [36, 80],
       severityRange: [1, 3],
       cause: "weeks of poor rest and damp camps",
+      tags: ["contagious"],
+      crisisThreshold: 20,
     },
-    cholera: {
-      id: "cholera",
-      label: "Cholera",
+    camp_scurvy: {
+      id: "camp_scurvy",
+      label: "Camp scurvy",
       type: "disease",
-      baseHoursIncubation: [6, 18],
-      baseHoursAcute: [36, 96],
-      severityRange: [2, 3],
-      cause: "contaminated river water through the corridor",
-      affects: "thirst, condition",
-    },
-    scurvy_like: {
-      id: "scurvy_like",
-      label: "Scurvy-like weakness",
-      type: "disease",
-      baseHoursIncubation: [48, 96],
-      baseHoursAcute: [120, 220],
+      baseHoursIncubation: [96, 160],
+      baseHoursAcute: [200, 320],
+      baseHoursRecovery: [120, 180],
       severityRange: [1, 2],
       cause: "weeks without greens or fruit",
-      affects: "morale, condition",
+      tags: ["nutrition"],
+      crisisThreshold: 15,
     },
     mountain_pneumonia: {
       id: "mountain_pneumonia",
       label: "Mountain pneumonia",
       type: "disease",
-      baseHoursIncubation: [24, 72],
-      baseHoursAcute: [72, 140],
+      baseHoursIncubation: [18, 48],
+      baseHoursAcute: [72, 150],
+      baseHoursRecovery: [60, 120],
       severityRange: [2, 3],
       cause: "thin, frigid air in the passes",
-      affects: "warmth, energy",
+      tags: ["cold", "respiratory"],
+      crisisThreshold: 25,
     },
     snakebite: {
       id: "snakebite",
@@ -2504,19 +2547,23 @@
       type: "injury",
       baseHoursIncubation: [0, 2],
       baseHoursAcute: [48, 120],
+      baseHoursRecovery: [50, 120],
       severityRange: [2, 3],
       cause: "stepping near brush or creek banks",
-      affects: "condition, morale",
+      tags: ["injury"],
+      crisisThreshold: 20,
     },
     broken_bone: {
       id: "broken_bone",
       label: "Broken bone",
       type: "injury",
       baseHoursIncubation: [0, 1],
-      baseHoursAcute: [120, 260],
+      baseHoursAcute: [140, 280],
+      baseHoursRecovery: [160, 320],
       severityRange: [2, 3],
       cause: "wagon mishap or hard fall",
-      affects: "travel speed, condition",
+      tags: ["injury"],
+      crisisThreshold: 30,
     },
     sprain: {
       id: "sprain",
@@ -3301,27 +3348,41 @@
     });
     if (!people.length) return;
 
-    // Fruit/veg deficiency → scurvy‑like problems over time
+    // Fruit/veg deficiency → camp scurvy over time
+    if (typeof gameState.scurvyRiskHours !== "number") {
+      gameState.scurvyRiskHours = 0;
+    }
     if (avgFruit < 0.4) {
-      people.forEach(function (p) {
-        p.condition = clamp(p.condition - 1.5, 0, 100);
-        p.energy    = clamp(p.energy    - 1,   0, 100);
-        p.morale    = clamp(p.morale    - 1,   0, 100);
-      });
+      gameState.scurvyRiskHours += 6;
       if (Math.random() < 0.25) {
         addLog(
           "Lack of fresh greens or fruit is showing: gums are tender and cuts heal slowly."
         );
       }
+    } else {
+      gameState.scurvyRiskHours = Math.max(0, gameState.scurvyRiskHours - 8);
     }
-    if (avgFruit < 0.2) {
+    if (avgFruit > 0.8) {
+      gameState.scurvyRiskHours = Math.max(0, gameState.scurvyRiskHours - 18);
       people.forEach(function (p) {
-        p.condition = clamp(p.condition - 2, 0, 100);
+        const aff = p.afflictions && p.afflictions.find(function (a) {
+          return a && a.id === "camp_scurvy" && !a.resolved;
+        });
+        if (aff) {
+          aff.reliefHours = (aff.reliefHours || 0) + 2;
+        }
       });
-      if (Math.random() < 0.2) {
-        addLog(
-          "Several in the party show bleeding gums and aching legs—signs of camp fever from months on preserved rations."
-        );
+      if (Math.random() < 0.35) {
+        addLog("Fresh greens and berries lift spirits and keep scurvy at bay.");
+      }
+    }
+    if (gameState.scurvyRiskHours > 120) {
+      const untreated = people.find(function (p) {
+        return p && !hasAffliction(p, "camp_scurvy");
+      });
+      if (untreated) {
+        addAffliction(untreated, "camp_scurvy", { severity: avgFruit < 0.2 ? 2 : 1 });
+        gameState.scurvyRiskHours = 60;
       }
     }
 
@@ -3656,7 +3717,9 @@
 
     const incubation = pickRange(def.baseHoursIncubation);
     const acute = pickRange(def.baseHoursAcute);
-    const recoveryBuffer = 24 + severity * 12 + rng() * 18;
+    const recoveryWindow = def.baseHoursRecovery
+      ? pickRange(def.baseHoursRecovery)
+      : 24 + severity * 12 + rng() * 18;
 
     const aff = {
       id: def.id,
@@ -3667,24 +3730,42 @@
       hoursActive: 0,
       hoursIncubation: incubation,
       hoursAcute: acute,
-      recoveryBuffer: recoveryBuffer,
+      recoveryBuffer: recoveryWindow,
       cause: def.cause,
+      tags: def.tags || [],
+      crisisThreshold: def.crisisThreshold || 20,
       startedAt: new Date(gameState.date.getTime()),
       resolved: false,
       reliefHours: 0,
       lastNotified: 0,
+      tendedThisHour: false,
     };
 
     person.afflictions.push(aff);
 
-    const onsetText =
+    let onsetText =
       def.id === "sprain"
         ? person.name +
           " favors an injured ankle and knows it will be painful to walk for a while."
-        :
-          person.name +
-          " doesn’t feel quite right: stomach cramps and unease set in.";
-    addLog(onsetText);
+        : person.name + " doesn’t feel quite right: aches and unease set in.";
+    if (aff.id === "cholera") {
+      onsetText =
+        person.name +
+        " reels with stomach cramps and watery sickness after a dubious draw of water.";
+    } else if (aff.id === "camp_scurvy") {
+      onsetText =
+        person.name +
+        " complains of sore joints and bleeding gums after too many days without greens.";
+    } else if (aff.id === "snakebite") {
+      onsetText =
+        person.name +
+        " yells—a rattler’s bite leaves a pair of punctures and swelling already climbing.";
+    } else if (aff.id === "broken_bone") {
+      onsetText =
+        person.name +
+        " goes down hard. A limb hangs wrong; splints and long rest will be needed.";
+    }
+    logAfflictionStageChange(person, aff, "none");
     return aff;
   }
 
@@ -3851,6 +3932,15 @@
       (s.cooked_meals || 0);
     const fuelUnits = (s.firewood || 0) + (s.buffalo_chips || 0);
     const wagonHurt = gameState.wagonCondition < 70;
+    const seriousAfflictions = getAllPeople().some(function (p) {
+      return (
+        p &&
+        p.afflictions &&
+        p.afflictions.some(function (a) {
+          return a && !a.resolved && (a.stage === "acute" || a.severity >= 2);
+        })
+      );
+    });
 
     const lowWater = waterGal < mouths * 0.4;
     const fewMeals = cookedMeals < mouths * 1.5;
@@ -3861,6 +3951,9 @@
     }
     if (mode === "camp" && !nightNow && lowWater) {
       essentialJobs.fetch_water = true;
+    }
+    if (mode === "camp" && seriousAfflictions) {
+      essentialJobs.doctor = true;
     }
     if (mode === "camp" && block === "evening" && fewMeals && fuelUnits > 0.1) {
       essentialJobs.cook = true;
@@ -4039,6 +4132,7 @@
     dom.hourTasks = document.getElementById("ot-hour-tasks");
     dom.scene = document.getElementById("ot-scene");
     dom.sceneCaption = document.getElementById("ot-scene-caption");
+    dom.afflictionAlerts = document.getElementById("ot-affliction-alerts");
     dom.trailCanvas = document.getElementById("ot-trail-canvas");
     dom.btnViewJournal = document.getElementById("ot-btn-view-journal");
     dom.btnViewExplorer = document.getElementById("ot-btn-view-explorer");
@@ -5024,17 +5118,45 @@
 
   function logAfflictionStageChange(person, aff, prevStage) {
     if (!person || !aff) return;
+    const label = aff.label.toLowerCase();
+    if (prevStage === "none") {
+      addLog(person.name + " falls ill with " + label + ".");
+      return;
+    }
     if (aff.stage === "acute" && prevStage !== "acute") {
       if (aff.id === "dysentery") {
         addLog(
-          "After drinking from a stagnant pool along the Platte, " +
-            person.name +
-            " is struck with violent cramps and diarrhea."
+          "After foul water, " + person.name + " is struck with violent cramps and diarrhea."
+        );
+      } else if (aff.id === "cholera") {
+        addLog(
+          person.name +
+            " is wracked by cholera — lips dry, hands trembling, water passing straight through."
         );
       } else if (aff.id === "camp_fever") {
         addLog(
+          person.name + " is shivering with fever and complains of aching bones."
+        );
+      } else if (aff.id === "camp_scurvy") {
+        addLog(
+          person.name + " moves stiffly; gums bleed and joints flare from long weeks without greens."
+        );
+      } else if (aff.id === "mountain_pneumonia") {
+        addLog(
+          "Thin air and cold rain catch up to " +
+            person.name +
+            "; a deep cough settles in."
+        );
+      } else if (aff.id === "snakebite") {
+        addLog(
+          "Swelling creeps up from the punctures in " +
+            person.name +
+            "'s leg; fever threatens if the bite worsens."
+        );
+      } else if (aff.id === "broken_bone") {
+        addLog(
           person.name +
-            " is shivering with fever and complains of aching bones."
+            " lies still as splints are rigged. Travel will be slow while the bone knits."
         );
       } else if (aff.id === "sprain") {
         addLog(person.name + " is laid up by a sprained ankle.");
@@ -5051,6 +5173,9 @@
         person.name +
           " is finally able to keep food down and rest; the illness lifts."
       );
+    }
+    if (typeof renderAfflictionAlerts === "function") {
+      renderAfflictionAlerts();
     }
   }
 
@@ -5397,12 +5522,20 @@
   }
 
   function tickAfflictionsForHour() {
-    const doctor = getBestDoctor();
-    const hasMedicine = (gameState.supplies && gameState.supplies.med_kits) > 0;
-    const docSkill = doctor && doctor.skills ? doctor.skills.doctoring || 0 : 0;
-    const treatBonusBase = 1 + docSkill * 0.2 + (hasMedicine ? 0.5 : 0);
+    const doctorings = gameState.doctoringThisHour || [];
+    const treatmentMap = {};
+    doctorings.forEach(function (entry) {
+      if (!entry || !entry.patient) return;
+      const pid = entry.patient.id;
+      const skill = (entry.doctor.skills && entry.doctor.skills.doctoring) || 0;
+      const medUsed = entry.usedMedicine ? 0.6 : 0;
+      const bonus = 0.4 + skill * 0.25 + medUsed;
+      treatmentMap[pid] = Math.max(treatmentMap[pid] || 0, bonus);
+    });
+
     const rng =
       (gameState.weatherSystem && gameState.weatherSystem.rng) || Math.random;
+    const resting = gameState.mode === "camp";
 
     getAllPeople().forEach(function (person) {
       if (!person || !person.alive) return;
@@ -5411,23 +5544,11 @@
         if (!aff || aff.resolved) return;
         aff.hoursActive += 1;
 
-        if (aff.stage === "acute" && treatBonusBase > 1) {
-          aff.reliefHours = (aff.reliefHours || 0) + 0.05 * (treatBonusBase - 1);
-          if (hasMedicine && !aff.medicineUsed && aff.severity >= 2) {
-            gameState.supplies.med_kits = Math.max(
-              0,
-              (gameState.supplies.med_kits || 0) - 1
-            );
-            aff.medicineUsed = true;
-            if (doctor) {
-              addLog(
-                doctor.name +
-                  " tends to " +
-                  person.name +
-                  " with medicines, easing the worst of the sickness."
-              );
-            }
-          }
+        const treatBonus = treatmentMap[person.id] || 0;
+        if (aff.tendedThisHour) aff.tendedThisHour = false;
+
+        if (treatBonus > 0 && aff.stage === "acute") {
+          aff.reliefHours = (aff.reliefHours || 0) + treatBonus;
         }
 
         const progress = aff.hoursActive + (aff.reliefHours || 0);
@@ -5456,64 +5577,102 @@
         }
 
         let conditionLoss = 0;
-        const treatDivisor = aff.stage === "acute" ? treatBonusBase : 1.0;
+        const treatDivisor = aff.stage === "acute" ? 1 + treatBonus : 1.0;
 
-        if (aff.id === "dysentery") {
+        function fatigue(deltaEnergy, deltaMorale, deltaWarmth) {
+          if (deltaEnergy) person.energy = clamp(person.energy + deltaEnergy, 0, 110);
+          if (deltaMorale) person.morale = clamp(person.morale + deltaMorale, 0, 100);
+          if (deltaWarmth) person.warmth = clamp(person.warmth + deltaWarmth, 0, 100);
+        }
+
+        if (aff.id === "dysentery" || aff.id === "cholera") {
+          const thirstHit = aff.id === "cholera" ? 12 : 9;
+          const hungerHit = aff.id === "cholera" ? 7 : 6;
+          const condScale = aff.id === "cholera" ? 1.6 : 1.2;
           if (aff.stage === "incubation") {
-            person.morale = clamp(person.morale - 0.5, 0, 100);
+            fatigue(-1, -0.5, 0);
           } else if (aff.stage === "acute") {
             person.hunger = clamp(
-              person.hunger - (6 * aff.severity) / treatDivisor,
+              person.hunger - (hungerHit * aff.severity) / treatDivisor,
               0,
               100
             );
             person.thirst = clamp(
-              person.thirst - (9 * aff.severity) / treatDivisor,
+              person.thirst - (thirstHit * aff.severity) / treatDivisor,
               0,
               100
             );
-            person.energy = clamp(
-              person.energy - (5 * aff.severity) / treatDivisor,
-              0,
-              110
-            );
-            person.morale = clamp(person.morale - 4, 0, 100);
-            conditionLoss += (1.3 * aff.severity) / treatDivisor;
+            fatigue(-(5 * aff.severity) / treatDivisor, -4, 0);
+            conditionLoss += (condScale * aff.severity) / treatDivisor;
           } else if (aff.stage === "recovery") {
-            person.energy = clamp(person.energy + 0.5, 0, 110);
-            person.morale = clamp(person.morale + 0.5, 0, 100);
-            conditionLoss += 0.2;
+            fatigue(0.5, 0.6, 0);
+            conditionLoss += 0.25;
           }
         } else if (aff.id === "camp_fever") {
           if (aff.stage === "incubation") {
-            person.energy = clamp(person.energy - 1.2, 0, 110);
+            fatigue(-1.2, -0.6, -0.4);
           } else if (aff.stage === "acute") {
-            person.energy = clamp(
-              person.energy - (4 * aff.severity) / treatDivisor,
-              0,
-              110
-            );
-            person.warmth = clamp(
-              person.warmth - (3 + aff.severity),
-              0,
-              100
-            );
-            person.morale = clamp(person.morale - 2.5, 0, 100);
+            fatigue(-(4 * aff.severity) / treatDivisor, -3, -3 - aff.severity);
             person.thirst = clamp(person.thirst - 2, 0, 100);
             conditionLoss += (0.9 * aff.severity) / treatDivisor;
           } else if (aff.stage === "recovery") {
-            person.warmth = clamp(person.warmth + 0.4, 0, 100);
-            person.morale = clamp(person.morale + 0.4, 0, 100);
+            fatigue(0.6, 0.5, 0.5);
+            conditionLoss += 0.2;
+          }
+        } else if (aff.id === "camp_scurvy") {
+          if (aff.stage === "incubation") {
+            fatigue(-0.6, -0.6, 0);
             conditionLoss += 0.25;
+          } else if (aff.stage === "acute") {
+            fatigue(-(2 * aff.severity), -2, 0);
+            conditionLoss += (0.6 * aff.severity) / treatDivisor;
+          } else if (aff.stage === "recovery") {
+            fatigue(0.4, 0.6, 0);
+            conditionLoss += 0.1;
+          }
+        } else if (aff.id === "mountain_pneumonia") {
+          if (aff.stage === "incubation") {
+            fatigue(-1, -0.5, -1);
+          } else if (aff.stage === "acute") {
+            fatigue(-(4 * aff.severity) / treatDivisor, -2, -(4 + aff.severity));
+            conditionLoss += (1.1 * aff.severity) / treatDivisor;
+          } else if (aff.stage === "recovery") {
+            fatigue(0.6, 0.4, 0.5);
+            conditionLoss += 0.2;
+          }
+        } else if (aff.id === "snakebite") {
+          if (aff.stage === "incubation") {
+            conditionLoss += 0.6;
+            fatigue(-1.2, -1, 0);
+          } else if (aff.stage === "acute") {
+            conditionLoss += (1.6 * aff.severity) / treatDivisor;
+            fatigue(-(2 * aff.severity), -2, 0);
+          } else if (aff.stage === "recovery") {
+            fatigue(0.5, 0.4, 0);
+            conditionLoss += 0.25;
+          }
+        } else if (aff.id === "broken_bone") {
+          if (aff.stage === "incubation") {
+            conditionLoss += 0.8;
+            fatigue(-2, -1, 0);
+          } else if (aff.stage === "acute") {
+            fatigue(-(3 * aff.severity), -2, 0);
+            conditionLoss += (1.2 * aff.severity) / treatDivisor;
+          } else if (aff.stage === "recovery") {
+            fatigue(-0.5, 0.2, 0);
+            conditionLoss += 0.35;
           }
         } else if (aff.id === "sprain") {
           if (aff.stage === "acute") {
-            person.energy = clamp(person.energy - 1, 0, 110);
-            person.morale = clamp(person.morale - 0.8, 0, 100);
+            fatigue(-1, -0.8, 0);
             conditionLoss += 0.35 / treatDivisor;
           } else if (aff.stage === "recovery") {
-            person.energy = clamp(person.energy - 0.25, 0, 110);
+            fatigue(-0.25, 0, 0);
           }
+        }
+
+        if (resting && aff.stage !== "acute") {
+          aff.reliefHours = (aff.reliefHours || 0) + 0.2;
         }
 
         person.condition = clamp(person.condition - conditionLoss, 0, 100);
@@ -5523,7 +5682,7 @@
           (aff.lastNotified == null || aff.hoursActive - aff.lastNotified >= 12);
         if (needsProgressLog) {
           aff.lastNotified = aff.hoursActive;
-          if (aff.id === "dysentery") {
+          if (aff.id === "dysentery" || aff.id === "cholera") {
             addLog(
               person.name +
                 " is too weak to walk and rides in the wagon while the illness grips them."
@@ -5532,6 +5691,21 @@
             addLog(
               person.name +
                 " burns with fever and needs tending; travel slows while they rest."
+            );
+          } else if (aff.id === "mountain_pneumonia") {
+            addLog(
+              person.name + " coughs through the night, lungs rattling in the cold air."
+            );
+          } else if (aff.id === "snakebite") {
+            addLog(
+              "Red streaks creep from the snakebite on " +
+                person.name +
+                "'s leg; careful tending might hold infection at bay."
+            );
+          } else if (aff.id === "broken_bone") {
+            addLog(
+              person.name +
+                " winces with every rut; the bone will only mend with time and steady care."
             );
           } else if (aff.id === "sprain") {
             addLog(person.name + " keeps weight off a swollen ankle.");
@@ -5557,6 +5731,7 @@
       (gameState.weatherSystem && gameState.weatherSystem.rng) || Math.random;
     const region = gameState.region;
     const w = gameState.weatherState || {};
+    const ss = ensureStoryState();
     const tempC = typeof w.tempC === "number" ? w.tempC : 15;
     const hot = tempC >= 24;
     const wetRecently = w.precip === "rain" || gameState.recentRainHours > 24;
@@ -5567,6 +5742,9 @@
     const people = getAllPeople().filter(function (p) {
       return p && p.alive;
     });
+    const waterQuality = gameState.waterQuality || "okay";
+    const plan = gameState.waterPlan || { mode: "raw" };
+    const boiled = plan.mode === "boil";
     const avgConditionEnergy = people.length
       ?
           people.reduce(function (sum, p) {
@@ -5574,15 +5752,34 @@
           }, 0) / people.length
       : 100;
 
+    ss.risk.bad_water = waterQuality === "risky" || waterQuality === "alkali";
+    ss.risk.water_shortage = waterGal < mouths * 0.4;
+
     if (isCholeraCorridor(region, miles)) {
-      let base = 0.0005;
+      let base = 0.00045;
+      const qualityFactor =
+        waterQuality === "good"
+          ? 0.35
+          : waterQuality === "okay"
+          ? 0.65
+          : waterQuality === "alkali"
+          ? 2.0
+          : 1.6; // risky/stagnant
+      if (boiled) base *= 0.35;
       if (hot && wetRecently) base *= 1.5;
-      if (waterGal < mouths * 0.4) base *= 1.5;
-      if (avgConditionEnergy < 50) base *= 1.5;
+      if (ss.risk.water_shortage) base *= 1.4;
+      if (avgConditionEnergy < 50) base *= 1.4;
+      base *= qualityFactor;
 
       let newCase = false;
       people.some(function (p) {
-        if (hasAffliction(p, "dysentery")) return false;
+        if (hasAffliction(p, "dysentery") || hasAffliction(p, "cholera"))
+          return false;
+        if (rng() < base * 0.35) {
+          addAffliction(p, "cholera", { severity: 3 });
+          newCase = true;
+          return true;
+        }
         if (rng() < base) {
           addAffliction(p, "dysentery", { severity: rng() < 0.35 ? 2 : 1 });
           newCase = true;
@@ -5591,6 +5788,13 @@
         return false;
       });
       if (newCase) return; // avoid multiple clustered cases in one hour
+    }
+
+    if (waterQuality === "alkali" && !isCholeraCorridor(region, miles)) {
+      const target = choice(people);
+      if (target && rng() < 0.0003 && !hasAffliction(target, "dysentery")) {
+        addAffliction(target, "dysentery", { severity: 1 });
+      }
     }
 
     const coldWet =
@@ -5604,7 +5808,7 @@
         const warmthLow = p.warmth < 30;
         const energyLow = p.energy < 30;
         if (!warmthLow && !energyLow) return;
-        let risk = 0.0003;
+        let risk = 0.00032;
         if (warmthLow) risk *= 1.6;
         if (energyLow) risk *= 1.6;
         if (roughCamp) risk *= 1.3;
@@ -5612,6 +5816,35 @@
           addAffliction(p, "camp_fever", { severity: tempC <= 0 ? 2 : 1 });
         }
       });
+    }
+
+    if (gameState.region === "mountains" || gameState.region === "blue_mountains") {
+      const highCold = tempC < 3 || (w.precip === "snow" && tempC < 8);
+      if (highCold) {
+        people.forEach(function (p) {
+          if (hasAffliction(p, "mountain_pneumonia")) return;
+          let risk = 0.00025;
+          if (p.warmth < 35) risk *= 2.2;
+          if (rng() < risk) addAffliction(p, "mountain_pneumonia", { severity: 2 });
+        });
+      }
+    }
+
+    if (gameState.region === "snake_plain" || gameState.region === "central_plains") {
+      const biteRisk = w.tempC > 15 && gameState.mode === "travel" ? 0.00028 : 0;
+      if (biteRisk > 0) {
+        const walker = choice(people);
+        if (walker && rng() < biteRisk && !hasAffliction(walker, "snakebite")) {
+          addAffliction(walker, "snakebite", { severity: 2 });
+        }
+      }
+    }
+
+    if (gameState.wagonCondition < 55 && Math.random() < 0.0002) {
+      const target = choice(people);
+      if (target && !hasAffliction(target, "broken_bone")) {
+        addAffliction(target, "broken_bone", { severity: 2 });
+      }
     }
   }
 
@@ -6167,6 +6400,7 @@
     let factor = 0.5;
     const name = gameState.locationName.toLowerCase();
     let quality = "stagnant";
+    let qualityTag = "risky";
     if (
       name.indexOf("river") >= 0 ||
       name.indexOf("ford") >= 0 ||
@@ -6176,15 +6410,18 @@
     ) {
       factor = 1.0;
       quality = "running";
+      qualityTag = "good";
     } else if (
       gameState.region === "snake_plain" ||
       gameState.region === "mountains"
     ) {
       factor = 0.7;
       quality = "alkali";
+      qualityTag = "alkali";
     } else if (gameState.region === "blue_mountains") {
       factor = 0.8;
       quality = "cold_stream";
+      qualityTag = "good";
     }
 
     const dayKey = getDayKey(gameState.date || new Date());
@@ -6195,7 +6432,10 @@
               "Fetch water: OK to boil (safer, uses fuel/time) / Cancel for risky quick draw?"
             )
           : true;
-      gameState.waterPlan = { dayKey: dayKey, mode: wantsBoil ? "boil" : "raw" };
+      gameState.waterPlan = {
+        dayKey: dayKey,
+        mode: wantsBoil ? "boil" : "raw",
+      };
     }
 
     const boil = gameState.waterPlan && gameState.waterPlan.mode === "boil";
@@ -6233,7 +6473,7 @@
     const gallons = 3 * factor;
     if (!gameState.supplies.water) gameState.supplies.water = 0;
     gameState.supplies.water += gallons;
-    gameState.waterQuality = quality;
+    gameState.waterQuality = qualityTag;
     gameState.lastWaterSourceType = quality;
     addLog(
       person.name +
@@ -6263,41 +6503,73 @@
   }
 
   function performDoctoring(person) {
-    const patients = getAllPeople().filter(function (p) {
-      return (
-        p &&
-        p.alive &&
-        p.afflictions &&
-        p.afflictions.some(function (a) {
-          return a && !a.resolved && a.stage !== "resolved";
-        })
-      );
-    });
+    const patients = getAllPeople()
+      .filter(function (p) {
+        return (
+          p &&
+          p.alive &&
+          p.afflictions &&
+          p.afflictions.some(function (a) {
+            return a && !a.resolved && a.stage !== "resolved";
+          })
+        );
+      })
+      .sort(function (a, b) {
+        function score(p) {
+          const severe = p.afflictions.filter(function (a) {
+            return a && !a.resolved && a.stage === "acute";
+          });
+          const crisis = severe.reduce(function (sum, a) {
+            return sum + (a.crisisThreshold || 20) - (p.condition || 50);
+          }, 0);
+          return crisis;
+        }
+        return score(b) - score(a);
+      });
     if (!patients.length) {
       if (Math.random() < 0.2) {
         addLog(person.name + " checks everyone over; no one needs tending right now.");
       }
       return;
     }
-    const target = choice(patients);
+    const target = patients[0];
     const skill = (person.skills && person.skills.doctoring) || 0;
-    const relief = 0.4 + skill * 0.2;
+    const hasMedicine = (gameState.supplies && gameState.supplies.med_kits) > 0;
+    const relief = 0.4 + skill * 0.25;
+    let usedMedicine = false;
     target.afflictions.forEach(function (aff) {
       if (!aff || aff.resolved) return;
       aff.reliefHours = (aff.reliefHours || 0) + relief;
-      if (aff.severity > 1 && Math.random() < 0.15) {
+      aff.tendedThisHour = true;
+      if (hasMedicine && !aff.medicineUsed && aff.severity >= 2) {
+        gameState.supplies.med_kits = Math.max(
+          0,
+          (gameState.supplies.med_kits || 0) - 1
+        );
+        aff.medicineUsed = true;
+        usedMedicine = true;
+      }
+      if (aff.severity > 1 && Math.random() < 0.15 + skill * 0.05) {
         aff.severity = Math.max(1, aff.severity - 1);
       }
     });
-    if (Math.random() < 0.45) {
-      addLog(
-        person.name +
-          " tends to " +
-          target.name +
-          " through the hour, easing pain and keeping illness from worsening.",
-        { characters: [person.id, target.id], tone: "event" }
-      );
-    }
+
+    if (!gameState.doctoringThisHour) gameState.doctoringThisHour = [];
+    gameState.doctoringThisHour.push({
+      doctor: person,
+      patient: target,
+      usedMedicine: usedMedicine,
+    });
+
+    addLog(
+      person.name +
+        " tends to " +
+        target.name +
+        (usedMedicine
+          ? " with splints and precious medicine."
+          : " with cloths, rest, and steady hands."),
+      { characters: [person.id, target.id], tone: "event" }
+    );
   }
 
   function performTask(person, taskIdOverride, context) {
@@ -6454,6 +6726,7 @@
 
     refreshWeather();
     gameState.guardLevel = 0;
+    gameState.doctoringThisHour = [];
 
     const people = getAllPeople();
     const resolvedTasks = resolveTasksForHour();
@@ -7217,6 +7490,83 @@
             hoursLeft: 14,
             source: "illness",
           });
+        });
+      },
+    },
+    {
+      id: "fort_hospital_care",
+      kind: "breather",
+      condition: function (ctx) {
+        const atFort = (ctx.location || "").toLowerCase().indexOf("fort") >= 0;
+        if (!atFort) return false;
+        const serious = ctx.people.some(function (p) {
+          return (
+            p &&
+            p.afflictions &&
+            p.afflictions.some(function (a) {
+              return a && !a.resolved && a.stage === "acute";
+            })
+          );
+        });
+        const flagKey = "fort_hospital_" + (ctx.location || "fort");
+        return serious && !ctx.storyState.eventFlags[flagKey];
+      },
+      weight: function () {
+        return 6;
+      },
+      run: function (ctx) {
+        const flagKey = "fort_hospital_" + (ctx.location || "fort");
+        ctx.storyState.eventFlags[flagKey] = true;
+        const cost = 18;
+        if (ctx.gameState.money && ctx.gameState.money > cost) {
+          ctx.gameState.money = Math.max(0, ctx.gameState.money - cost);
+          ctx.people.forEach(function (p) {
+            if (!p || !p.afflictions) return;
+            p.afflictions.forEach(function (a) {
+              if (!a || a.resolved) return;
+              a.reliefHours = (a.reliefHours || 0) + 8;
+              a.tendedThisHour = true;
+            });
+          });
+          addLog(
+            "The fort’s surgeon lances abscesses, sets splints, and shares tonic. It costs $" +
+              cost +
+              " but the care steadies the sick.",
+            { tone: "event", location: ctx.location }
+          );
+        } else {
+          addLog(
+            "A hospital tent stands near the palisade, but funds are too thin for extended care.",
+            { tone: "warning", location: ctx.location }
+          );
+        }
+      },
+    },
+    {
+      id: "camp_quarantine_outbreak",
+      kind: "major",
+      minTension: 18,
+      condition: function (ctx) {
+        const shared = ctx.people.filter(function (p) {
+          return p && p.afflictions && p.afflictions.some(function (a) {
+            return a && !a.resolved && a.stage === "acute" && (a.id === "dysentery" || a.id === "cholera");
+          });
+        });
+        return shared.length >= 2 && ctx.storyState.risk.bad_water;
+      },
+      weight: function () {
+        return 5;
+      },
+      run: function (ctx) {
+        addLog(
+          "Illness spreads through camp. You post a quarantine and lose a day calming the sick and boiling every drop of water.",
+          { tone: "event", location: ctx.location }
+        );
+        ctx.storyState.eventFlags.forcedCampHours = 24;
+        ctx.storyState.risk.behind_schedule = true;
+        ctx.people.forEach(function (p) {
+          if (!p) return;
+          p.morale = clamp((p.morale || 50) - 4, 0, 100);
         });
       },
     },
@@ -8599,6 +8949,50 @@
     }
   }
 
+  function renderAfflictionAlerts() {
+    const container = dom.afflictionAlerts;
+    if (!container) return;
+    container.innerHTML = "";
+    const alerts = [];
+    getAllPeople().forEach(function (p) {
+      if (!p || !p.afflictions) return;
+      p.afflictions.forEach(function (a) {
+        if (!a || a.resolved) return;
+        if (a.stage === "acute" || a.severity >= 2) {
+          alerts.push({
+            id: a.id + "_" + p.id,
+            label:
+              (a.id === "cholera"
+                ? "💧"
+                : a.id === "mountain_pneumonia"
+                ? "🌨"
+                : a.id === "snakebite"
+                ? "🐍"
+                : a.id === "broken_bone"
+                ? "🦴"
+                : "✶") +
+              " " +
+              (a.label || "Affliction"),
+            severity: a.severity || 1,
+          });
+        }
+      });
+    });
+    if (!alerts.length) {
+      container.style.display = "none";
+      return;
+    }
+    container.style.display = "flex";
+    alerts.slice(0, 4).forEach(function (a) {
+      const pill = document.createElement("div");
+      pill.className = "ot-affliction-pill";
+      if (a.severity >= 3) pill.classList.add("severe");
+      else if (a.severity >= 2) pill.classList.add("moderate");
+      pill.textContent = a.label;
+      container.appendChild(pill);
+    });
+  }
+
 
   function updatePriorityCellAppearance(btn, prio) {
     btn.classList.remove("prio-off", "prio-1", "prio-2", "prio-3", "prio-4");
@@ -8635,6 +9029,18 @@
         warnings.push("No one is assigned as " + label.toLowerCase() + ".");
       }
     });
+    const urgentSick = getAllPeople().some(function (p) {
+      return (
+        p &&
+        p.afflictions &&
+        p.afflictions.some(function (a) {
+          return a && !a.resolved && a.stage === "acute";
+        })
+      );
+    });
+    if (urgentSick && !coverage.doctor) {
+      warnings.push("Serious illness in camp but no doctor assigned.");
+    }
     if (!warnings.length) {
       warnings.push("All vital roles have at least one person assigned.");
     }
@@ -8720,6 +9126,7 @@
       renderPartyManifest();
       renderHourTasks();
       renderScene();
+      renderAfflictionAlerts();
       renderTrailHeader();
       renderTrailMap();
       renderCompanionDetail();
