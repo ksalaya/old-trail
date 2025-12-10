@@ -32,3 +32,12 @@ Illness & Medical – TODO / FUTURE HOOKS
 Camp & Crafting – FUTURE TODO
 - Guard/night watch layering, flood/wind mishaps, and task-linked weather mishaps (EVENT_DEFS, camp overlay).
 - Regional crafting/recipes and spoilage clocks tied to supplies (buildCraftingWidget, CAMP_TASKS).
+
+
+Batch: Storyteller & Medical & Camp Hooks – TODO after current pass
+- Flesh out romance, feud, and love-triangle multi-step arcs with cooldowns and more dialogue variety (EVENT_DEFS, buildStoryContext).
+- Replace confirm-based water choice with inline UI affordances and tie fuel/time costs into hourly scheduling (performFetchWater, camp UI).
+- Expand staged illnesses with explicit onset/crisis/recovery beats for cholera, scurvy, mountain pneumonia, and snakebite.
+- Build fort/mission clinic interaction that spends money/days to stabilize severe afflictions.
+- Add guard/night watch successes and failures plus weather-driven camp mishaps (flooded stores, wind-torn tents) with event flags.
+- Implement crafting recipes with inputs/outputs and spoilage-aware cooking (CRAFTING_RECIPES, CAMP_TASKS, spoilage timers).
