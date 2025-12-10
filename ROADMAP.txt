@@ -18,3 +18,17 @@ CAMP & CRAFTING – FUTURE TODO
 - Expanded regional recipes and preservation methods, plus spoilage tracking.
 - Larger thought library with location- and event-aware lines and cooldowns.
 - Audio/animation polish for campfire, crafting ticks, and trail log entries.
+
+Storyteller & Social – Future Work
+- Storyteller preset cards: add mobile-specific stacking rules and richer icon art hooks (old-trail.html renderStorytellerCards).
+- Romance/feud arcs: full multi-step relationship stories and love-triangle pacing still needed (EVENT_DEFS, buildStoryContext).
+- Tension tuning: playtest-driven pass on preset values and debug surfacing (STORYTELLER_PRESETS, updateStoryTension).
+
+Illness & Medical – TODO / FUTURE HOOKS
+- Expand new disease hooks with event-driven triggers and staged care (addAffliction/logAfflictionStageChange in old-trail.html).
+- Water quality: add player choices for boiling/filters and campsite consequences (performFetchWater, maybeTriggerIllnessForHour).
+- Doctoring: deeper treatment options such as triage or fort clinics (performDoctoring, JOB_DEFS.doctor).
+
+Camp & Crafting – FUTURE TODO
+- Guard/night watch layering, flood/wind mishaps, and task-linked weather mishaps (EVENT_DEFS, camp overlay).
+- Regional crafting/recipes and spoilage clocks tied to supplies (buildCraftingWidget, CAMP_TASKS).

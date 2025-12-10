@@ -166,6 +166,54 @@
   width: 100%;
 }
 
+.ot-preset-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.ot-preset-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px;
+  background: rgba(10, 10, 16, 0.7);
+  cursor: pointer;
+  transition: border-color 0.1s ease, transform 0.1s ease;
+}
+
+.ot-preset-card:hover,
+.ot-preset-card:focus {
+  border-color: rgba(245, 210, 139, 0.65);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.ot-preset-card.ot-selected {
+  border-color: rgba(245, 210, 139, 0.95);
+  box-shadow: 0 0 0 1px rgba(245, 210, 139, 0.3);
+}
+
+.ot-preset-icon {
+  font-size: 16px;
+  color: #f4d68e;
+}
+
+.ot-preset-tagline {
+  color: #b6b3ac;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.ot-preset-example {
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 11px;
+  color: #dcd8ce;
+  min-height: 32px;
+}
+
 /* ==== BUTTONS ============================================================== */
 
 .ot-btn,
@@ -1101,6 +1149,21 @@
             condition will slow to a crawl or fall apart long before Oregon.
           </div>
         </div>
+        <div class="ot-panel">
+          <div class="ot-panel-header">Narrator &amp; difficulty</div>
+          <div class="ot-panel-body ot-panel-body-sm">
+            <div id="ot-storyteller-cards" class="ot-preset-cards"></div>
+            <div
+              id="ot-storyteller-example"
+              class="ot-preset-example"
+              aria-live="polite"
+            ></div>
+            <div class="ot-panel-body-sm ot-text-muted" style="margin-top: 6px;">
+              Tap or click a card to select a narrator. The dropdown on the left
+              will follow along for accessibility and saved games.
+            </div>
+          </div>
+        </div>
         <div id="ot-start-art" class="ot-start-art"></div>
       </div>
     </div>
@@ -1212,6 +1275,13 @@
             <div id="ot-narrator-picker" class="ot-narrator-picker" style="display: none; margin-top: 6px;">
               <select id="ot-storyteller-midrun" class="ot-select"></select>
               <div id="ot-narrator-hint" class="ot-panel-body-sm ot-text-muted" style="margin-top: 4px;"></div>
+            </div>
+            <div class="ot-panel-body-sm ot-text-muted" style="margin-top: 6px;">
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <input type="checkbox" id="ot-tension-debug" />
+                <span>Show tension debug</span>
+              </label>
+              <div id="ot-tension-readout" class="ot-panel-body-sm ot-text-muted"></div>
             </div>
           </div>
         </div>
@@ -1373,6 +1443,11 @@
           Camp tasks planner
         </div>
         <div id="oldtrail-camp-menu-widget"></div>
+        <div
+          id="ot-camp-roles-summary"
+          class="ot-panel-body-sm ot-text-muted"
+          style="margin-top: 6px"
+        ></div>
         <div style="display: flex; gap: 8px; margin-top: 8px; align-items: center">
           <button id="ot-btn-camp-confirm" class="ot-btn-gold">Confirm chores</button>
           <button id="ot-btn-camp-auto" class="ot-btn-outline">Auto plan</button>
@@ -1907,6 +1982,7 @@
     { id: "cook", label: "Cook meals" },
     { id: "repair", label: "Repair wagon / gear" },
     { id: "guard", label: "Stand watch / guard" },
+    { id: "doctor", label: "Doctor / care" },
     { id: "rest", label: "Rest" },
     { id: "sleep", label: "Sleep" },
   ];
@@ -1921,7 +1997,7 @@
     { id: "fetch_water", label: "Water",       taskId: "fetch_water", relatedSkill: "travel",     vital: true  },
     { id: "repair",      label: "Repair",      taskId: "repair",      relatedSkill: "woodcutting", vital: true },
     { id: "guard",       label: "Guard",       taskId: "guard",       relatedSkill: "travel",     vital: true  },
-    { id: "doctor",      label: "Doctor",      taskId: "rest",        relatedSkill: "doctoring",  vital: true  },
+    { id: "doctor",      label: "Doctor",      taskId: "doctor",      relatedSkill: "doctoring",  vital: true  },
   ];
 
   // Supplies including prepared meal types
@@ -2356,6 +2432,56 @@
       severityRange: [1, 3],
       cause: "weeks of poor rest and damp camps",
     },
+    cholera: {
+      id: "cholera",
+      label: "Cholera",
+      type: "disease",
+      baseHoursIncubation: [6, 18],
+      baseHoursAcute: [36, 96],
+      severityRange: [2, 3],
+      cause: "contaminated river water through the corridor",
+      affects: "thirst, condition",
+    },
+    scurvy_like: {
+      id: "scurvy_like",
+      label: "Scurvy-like weakness",
+      type: "disease",
+      baseHoursIncubation: [48, 96],
+      baseHoursAcute: [120, 220],
+      severityRange: [1, 2],
+      cause: "weeks without greens or fruit",
+      affects: "morale, condition",
+    },
+    mountain_pneumonia: {
+      id: "mountain_pneumonia",
+      label: "Mountain pneumonia",
+      type: "disease",
+      baseHoursIncubation: [24, 72],
+      baseHoursAcute: [72, 140],
+      severityRange: [2, 3],
+      cause: "thin, frigid air in the passes",
+      affects: "warmth, energy",
+    },
+    snakebite: {
+      id: "snakebite",
+      label: "Snakebite",
+      type: "injury",
+      baseHoursIncubation: [0, 2],
+      baseHoursAcute: [48, 120],
+      severityRange: [2, 3],
+      cause: "stepping near brush or creek banks",
+      affects: "condition, morale",
+    },
+    broken_bone: {
+      id: "broken_bone",
+      label: "Broken bone",
+      type: "injury",
+      baseHoursIncubation: [0, 1],
+      baseHoursAcute: [120, 260],
+      severityRange: [2, 3],
+      cause: "wagon mishap or hard fall",
+      affects: "travel speed, condition",
+    },
     sprain: {
       id: "sprain",
       label: "Sprained ankle",
@@ -2585,6 +2711,9 @@
     },
     storyState: null,
     storytellerPresetId: "classic",
+    waterQuality: "safe",
+    cascadeEvents: [],
+    tensionDebug: false,
   };
 
   function defaultTraillinesState() {
@@ -2629,6 +2758,7 @@
         risk: {},
         riskDurations: {},
         cascadeLog: [],
+        recentEvents: [],
         presetId: gameState.storytellerPresetId || "classic",
       };
     }
@@ -2640,6 +2770,7 @@
     if (!ss.risk) ss.risk = {};
     if (!ss.riskDurations) ss.riskDurations = {};
     if (!Array.isArray(ss.cascadeLog)) ss.cascadeLog = [];
+    if (!Array.isArray(ss.recentEvents)) ss.recentEvents = [];
     if (!ss.presetId) ss.presetId = gameState.storytellerPresetId || "classic";
     return ss;
   }
@@ -2648,11 +2779,18 @@
     gentle: {
       id: "gentle",
       label: "Calm Narrator",
+      iconKey: "steady",
+      tagline: "Steady hardships, few surprises",
       description:
         "Emphasizes breathers and lifelines; brutal cascades are rarer and shorter.",
       hint: "Gentler swings, more hope.",
+      exampleStory:
+        "Expect a forgiving pace with lifelines after scares — a wagon that stumbles often finds a way back on its feet.",
+      // Softer drift and risk scaling for mellow curves
       tensionBaseDrift: 0.03,
       tensionRiskScale: 0.2,
+      tensionMin: 5,
+      tensionMax: 80,
       tensionAfterMajorDrop: 30,
       tensionAfterMinorDrop: 15,
       minHoursBetweenMajor: 32,
@@ -2663,11 +2801,18 @@
     classic: {
       id: "classic",
       label: "Classic Trail",
+      iconKey: "balanced",
+      tagline: "Balanced hardships and rests",
       description:
         "Balanced hardships and breathers with the familiar Oregon Trail rhythm.",
       hint: "Balanced tension and drama.",
+      exampleStory:
+        "Moments of calm give way to weather scares, illnesses, and tough river calls — but rarely all at once.",
+      // Middle-of-the-road drift with modest spikes when risk flags stack up
       tensionBaseDrift: 0.06,
       tensionRiskScale: 0.25,
+      tensionMin: 8,
+      tensionMax: 95,
       tensionAfterMajorDrop: 35,
       tensionAfterMinorDrop: 18,
       minHoursBetweenMajor: 24,
@@ -2678,11 +2823,18 @@
     harsh: {
       id: "harsh",
       label: "Harsh Frontier",
+      iconKey: "wild",
+      tagline: "Harsh cascades and sharp spikes",
       description:
         "Pushes risk flags harder with shorter breathers and sharper cascades.",
       hint: "Unforgiving, for experienced players.",
+      exampleStory:
+        "Long dry stretches can suddenly tip into illness, wagon failures, and morale spirals that demand fast decisions.",
+      // Higher drift + risk scaling, allows faster spikes
       tensionBaseDrift: 0.1,
       tensionRiskScale: 0.38,
+      tensionMin: 12,
+      tensionMax: 100,
       tensionAfterMajorDrop: 46,
       tensionAfterMinorDrop: 22,
       minHoursBetweenMajor: 19,
@@ -2743,6 +2895,7 @@
     if (!person.traits) person.traits = [];
     if (typeof person.morale !== "number") person.morale = 60;
     if (typeof person.lastBreakHour !== "number") person.lastBreakHour = 0;
+    if (!person.activeBreak) person.activeBreak = null;
     return person;
   }
 
@@ -3856,6 +4009,7 @@
     dom.btnCampConfirm = document.getElementById("ot-btn-camp-confirm");
     dom.btnCampAuto = document.getElementById("ot-btn-camp-auto");
     dom.campSummaryNote = document.getElementById("ot-camp-summary-note");
+    dom.campRolesSummary = document.getElementById("ot-camp-roles-summary");
     dom.craftingWidget = document.getElementById("oldtrail-crafting-widget");
     dom.thoughtsBubble = document.getElementById("oldtrail-thoughts-bubble");
 
@@ -3865,6 +4019,10 @@
     dom.narratorPicker = document.getElementById("ot-narrator-picker");
     dom.narratorHint = document.getElementById("ot-narrator-hint");
     dom.btnToggleNarrator = document.getElementById("ot-btn-toggle-narrator");
+    dom.storytellerCards = document.getElementById("ot-storyteller-cards");
+    dom.storytellerExample = document.getElementById("ot-storyteller-example");
+    dom.tensionDebug = document.getElementById("ot-tension-debug");
+    dom.tensionReadout = document.getElementById("ot-tension-readout");
 
   }
 
@@ -4042,6 +4200,68 @@
       if (preset.id === selectedId) opt.selected = true;
       selectEl.appendChild(opt);
     });
+    renderStorytellerCards(selectedId || (selectEl && selectEl.value));
+  }
+
+  function storytellerIcon(key) {
+    switch (key) {
+      case "steady":
+        return "⬡";
+      case "wild":
+        return "✶";
+      case "balanced":
+      default:
+        return "⚖";
+    }
+  }
+
+  function renderStorytellerCards(selectedId) {
+    if (!dom.storytellerCards) return;
+    dom.storytellerCards.innerHTML = "";
+    const exampleFor = function (preset) {
+      return preset.exampleStory || preset.description || preset.hint || "";
+    };
+    Object.keys(STORYTELLER_PRESETS).forEach(function (key) {
+      const preset = STORYTELLER_PRESETS[key];
+      const card = document.createElement("div");
+      card.className = "ot-preset-card";
+      card.setAttribute("tabindex", "0");
+      card.setAttribute("role", "button");
+      if (preset.id === selectedId) card.classList.add("ot-selected");
+      const icon = document.createElement("div");
+      icon.className = "ot-preset-icon";
+      icon.textContent = storytellerIcon(preset.iconKey);
+      const title = document.createElement("div");
+      title.style.fontWeight = "bold";
+      title.textContent = preset.label;
+      const tagline = document.createElement("div");
+      tagline.className = "ot-preset-tagline";
+      tagline.textContent = preset.tagline || preset.hint || "";
+      const hint = document.createElement("div");
+      hint.className = "ot-panel-body-sm";
+      hint.textContent = preset.hint || "";
+      card.appendChild(icon);
+      card.appendChild(title);
+      card.appendChild(tagline);
+      card.appendChild(hint);
+      const showExample = function () {
+        if (dom.storytellerExample) {
+          dom.storytellerExample.textContent = exampleFor(preset);
+        }
+      };
+      card.addEventListener("mouseenter", showExample);
+      card.addEventListener("focus", showExample);
+      card.addEventListener("click", function () {
+        if (dom.storytellerPreset) dom.storytellerPreset.value = preset.id;
+        renderStorytellerDescription(preset.id);
+        renderStorytellerOptions(dom.storytellerMidrun, preset.id);
+        renderStorytellerCards(preset.id);
+        gameState.storytellerPresetId = preset.id;
+      });
+      dom.storytellerCards.appendChild(card);
+    });
+    const active = STORYTELLER_PRESETS[selectedId] || STORYTELLER_PRESETS.classic;
+    if (dom.storytellerExample) dom.storytellerExample.textContent = exampleFor(active);
   }
 
   function renderStorytellerDescription(presetId) {
@@ -4051,10 +4271,13 @@
     }
     if (dom.narratorLabel) {
       dom.narratorLabel.textContent = "Narrator: " + preset.label;
-      dom.narratorLabel.title = preset.hint || preset.description || "";
+      dom.narratorLabel.title = preset.tagline || preset.description || "";
     }
     if (dom.narratorHint) {
-      dom.narratorHint.textContent = preset.description || "";
+      dom.narratorHint.textContent = preset.tagline || preset.description || "";
+    }
+    if (dom.storytellerExample) {
+      dom.storytellerExample.textContent = preset.exampleStory || preset.description || "";
     }
   }
 
@@ -4809,6 +5032,15 @@
             person.morale = clamp(person.morale + 0.5, 0, 100);
             conditionLoss += 0.2;
           }
+        } else if (aff.id === "cholera") {
+          person.thirst = clamp(person.thirst - 4, 0, 100);
+          person.energy = clamp(person.energy - 1.5, 0, 110);
+          person.morale = clamp(person.morale - 1.5, 0, 100);
+          if (aff.stage === "acute") {
+            conditionLoss += (2.2 * aff.severity) / treatDivisor;
+          } else if (aff.stage === "recovery") {
+            conditionLoss += 0.5;
+          }
         } else if (aff.id === "camp_fever") {
           if (aff.stage === "incubation") {
             person.energy = clamp(person.energy - 1.2, 0, 110);
@@ -4839,6 +5071,20 @@
           } else if (aff.stage === "recovery") {
             person.energy = clamp(person.energy - 0.25, 0, 110);
           }
+        } else if (aff.id === "mountain_pneumonia") {
+          if (aff.stage === "acute") {
+            person.warmth = clamp(person.warmth - 4, 0, 100);
+            person.energy = clamp(person.energy - 2, 0, 110);
+            conditionLoss += (1.5 * aff.severity) / treatDivisor;
+          } else if (aff.stage === "recovery") {
+            person.warmth = clamp(person.warmth - 1, 0, 100);
+          }
+        } else if (aff.id === "snakebite") {
+          conditionLoss += (1.1 * aff.severity) / treatDivisor;
+          person.morale = clamp(person.morale - 2, 0, 100);
+        } else if (aff.id === "broken_bone") {
+          person.energy = clamp(person.energy - 1.2, 0, 110);
+          conditionLoss += 0.9 / treatDivisor;
         }
 
         person.condition = clamp(person.condition - conditionLoss, 0, 100);
@@ -4893,6 +5139,7 @@
     const people = getAllPeople().filter(function (p) {
       return p && p.alive;
     });
+    const waterQuality = gameState.waterQuality || "safe";
     const avgConditionEnergy = people.length
       ?
           people.reduce(function (sum, p) {
@@ -4902,13 +5149,28 @@
 
     if (isCholeraCorridor(region, miles)) {
       let base = 0.0005;
+      const badWaterFactor =
+        waterQuality === "alkali"
+          ? 2.4
+          : waterQuality === "stagnant"
+          ? 1.8
+          : waterQuality === "running"
+          ? 0.75
+          : 1.0;
       if (hot && wetRecently) base *= 1.5;
       if (waterGal < mouths * 0.4) base *= 1.5;
       if (avgConditionEnergy < 50) base *= 1.5;
+      base *= badWaterFactor;
 
       let newCase = false;
       people.some(function (p) {
-        if (hasAffliction(p, "dysentery")) return false;
+        if (hasAffliction(p, "dysentery") || hasAffliction(p, "cholera"))
+          return false;
+        if (rng() < base * 0.4) {
+          addAffliction(p, "cholera", { severity: 3 });
+          newCase = true;
+          return true;
+        }
         if (rng() < base) {
           addAffliction(p, "dysentery", { severity: rng() < 0.35 ? 2 : 1 });
           newCase = true;
@@ -4917,6 +5179,17 @@
         return false;
       });
       if (newCase) return; // avoid multiple clustered cases in one hour
+    }
+
+    if (
+      waterQuality === "alkali" &&
+      !isCholeraCorridor(region, miles) &&
+      Math.random() < 0.00025
+    ) {
+      const target = choice(people);
+      if (target && !hasAffliction(target, "dysentery")) {
+        addAffliction(target, "dysentery", { severity: 1 });
+      }
     }
 
     const coldWet =
@@ -4938,6 +5211,28 @@
           addAffliction(p, "camp_fever", { severity: tempC <= 0 ? 2 : 1 });
         }
       });
+    }
+
+    if (gameState.region === "mountains" || gameState.region === "blue_mountains") {
+      const highCold = tempC < 3 || (w.precip === "snow" && tempC < 8);
+      if (highCold) {
+        people.forEach(function (p) {
+          if (hasAffliction(p, "mountain_pneumonia")) return;
+          let risk = 0.0002;
+          if (p.warmth < 35) risk *= 2.2;
+          if (rng() < risk) addAffliction(p, "mountain_pneumonia", { severity: 2 });
+        });
+      }
+    }
+
+    if (gameState.region === "snake_plain" || gameState.region === "central_plains") {
+      const biteRisk = w.tempC > 15 && gameState.mode === "travel" ? 0.00025 : 0;
+      if (biteRisk > 0) {
+        const walker = choice(people);
+        if (walker && rng() < biteRisk && !hasAffliction(walker, "snakebite")) {
+          addAffliction(walker, "snakebite", { severity: 2 });
+        }
+      }
     }
   }
 
@@ -5756,6 +6051,7 @@
   function performFetchWater(person) {
     let factor = 0.5;
     const name = gameState.locationName.toLowerCase();
+    let quality = "stagnant";
     if (
       name.indexOf("river") >= 0 ||
       name.indexOf("ford") >= 0 ||
@@ -5764,18 +6060,22 @@
       name.indexOf("springs") >= 0
     ) {
       factor = 1.0;
+      quality = "running";
     } else if (
       gameState.region === "snake_plain" ||
       gameState.region === "mountains"
     ) {
       factor = 0.7;
+      quality = "alkali";
     } else if (gameState.region === "blue_mountains") {
       factor = 0.8;
+      quality = "cold_stream";
     }
 
     const gallons = 3 * factor;
     if (!gameState.supplies.water) gameState.supplies.water = 0;
     gameState.supplies.water += gallons;
+    gameState.waterQuality = quality;
     addLog(
       person.name +
         " hauls water for camp — about " +
@@ -5799,8 +6099,46 @@
     );
     addLog(
       person.name +
-        " spends the hour tightening bolts, checking wheels, and greasing the wagon."
+      " spends the hour tightening bolts, checking wheels, and greasing the wagon."
     );
+  }
+
+  function performDoctoring(person) {
+    const patients = getAllPeople().filter(function (p) {
+      return (
+        p &&
+        p.alive &&
+        p.afflictions &&
+        p.afflictions.some(function (a) {
+          return a && !a.resolved && a.stage !== "resolved";
+        })
+      );
+    });
+    if (!patients.length) {
+      if (Math.random() < 0.2) {
+        addLog(person.name + " checks everyone over; no one needs tending right now.");
+      }
+      return;
+    }
+    const target = choice(patients);
+    const skill = (person.skills && person.skills.doctoring) || 0;
+    const relief = 0.4 + skill * 0.2;
+    target.afflictions.forEach(function (aff) {
+      if (!aff || aff.resolved) return;
+      aff.reliefHours = (aff.reliefHours || 0) + relief;
+      if (aff.severity > 1 && Math.random() < 0.15) {
+        aff.severity = Math.max(1, aff.severity - 1);
+      }
+    });
+    if (Math.random() < 0.45) {
+      addLog(
+        person.name +
+          " tends to " +
+          target.name +
+          " through the hour, easing pain and keeping illness from worsening.",
+        { characters: [person.id, target.id], tone: "event" }
+      );
+    }
   }
 
   function performTask(person, taskIdOverride, context) {
@@ -5889,6 +6227,10 @@
     } else if (task === "guard") {
       person.energy = clamp(person.energy - 2, 0, 100);
       gameState.guardLevel += 0.5;
+    } else if (task === "doctor") {
+      person.energy = clamp(person.energy - 2, 0, 100);
+      person.morale = clamp(person.morale + 0.5, 0, 100);
+      performDoctoring(person);
     } else if (task === "rest") {
       person.energy = clamp(person.energy + 4, 0, 100);
       person.morale = clamp(person.morale + 1, 0, 100);
@@ -6305,11 +6647,26 @@
     const riskPull = ctx.riskCount * preset.tensionRiskScale;
     const moodPull = ctx.avgMorale > 70 ? -0.25 : ctx.avgMorale < 40 ? 0.35 : 0;
     const drift = preset.tensionBaseDrift;
-    storyState.tension = clamp(
-      (storyState.tension || 0) + drift + riskPull + moodPull,
-      0,
-      100
-    );
+    let next = (storyState.tension || 0) + drift + riskPull + moodPull;
+    if (preset.tensionMin != null) next = Math.max(preset.tensionMin, next);
+    if (preset.tensionMax != null) next = Math.min(preset.tensionMax, next);
+    storyState.tension = clamp(next, 0, 100);
+  }
+
+  function renderTensionDebug(storyState) {
+    if (!dom.tensionReadout) return;
+    if (!gameState.tensionDebug) {
+      dom.tensionReadout.textContent = "";
+      return;
+    }
+    const recent = (storyState.recentEvents || []).slice(-4);
+    const label = recent
+      .map(function (e) {
+        return e.id || e.kind || "?";
+      })
+      .join(", ");
+    dom.tensionReadout.textContent =
+      "Tension " + Math.round(storyState.tension) + (label ? " · " + label : "");
   }
 
   const EVENT_DEFS = [
@@ -7036,6 +7393,7 @@
 
     const ctx = buildStoryContext();
     updateStoryTension(ss, ctx);
+    renderTensionDebug(ss);
 
     const preset =
       STORYTELLER_PRESETS[ss.presetId || gameState.storytellerPresetId] ||
@@ -7071,6 +7429,11 @@
       const pick = weightedPick(eligible);
       if (pick && pick.def && pick.def.run) {
         pick.def.run(ctx);
+        ss.recentEvents.push({ id: pick.def.id, kind: pick.def.kind });
+        if (ss.recentEvents.length > 6) ss.recentEvents.shift();
+        if (gameState.tensionDebug) {
+          console.log("[tension]", Math.round(ss.tension), pick.def.id);
+        }
         if (pick.def.kind === "major") {
           ss.hoursSinceMajorEvent = 0;
           ss.tension = clamp(
@@ -7086,6 +7449,7 @@
             100
           );
         }
+        renderTensionDebug(ss);
         return;
       }
     }
@@ -7215,6 +7579,7 @@
       select.value = person.task || "travel";
       select.addEventListener("change", function () {
         person.task = select.value;
+        renderCampRolesSummary();
       });
       tdSelect.appendChild(select);
       tr.appendChild(tdSelect);
@@ -8148,6 +8513,10 @@
         gameState.weatherHistory = [];
       }
 
+      if (!gameState.waterQuality) gameState.waterQuality = "safe";
+      if (!Array.isArray(gameState.cascadeEvents)) gameState.cascadeEvents = [];
+      if (gameState.tensionDebug == null) gameState.tensionDebug = false;
+
       ensureTraillinesState();
       ensureStoryState();
 
@@ -8325,6 +8694,13 @@
       gameState.storytellerPresetId || "classic"
     );
     renderStorytellerDescription(gameState.storytellerPresetId || "classic");
+    if (dom.tensionDebug) {
+      dom.tensionDebug.checked = !!gameState.tensionDebug;
+      dom.tensionDebug.addEventListener("change", function () {
+        gameState.tensionDebug = dom.tensionDebug.checked;
+        renderTensionDebug(ensureStoryState());
+      });
+    }
     if (dom.storytellerPreset) {
       dom.storytellerPreset.addEventListener("change", function () {
         const presetId = dom.storytellerPreset.value || "classic";
@@ -8696,6 +9072,29 @@
     })();
   }
 
+  function renderCampRolesSummary() {
+    if (!dom.campRolesSummary) return;
+    const people = getAllPeople().filter(function (p) {
+      return p && p.alive;
+    });
+    if (!people.length) {
+      dom.campRolesSummary.textContent = "";
+      return;
+    }
+    const taskLabel = function (taskId) {
+      const t = TASKS.find(function (x) {
+        return x.id === taskId;
+      });
+      return t ? t.label : taskId;
+    };
+    dom.campRolesSummary.innerHTML = people
+      .map(function (p) {
+        const role = taskLabel(p.task || "auto");
+        return '<div><strong>' + p.name + "</strong>: " + role + "</div>";
+      })
+      .join("");
+  }
+
   function buildCraftingWidget() {
     const root = document.getElementById("oldtrail-crafting-widget");
     if (!root || root.dataset.built) return;
@@ -8845,6 +9244,7 @@
         })
       );
     }
+    renderCampRolesSummary();
     if (dom.campOverlay) dom.campOverlay.classList.add("ot-show");
     dom.campOverlay.classList.add("ot-show");
   }
@@ -8949,6 +9349,7 @@
     const tasks = autoSelectCampTasks(gameState);
     oldTrailCampMenu.setTasks(tasks);
     dom.campSummaryNote.textContent = "Auto-selected chores based on needs.";
+    renderCampRolesSummary();
   }
 
   function confirmCampTasks() {
