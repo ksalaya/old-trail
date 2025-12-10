@@ -1,43 +1,46 @@
-=== Illness & Medical – TODO / FUTURE HOOKS ===
-- Add additional diseases: cholera (more lethal than dysentery), scurvy/camp-scurvy tied directly to long-term low fruitVeg intake, mountain pneumonia in high passes, snakebite, broken bones, etc.
-- Integrate water quality tracking (safe wells/boiled vs. stagnant/alkali sources) and make bad-water choices explicitly increase dysentery/cholera risk.
-- Replace the current “automatic doctoring” with an explicit Doctor task:
-  - Add a 'Doctor / Care for sick' task in the hour-tasks UI.
-  - Wire JOB_DEFS.doctor to a distinct task id and handle it in performTask().
-- Add affliction icons/overlays in the temporal viewport when a major crisis occurs.
-- Tie afflictions more strongly into events:
-  - Hospital/mission care at forts (expensive but higher survival).
-  - Quarantine or delay events when an epidemic sweeps through the camp.
-- Refine numbers and probabilities using historical cholera-corridor research and playtesting.
+Old Trail – Consolidated Roadmap
+================================
 
+Travel & Explorer View
+----------------------
+- Route & cutoff strategy cards (Sublette vs. Fort Bridger, Snake crossings, Columbia rafting vs. Barlow) with distance/climate tradeoffs and diary flavor when chosen.
+- Weather layer 2.0 tied to route segments and start-date tuning: segment-specific climate/risk tables, high-river and late-snow windows, river depth informed by recent precipitation, and clearer schedule hints at major forts.
+- Explorer follow-ups: expand the tile world to the full route with historical landmarks, sync tiles more tightly to mileage/waypoints, add sprite-based wagons/companions with animation and weather overlays, tie encounters to map features (hunting grounds, crossings, passes), add mobile/touch controls, and polish transitions/effects for the explorer viewport.
 
-CAMP & CRAFTING – FUTURE TODO
-- Per-companion chore assignment with visible roles and timing.
-- Skill-based camp and crafting results plus richer failure/partial success states.
-- Weather-aware camp events (flooded camp, blown tents) and deeper guard/night watch effects.
-- Expanded regional recipes and preservation methods, plus spoilage tracking.
-- Larger thought library with location- and event-aware lines and cooldowns.
-- Audio/animation polish for campfire, crafting ticks, and trail log entries.
+Camp & Delegation
+-----------------
+- Per-companion chore assignment with visible timing, guard/night watch layering, and weather-aware mishaps (flooded stores, wind damage, storm layovers).
+- Deeper crafting/camp systems: regional recipes and spoilage tracking, skill-based outcomes and partial successes, crafting recipes with inputs/outputs (ammo, wagon repairs, smoked meat, herbal tonics), and clearer overload feedback.
+- Meal authenticity pass: historical menu roster (mush & bacon, beans & bacon, salmon pots, flapjacks), ration-tier gating for recipes, rolling food-group tracker (staples/meat/fruit-veg/coffee), and effort-based meal macros (quick fry-ups vs. proper suppers) influenced by fuel/skill.
 
-Storyteller & Social – Future Work
-- Storyteller preset cards: add mobile-specific stacking rules and richer icon art hooks (old-trail.html renderStorytellerCards).
-- Romance/feud arcs: full multi-step relationship stories and love-triangle pacing still needed (EVENT_DEFS, buildStoryContext).
-- Tension tuning: playtest-driven pass on preset values and debug surfacing (STORYTELLER_PRESETS, updateStoryTension).
+Storyteller & Events
+--------------------
+- Storyteller preset polish (cards, tooltips, mid-run toggle UX), tension curve tuning, and richer cascade analytics on the end screen.
+- Broaden romance/feud/relationship arcs with multi-step beats, mental break consequences, and event choices that react to camp tasks and delegation.
+- Expand the event library for river dramas, illness cascades, weather/route-specific hazards (prairie fire, blizzards, dust storms), and add clinic/mission interactions at forts.
 
-Illness & Medical – TODO / FUTURE HOOKS
-- Expand new disease hooks with event-driven triggers and staged care (addAffliction/logAfflictionStageChange in old-trail.html).
-- Water quality: add player choices for boiling/filters and campsite consequences (performFetchWater, maybeTriggerIllnessForHour).
-- Doctoring: deeper treatment options such as triage or fort clinics (performDoctoring, JOB_DEFS.doctor).
+Illness & Medical
+-----------------
+- Additional diseases and stages: cholera, scurvy, mountain pneumonia, snakebite, broken bones, with clearer onset/crisis/recovery beats and affliction overlays when crises hit.
+- Water quality system with boiled/filtered choices, campsite water consequences, and explicit doctoring tasks or fort clinics that trade time/money for recovery odds.
+- Risk tuning from geography and weather: cholera corridor along the Platte, alkali poisoning in desert basins, frostbite/hypothermia in high passes, and dehydration or dust illness during hot/dry stretches.
 
-Camp & Crafting – FUTURE TODO
-- Guard/night watch layering, flood/wind mishaps, and task-linked weather mishaps (EVENT_DEFS, camp overlay).
-- Regional crafting/recipes and spoilage clocks tied to supplies (buildCraftingWidget, CAMP_TASKS).
+UI Polish & Accessibility
+-------------------------
+- Temporal viewport polish: optional fullscreen toggle, CRT/overlay stack, rain/snow/lightning effects tied to events, and painterly palettes that echo region/weather mood.
+- Mobile-friendly interaction: larger touch targets, explorer touch/virtual d-pad controls, and considerate fullscreen prompts on mobile start.
 
+Art & Audio
+-----------
+- Painterly parallax layers for travel/camp scenes across biomes, with wagon/oxen/companion sprites in explorer and tactical scenes.
+- Ambient soundscape (wind, storms, campfire, forts) plus lightweight UI/audio sprites for clicks, events, and camp tasks.
 
-Batch: Storyteller & Medical & Camp Hooks – TODO after current pass
-- Flesh out romance, feud, and love-triangle multi-step arcs with cooldowns and more dialogue variety (EVENT_DEFS, buildStoryContext).
-- Replace confirm-based water choice with inline UI affordances and tie fuel/time costs into hourly scheduling (performFetchWater, camp UI).
-- Expand staged illnesses with explicit onset/crisis/recovery beats for cholera, scurvy, mountain pneumonia, and snakebite.
-- Build fort/mission clinic interaction that spends money/days to stabilize severe afflictions.
-- Add guard/night watch successes and failures plus weather-driven camp mishaps (flooded stores, wind-torn tents) with event flags.
-- Implement crafting recipes with inputs/outputs and spoilage-aware cooking (CRAFTING_RECIPES, CAMP_TASKS, spoilage timers).
+Technical & Data
+----------------
+- Externalize trail geometry/world chunks for explorer (supports cutoffs and alternate routes) and add tactical mini-maps for raids/rescues/crossings that hook into delegation.
+- Persist/visualize fog-of-war progress and explorer positions alongside storyteller timelines for post-run summaries.
+
+Already Implemented / Notes
+---------------------------
+- Hourly simulation, delegation, nutrition tracking, and daily rhythm blocks are live; future items above extend those systems.
+- Explorer world camera now advances real time and shares the survival HUD/log widgets; future items cover content and polish expansions.
