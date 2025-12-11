@@ -79,3 +79,12 @@ Storyteller & Events – Phase 2+
 - Additional camp-task-reactive social beats and more granular mental break follow-ups beyond the first simmering feud arc.
 - Visual cascade timeline for the end-of-run summary (icons/lines layered over the textual highlights).
 - More historical named incidents (specific rivers, forts, and clinics) with bespoke choices and fort mission variants.
+
+Storyteller & Events – Phase 2+ (implemented / remaining)
+--------------------------------------------------------
+- Implemented region-aware storyteller curves with pacing summaries and HUD hints; added camp-only, per-week swap limits with counters.
+- Added love-triangle beats, leadership disputes, camp gratitude/blame reactions, mental break follow-ups, cascade timeline, and new historic river/fort/valley events.
+- TODO: fine-tune STORYTELLER_PRESETS.regionCurves after playtesting (difficulty/season variants).
+- TODO: expand triangle/leadership arcs with optional player choices and rare leader changes.
+- TODO: add more named incidents and fort missions plus branching route decisions.
+- TODO: upgrade the cascade timeline to show per-person condition tracks or lightweight graphs.
