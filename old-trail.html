@@ -12796,7 +12796,480 @@
         "Fresh graves pass by the trail. {name} falls quiet. 'They started just like us.'",
       ],
     },
+    {
+      id: "fort_romance_palisade",
+      moods: ["Upbeat", "Uneasy"],
+      locationTags: ["fort"],
+      socialTags: ["romance_arc"],
+      minHoursBetweenUses: 40,
+      templates: [
+        "Shadows lean against the palisade at {landmark}. {name} lingers nearby, grateful for a quiet corner with {friend} after the road.",
+      ],
+    },
+    {
+      id: "ferry_romance_after_rescue",
+      moods: ["Upbeat", "Uneasy"],
+      locationTags: ["ferry", "river"],
+      socialTags: ["romance_arc", "recent_rescue"],
+      minHoursBetweenUses: 46,
+      templates: [
+        "Mist rises off the current. {name} squeezes {rescuer}'s hand, remembering how close the river came to taking them both.",
+      ],
+    },
+    {
+      id: "fort_feud_civil_talk",
+      moods: ["Uneasy", "Worn"],
+      locationTags: ["fort"],
+      socialTags: ["feud_arc", "feud_truce"],
+      minHoursBetweenUses: 64,
+      templates: [
+        "Among traders at {landmark}, {name} and {rival} share a bench and finally talk without sparks. Maybe the walls help keep tempers in.",
+      ],
+    },
+    {
+      id: "river_feud_grumble",
+      moods: ["Uneasy", "Worn"],
+      locationTags: ["river"],
+      socialTags: ["feud_arc"],
+      minHoursBetweenUses: 44,
+      templates: [
+        "Watching the wagons test the ford, {name} mutters that {rival}'s last shortcut nearly drowned them. The current isn't the only thing running cold.",
+      ],
+    },
+    {
+      id: "triangle_ferry_glances",
+      moods: ["Uneasy"],
+      locationTags: ["ferry", "river"],
+      socialTags: ["triangle_arc"],
+      minHoursBetweenUses: 58,
+      templates: [
+        "The ferry deck rocks. {name} watches glances dart between {friend} and {rival}, the river a mirror for tangled feelings.",
+      ],
+    },
+    {
+      id: "rescue_reverence_bank",
+      moods: ["Upbeat", "Uneasy"],
+      locationTags: ["river"],
+      socialTags: ["recent_rescue"],
+      minHoursBetweenUses: 52,
+      templates: [
+        "At the bank, {name} keeps tracing the rope burns on their wrist. 'I'd have gone under without you,' they whisper toward {rescuer}.",
+      ],
+    },
+    {
+      id: "fort_romance_reunion",
+      moods: ["Upbeat"],
+      locationTags: ["fort"],
+      socialTags: ["romance_arc"],
+      minHoursBetweenUses: 48,
+      templates: [
+        "Supplies stacked high, {name} steals a laugh with {friend} between wagons at {landmark}. For a moment the trail feels like a courtship instead of a march.",
+      ],
+    },
+    {
+      id: "feud_reconcile_fire",
+      moods: ["Worn"],
+      locationTags: ["fort", "mountain_pass"],
+      socialTags: ["feud_arc", "feud_truce"],
+      minHoursBetweenUses: 70,
+      templates: [
+        "After the last storm scare, {name} nods toward {rival}. 'We got through that together. Let's keep it that way.' The words hang like truce smoke.",
+      ],
+    },
+    {
+      id: "pass_romance_warm_fire",
+      moods: ["Upbeat", "Uneasy"],
+      locationTags: ["mountain_pass"],
+      socialTags: ["romance_arc"],
+      weatherTags: ["cold_snap", "snow"],
+      minHoursBetweenUses: 54,
+      templates: [
+        "Snow flurries around the coals. {name} shifts closer to {friend} at the pass, grateful for warmth and the excuse to stay side by side.",
+      ],
+    },
+    {
+      id: "ferry_romance_wary_current",
+      moods: ["Uneasy"],
+      locationTags: ["ferry", "river"],
+      socialTags: ["romance_arc", "romance_steady"],
+      minHoursBetweenUses: 48,
+      templates: [
+        "{name} watches the ropes strain at {landmark}. 'Hold on to me,' they murmur to {friend}, half joke, half plea.",
+      ],
+    },
+    {
+      id: "triangle_fort_distance",
+      moods: ["Uneasy", "Worn"],
+      locationTags: ["fort"],
+      socialTags: ["triangle_arc"],
+      minHoursBetweenUses: 62,
+      templates: [
+        "Even inside {landmark}'s busy yard, {name} feels apart. {friend} and {rival} trade jokes with the sutler while {name} counts the crates instead.",
+      ],
+    },
+    {
+      id: "late_snow_refrain",
+      moods: ["Worn", "Broken"],
+      locationTags: ["mountain_pass"],
+      cascadeTags: ["late_snow"],
+      minHoursBetweenUses: 36,
+      templates: [
+        "Drifts creep back over the ruts. {name} mutters, 'Every time we dig out, the pass buries us again.'",
+      ],
+    },
+    {
+      id: "late_snow_bitter_joke",
+      moods: ["Uneasy", "Worn"],
+      regions: ["mountains", "blue_mountains"],
+      cascadeTags: ["late_snow"],
+      minHoursBetweenUses: 44,
+      templates: [
+        "'Maybe the snow just likes our company,' {name} says, teeth chattering. 'We've camped here long enough to charge rent.'",
+      ],
+    },
+    {
+      id: "wagon_trouble_running_gag",
+      moods: ["Uneasy"],
+      cascadeTags: ["wagon_trouble"],
+      minHoursBetweenUses: 28,
+      templates: [
+        "Another wheel squeals. {name} jokes weakly, 'Should give this wagon a name since we nurse it more than ourselves.'",
+      ],
+    },
+    {
+      id: "wagon_trouble_fort_delay",
+      moods: ["Worn"],
+      locationTags: ["fort"],
+      cascadeTags: ["wagon_trouble"],
+      minHoursBetweenUses: 48,
+      templates: [
+        "While traders roll past, {name} eyes the cracked spokes. 'If we stall at {landmark} any longer, spring will find us still bargaining.'",
+      ],
+    },
+    {
+      id: "wagon_trouble_prayer",
+      moods: ["Uneasy", "Worn"],
+      cascadeTags: ["wagon_trouble"],
+      minHoursBetweenUses: 34,
+      templates: [
+        "{name} pats the mended tongue. 'Just one day without breaking, old friend. Just one.'",
+      ],
+    },
+    {
+      id: "lingering_illness_sigh",
+      moods: ["Worn", "Broken"],
+      cascadeTags: ["lingering_illness"],
+      minHoursBetweenUses: 42,
+      templates: [
+        "Coughs rattle through camp again. {name} whispers, 'Thought that fever left us back by the Platte.'",
+      ],
+    },
+    {
+      id: "lingering_illness_gallows",
+      moods: ["Uneasy"],
+      cascadeTags: ["lingering_illness"],
+      minHoursBetweenUses: 36,
+      templates: [
+        "'If coughing were coin we'd buy a new wagon,' {name} jokes, then sighs. The laugh dies quick in the cold air.",
+      ],
+    },
+    {
+      id: "lingering_illness_watchful",
+      moods: ["Uneasy", "Worn"],
+      cascadeTags: ["lingering_illness"],
+      minHoursBetweenUses: 50,
+      templates: [
+        "{name} keeps checking on {friend}. 'The hills change but that sick look sticks around. We need a change of luck.'",
+      ],
+    },
+    {
+      id: "late_snow_route_blame",
+      moods: ["Uneasy"],
+      locationTags: ["mountain_pass"],
+      cascadeTags: ["late_snow"],
+      socialTags: ["leadership_conflict"],
+      minHoursBetweenUses: 46,
+      templates: [
+        "Snowflakes drift and {name} side-eyes {leader}. 'Said we'd beat the storms. Feels like the storms are beating us.'",
+      ],
+    },
+    {
+      id: "wagon_trouble_repeat_crossing",
+      moods: ["Worn"],
+      locationTags: ["river"],
+      cascadeTags: ["wagon_trouble"],
+      minHoursBetweenUses: 42,
+      templates: [
+        "Another crossing, another groan from the axle. {name} swears they can hear the wagon cursing back.",
+      ],
+    },
+    {
+      id: "leadership_doubt_route",
+      moods: ["Uneasy", "Worn"],
+      socialTags: ["leadership_conflict"],
+      minHoursBetweenUses: 40,
+      templates: [
+        "{name} whispers to {friend}, 'Does {leader} really know this bend? We've doubled back more than once.'",
+      ],
+    },
+    {
+      id: "leadership_support_climb",
+      moods: ["Upbeat", "Uneasy"],
+      socialTags: ["leadership_conflict"],
+      locationTags: ["mountain_pass"],
+      minHoursBetweenUses: 44,
+      templates: [
+        "The grade steepens. {name} calls out, 'Stay with {leader}. Better one sure line than a dozen guesses.'",
+      ],
+    },
+    {
+      id: "gratitude_doctor_warmth",
+      moods: ["Upbeat", "Uneasy"],
+      socialTags: ["gratitude_doctor"],
+      minHoursBetweenUses: 38,
+      templates: [
+        "Bandages changed, {name} murmurs thanks toward {friend}. 'Those steady hands kept me walking today.'",
+      ],
+    },
+    {
+      id: "gratitude_doctor_campfire",
+      moods: ["Upbeat"],
+      socialTags: ["gratitude_doctor"],
+      locationTags: ["fort"],
+      minHoursBetweenUses: 46,
+      templates: [
+        "At {landmark}'s fire pit, {name} quietly sets aside the best portion for the one who dosed and sat with them.",
+      ],
+    },
+    {
+      id: "chores_rivalry_guard",
+      moods: ["Uneasy"],
+      socialTags: ["chores_rivalry"],
+      minHoursBetweenUses: 30,
+      templates: [
+        "{name} eyes {rival} turning in early. 'Funny how some folks dodge guard duty when the wind howls.'",
+      ],
+    },
+    {
+      id: "chores_navigation_spat",
+      moods: ["Uneasy", "Worn"],
+      socialTags: ["chores_rivalry", "feud_arc"],
+      minHoursBetweenUses: 36,
+      templates: [
+        "As landmarks blur, {name} snaps, 'If {rival} picks another 'shortcut,' I'll take the map myself.'",
+      ],
+    },
+    {
+      id: "chores_cook_grumble",
+      moods: ["Uneasy"],
+      socialTags: ["chores_rivalry"],
+      minHoursBetweenUses: 28,
+      templates: [
+        "Stirring the pot, {name} mutters, 'Next meal, someone else can burn their hands while {rival} naps.'",
+      ],
+    },
+    {
+      id: "leader_blame_miles",
+      moods: ["Worn"],
+      socialTags: ["leadership_conflict"],
+      minHoursBetweenUses: 42,
+      templates: [
+        "Counting miles, {name} sighs, 'If {leader} hadn't pushed past the ferry, we'd have fresher oxen and calmer tempers.'",
+      ],
+    },
+    {
+      id: "navigation_trust_friend",
+      moods: ["Upbeat", "Uneasy"],
+      socialTags: ["chores_rivalry"],
+      minHoursBetweenUses: 34,
+      templates: [
+        "{name} walks beside {friend}. 'Your eye for the trail beats any map. Glad you're out front today.'",
+      ],
+    },
+    {
+      id: "gratitude_rescue_carry",
+      moods: ["Upbeat", "Uneasy"],
+      socialTags: ["recent_rescue"],
+      minHoursBetweenUses: 44,
+      templates: [
+        "Every step past {location}, {name} remembers being hauled up from the muck. 'I owe {rescuer} more than supper,' they think.",
+      ],
+    },
   ];
+
+  function buildThoughtContext(person, gameState, storyState) {
+    const ctx = {
+      env: {
+        region: gameState.region,
+        locationName: gameState.locationName,
+        tags: [],
+      },
+      risk: (storyState && storyState.risk) || {},
+      cascadeTags: [],
+      social: {
+        bestFriend: null,
+        strongestRival: null,
+        inRomanceArc: false,
+        inFeudArc: false,
+        inTriangleArc: false,
+        leadershipConflict: false,
+        gratitudeDoctor: false,
+        lastRescue: null,
+        leaderPerson: gameState.leader || null,
+      },
+      tasks: {
+        lastChore: null,
+      },
+    };
+
+    function pushTag(arr, tag) {
+      if (arr.indexOf(tag) === -1) arr.push(tag);
+    }
+
+    const locName = (gameState.locationName || "").toLowerCase();
+    if (locName.indexOf("fort") >= 0) pushTag(ctx.env.tags, "fort");
+    if (locName.indexOf("ferry") >= 0) pushTag(ctx.env.tags, "ferry");
+    if (
+      locName.indexOf("crossing") >= 0 ||
+      locName.indexOf("ford") >= 0 ||
+      locName.indexOf("river") >= 0
+    ) {
+      pushTag(ctx.env.tags, "river");
+    }
+    if (
+      locName.indexOf("pass") >= 0 ||
+      locName.indexOf("summit") >= 0 ||
+      locName.indexOf("gap") >= 0 ||
+      locName.indexOf("mountain") >= 0
+    ) {
+      pushTag(ctx.env.tags, "mountain_pass");
+    }
+
+    const risk = (storyState && storyState.risk) || {};
+    const riskDurations = (storyState && storyState.riskDurations) || {};
+    if (risk.behind_schedule && (risk.extended_cold_exposure || risk.cold_exposure)) {
+      pushTag(ctx.cascadeTags, "late_snow");
+    }
+    if (risk.overloaded_wagon || risk.wagon_trouble) {
+      pushTag(ctx.cascadeTags, "wagon_trouble");
+    }
+    if (risk.long_illness || (riskDurations.long_illness || 0) > 12) {
+      pushTag(ctx.cascadeTags, "lingering_illness");
+    }
+
+    const cascadeEntries = ((storyState && storyState.cascadeLog) || []).slice(-12).reverse();
+    cascadeEntries.forEach(function (entry) {
+      if (!entry) return;
+      if (entry.type === "wagon_failure") pushTag(ctx.cascadeTags, "wagon_trouble");
+      if (entry.type === "snowbound") pushTag(ctx.cascadeTags, "late_snow");
+      if (entry.category === "illness") pushTag(ctx.cascadeTags, "lingering_illness");
+      if (entry.extra && entry.extra.rescuer && entry.extra.rescued) {
+        if (entry.extra.rescuer === person.id || entry.extra.rescued === person.id) {
+          const rescuer =
+            (getAllPeople && getAllPeople().find(function (p) { return p && p.id === entry.extra.rescuer; })) || null;
+          const rescued =
+            (getAllPeople && getAllPeople().find(function (p) { return p && p.id === entry.extra.rescued; })) || null;
+          ctx.social.lastRescue = {
+            role: entry.extra.rescuer === person.id ? "rescuer" : "rescued",
+            other: entry.extra.rescuer === person.id ? rescued : rescuer,
+          };
+        }
+      }
+    });
+
+    const rels = (person && person.relationships) || {};
+    let bestFriend = null;
+    let strongestRival = null;
+    Object.keys(rels).forEach(function (rid) {
+      const rel = rels[rid];
+      if (!rel) return;
+      if (!bestFriend || (rel.opinion || 0) > (bestFriend.opinion || 0)) {
+        bestFriend = { id: rid, opinion: rel.opinion };
+      }
+      if (!strongestRival || (rel.opinion || 0) < (strongestRival.opinion || 0)) {
+        strongestRival = { id: rid, opinion: rel.opinion };
+      }
+    });
+    if (bestFriend && bestFriend.opinion > 0) {
+      ctx.social.bestFriend =
+        (getAllPeople && getAllPeople().find(function (p) { return p && p.id === bestFriend.id; })) || null;
+    }
+    if (strongestRival && strongestRival.opinion < 0) {
+      ctx.social.strongestRival =
+        (getAllPeople && getAllPeople().find(function (p) { return p && p.id === strongestRival.id; })) || null;
+    }
+
+    const arcs = (storyState && storyState.socialArcs) || {};
+    Object.keys(arcs).forEach(function (key) {
+      const arc = arcs[key];
+      if (!arc || key.indexOf(person.id) === -1) return;
+      if (arc.tag === "romance") ctx.social.inRomanceArc = true;
+      if (arc.tag === "triangle") ctx.social.inTriangleArc = true;
+      if (arc.tag === "feud") ctx.social.inFeudArc = true;
+      if (arc.status === "truce") pushTag(ctx.cascadeTags, "feud_truce");
+    });
+
+    const leader = gameState.leader;
+    if (leader && leader.id !== person.id) {
+      ctx.social.leaderPerson = leader;
+      const relToLeader = leader && rels[leader.id];
+      if (relToLeader && (relToLeader.opinion || 0) < -6) {
+        ctx.social.leadershipConflict = true;
+      }
+    } else if (leader && leader.id === person.id) {
+      const others = (getAllPeople && getAllPeople()) || [];
+      const unhappy = others.some(function (p) {
+        if (!p || p.id === leader.id) return false;
+        const rel = p.relationships && p.relationships[leader.id];
+        return rel && (rel.opinion || 0) < -8;
+      });
+      ctx.social.leadershipConflict = unhappy;
+    }
+
+    const doctorings = (gameState && gameState.doctoringThisHour) || [];
+    ctx.social.gratitudeDoctor = doctorings.some(function (entry) {
+      if (!entry) return false;
+      return (entry.patient && entry.patient.id === person.id) || (entry.doctor && entry.doctor.id === person.id);
+    });
+
+    const tasks = (storyState && storyState.lastHourCampTasks) || {};
+    if (tasks.cookedById === person.id) ctx.tasks.lastChore = "cook";
+    else if (tasks.huntedById === person.id) ctx.tasks.lastChore = "hunter";
+    else if (tasks.fetchedWaterById === person.id) ctx.tasks.lastChore = "water";
+    else if (tasks.repairedById === person.id) ctx.tasks.lastChore = "repair";
+    else if (tasks.guardedByIds && tasks.guardedByIds.indexOf(person.id) >= 0) ctx.tasks.lastChore = "guard";
+
+    ctx.socialTagList = [];
+    if (ctx.social.inRomanceArc) pushTag(ctx.socialTagList, "romance_arc");
+    if (ctx.social.inFeudArc) pushTag(ctx.socialTagList, "feud_arc");
+    if (ctx.social.inTriangleArc) pushTag(ctx.socialTagList, "triangle_arc");
+    if (ctx.social.leadershipConflict) pushTag(ctx.socialTagList, "leadership_conflict");
+    if (ctx.social.gratitudeDoctor) pushTag(ctx.socialTagList, "gratitude_doctor");
+    if (ctx.tasks.lastChore) pushTag(ctx.socialTagList, "chores_rivalry");
+    if (ctx.social.lastRescue) pushTag(ctx.socialTagList, "recent_rescue");
+
+    return ctx;
+  }
+
+  function fillThoughtTemplate(template, person, ctx) {
+    const env = (ctx && ctx.env) || {};
+    const social = (ctx && ctx.social) || {};
+    const replacements = {
+      "{name}": person ? person.name : "",
+      "{friend}": social.bestFriend ? social.bestFriend.name : "a friend",
+      "{rival}": social.strongestRival ? social.strongestRival.name : "a rival",
+      "{location}": env.locationName || "the trail",
+      "{landmark}": env.locationName || "the trail",
+      "{rescuer}": social.lastRescue && social.lastRescue.other ? social.lastRescue.other.name : "our rescuer",
+      "{leader}": social.leaderPerson ? social.leaderPerson.name : "our lead",
+    };
+    let text = template || "";
+    Object.keys(replacements).forEach(function (key) {
+      const value = replacements[key] || "";
+      text = text.split(key).join(value);
+    });
+    return text;
+  }
 
   function ensureThoughtHistory() {
     if (!gameState.thoughtHistory) gameState.thoughtHistory = { lastUsedByThoughtId: {} };
@@ -12844,10 +13317,11 @@
 
   function companionThoughtLine(person) {
     if (!person) return "";
+    const ss = ensureStoryState();
+    const ctxThought = buildThoughtContext(person, gameState, ss || {});
     const risk = (gameState.storyState && gameState.storyState.risk) || {};
     const weather = gameState.weatherState || {};
-    const region = gameState.region;
-    const ss = ensureStoryState();
+    const region = ctxThought.env.region || gameState.region;
     const history = ensureThoughtHistory();
     const nowHour = Math.floor((gameState.date ? gameState.date.getTime() : Date.now()) / 3600000);
     const weatherTags = [];
@@ -12867,6 +13341,7 @@
     function addSocialTag(tag) {
       if (socialTags.indexOf(tag) === -1) socialTags.push(tag);
     }
+    (ctxThought.socialTagList || []).forEach(addSocialTag);
     const arcs = (ss && ss.socialArcs) || {};
     Object.keys(arcs).forEach(function (key) {
       const arc = arcs[key];
@@ -12904,6 +13379,18 @@
         });
         if (!matchRisk) return false;
       }
+      if (t.locationTags && t.locationTags.length) {
+        const matchLocation = t.locationTags.some(function (tag) {
+          return (ctxThought.env.tags || []).indexOf(tag) >= 0;
+        });
+        if (!matchLocation) return false;
+      }
+      if (t.cascadeTags && t.cascadeTags.length) {
+        const matchCascade = t.cascadeTags.some(function (tag) {
+          return (ctxThought.cascadeTags || []).indexOf(tag) >= 0;
+        });
+        if (!matchCascade) return false;
+      }
       if (t.socialTags && t.socialTags.length) {
         const matchSocial = t.socialTags.some(function (tag) {
           return socialTags.indexOf(tag) >= 0;
@@ -12928,7 +13415,7 @@
     const chosen = pick ? pick.def : candidates[0];
     history.lastUsedByThoughtId[chosen.id] = nowHour;
     const template = choice(chosen.templates || ["..."]);
-    return template.replace("{name}", person.name);
+    return fillThoughtTemplate(template, person, ctxThought);
   }
 
   function showCompanionThoughtForHour() {
