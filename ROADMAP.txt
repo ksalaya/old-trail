@@ -100,3 +100,6 @@ Thought Library & Narrative – future
 - Broader romance and feud callbacks that reference specific forts, ferries, or rescues, including rare reconciliation beats.
 - Location-specific refrains and running jokes tied to cascades (late-snow delays, repeated wagon breaks, lingering illnesses).
 - More relationship-aware lines for leadership disputes, gratitude after doctoring, and rivalry over chores or navigation calls.
+- Track explicit rescue events per pair so {rescuer} and river/fort callbacks can name the right helper after multiple incidents.
+- Add lightweight leadership dispute state that outlives a single event so related thoughts can cool down gradually.
+- Carry longer task history (beyond last-hour camp chores) to fuel ongoing cook/guard/navigation rivalries in the thought library.
