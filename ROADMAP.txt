@@ -88,3 +88,15 @@ Storyteller & Events – Phase 2+ (implemented / remaining)
 - TODO: expand triangle/leadership arcs with optional player choices and rare leader changes.
 - TODO: add more named incidents and fort missions plus branching route decisions.
 - TODO: upgrade the cascade timeline to show per-person condition tracks or lightweight graphs.
+
+Spoilage & Recipes – future
+---------------------------
+- Wire fort/trading purchases and starting pantry stocks into spoilage batch registration so all perishables share timing.
+- Add pickling/salting/jerky recipes plus climate-aware shelf-life tuning (humid Platte summers vs. cold mountain nights).
+- Expand regional recipe lists (Columbia fish stews, Willamette harvest feasts, Snake Country roasting pits) with preservation options.
+
+Thought Library & Narrative – future
+------------------------------------
+- Broader romance and feud callbacks that reference specific forts, ferries, or rescues, including rare reconciliation beats.
+- Location-specific refrains and running jokes tied to cascades (late-snow delays, repeated wagon breaks, lingering illnesses).
+- More relationship-aware lines for leadership disputes, gratitude after doctoring, and rivalry over chores or navigation calls.

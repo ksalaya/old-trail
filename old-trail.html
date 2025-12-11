@@ -2613,6 +2613,135 @@
     tea:         { coffeeTea: 0.8 },
   };
 
+  const RECIPE_DEFS = [
+    {
+      id: "mush_bacon",
+      name: "Mush & bacon",
+      tier: "meal_hearty",
+      blocks: ["morning", "evening"],
+      regionTags: ["plains", "central_plains", "high_plains"],
+      ingredients: [
+        { id: "flour", lbs: 0.45 },
+        { id: "bacon", lbs: 0.25 },
+      ],
+      preservationMethod: "cooked",
+      weight: 2,
+    },
+    {
+      id: "beans_bacon",
+      name: "Beans & bacon pot",
+      tier: "meal_hearty",
+      blocks: ["evening", "noon"],
+      regionTags: ["plains", "central_plains", "high_plains", "mountains"],
+      ingredients: [
+        { id: "beans_rice", lbs: 0.4 },
+        { id: "bacon", lbs: 0.35 },
+      ],
+      preservationMethod: "cooked",
+      weight: 3,
+    },
+    {
+      id: "trail_stew",
+      name: "Trail stew",
+      tier: "meal_feast",
+      blocks: ["evening"],
+      regionTags: ["plains", "central_plains", "high_plains", "mountains"],
+      ingredients: [
+        { id: "fresh_meat", lbs: 0.6 },
+        { id: "flour", lbs: 0.2 },
+        { id: "dried_fruit", lbs: 0.2 },
+      ],
+      preservationMethod: "cooked",
+      weight: 2,
+    },
+    {
+      id: "pan_fry_meat",
+      name: "Meat fry-up",
+      tier: "meal_feast",
+      blocks: ["evening", "night"],
+      regionTags: ["plains", "central_plains", "high_plains", "mountains"],
+      ingredients: [
+        { id: "fresh_meat", lbs: 0.8 },
+        { id: "flour", lbs: 0.1 },
+      ],
+      preservationMethod: "cooked",
+      weight: 1,
+    },
+    {
+      id: "corn_cakes",
+      name: "Corn cakes & coffee",
+      tier: "meal_simple",
+      blocks: ["morning", "noon"],
+      regionTags: ["plains", "central_plains", "willamette"],
+      ingredients: [{ id: "flour", lbs: 0.4 }],
+      preservationMethod: "cooked",
+      weight: 2,
+    },
+    {
+      id: "fruit_mush",
+      name: "Fruit mush",
+      tier: "meal_simple",
+      blocks: ["morning", "noon"],
+      regionTags: ["snake_plain", "columbia", "willamette"],
+      ingredients: [{ id: "dried_fruit", lbs: 0.3 }],
+      preservationMethod: "cooked",
+      weight: 1,
+    },
+    {
+      id: "salmon_pot",
+      name: "Salmon pot",
+      tier: "meal_hearty",
+      blocks: ["evening"],
+      regionTags: ["snake_plain", "columbia"],
+      ingredients: [
+        { id: "fresh_meat", lbs: 0.5 },
+        { id: "beans_rice", lbs: 0.2 },
+        { id: "dried_fruit", lbs: 0.15 },
+      ],
+      preservationMethod: "cooked",
+      weight: 2,
+    },
+    {
+      id: "willamette_stew",
+      name: "Willamette root stew",
+      tier: "meal_hearty",
+      blocks: ["evening"],
+      regionTags: ["blue_mountains", "willamette"],
+      ingredients: [
+        { id: "fresh_meat", lbs: 0.4 },
+        { id: "beans_rice", lbs: 0.25 },
+        { id: "dried_fruit", lbs: 0.15 },
+      ],
+      preservationMethod: "cooked",
+      weight: 2,
+    },
+    {
+      id: "hardtack_fry",
+      name: "Fried hardtack",
+      tier: "meal_simple",
+      blocks: ["noon", "night", "morning"],
+      regionTags: ["plains", "central_plains", "high_plains", "mountains", "snake_plain"],
+      ingredients: [{ id: "hardtack", lbs: 0.35 }],
+      preservationMethod: "cooked",
+      weight: 1,
+    },
+    {
+      id: "smoke_strips",
+      name: "Smoked strips for the road",
+      kind: "preserve",
+      blocks: ["evening", "noon"],
+      regionTags: ["plains", "high_plains", "mountains", "snake_plain"],
+      ingredients: [
+        { id: "fresh_meat", lbs: 2.0 },
+        { id: "salt_soda", lbs: 0.1 },
+      ],
+      outputSupply: "fresh_meat",
+      outputQty: 1.8,
+      preservationMethod: "smoked",
+      weight: 1,
+    },
+  ];
+
 
   const WATER_PER_DRINK = 0.25; // gallons per drink
 
@@ -3099,39 +3228,227 @@
     };
   }
 
+  function getCurrentTrailHour(state) {
+    const gs = state || gameState || {};
+    const date = gs.date instanceof Date ? gs.date : new Date();
+    const startDay =
+      typeof gs.startDayOfYear === "number" ? gs.startDayOfYear : getDayOfYear(date);
+    const doy = getDayOfYear(date);
+    const hour = date.getHours();
+    return Math.max(0, (doy - startDay) * 24 + hour);
+  }
+
   function ensureSpoilageState() {
-    if (!gameState.spoilage) gameState.spoilage = {};
-    if (!gameState.spoilage.perishables) gameState.spoilage.perishables = {};
-    const p = gameState.spoilage.perishables;
-    const defaults = {
-      freshMeat: { quantity: 0, ageHours: 0, shelfLifeHours: 72 },
-      vegFruit: { quantity: 0, ageHours: 0, shelfLifeHours: 96 },
-      cookedStew: { quantity: 0, ageHours: 0, shelfLifeHours: 48 },
+    const ss = ensureStoryState();
+    if (!ss.spoilage) ss.spoilage = { batches: [], nextBatchId: 1, migratedLegacy: false };
+    if (!Array.isArray(ss.spoilage.batches)) ss.spoilage.batches = [];
+    if (typeof ss.spoilage.nextBatchId !== "number") ss.spoilage.nextBatchId = 1;
+    if (typeof ss.spoilage.migratedLegacy !== "boolean") ss.spoilage.migratedLegacy = false;
+
+    if (
+      gameState.spoilage &&
+      gameState.spoilage.perishables &&
+      !ss.spoilage.migratedLegacy
+    ) {
+      const legacy = gameState.spoilage.perishables;
+      const nowHour = getCurrentTrailHour(gameState);
+      [
+        { key: "freshMeat", supplyId: "fresh_meat", method: "raw" },
+        { key: "cookedStew", supplyId: "meal_hearty", method: "cooked" },
+      ].forEach(function (entry) {
+        const rec = legacy[entry.key];
+        if (!rec || !rec.quantity || rec.quantity <= 0) return;
+        registerFoodBatch(entry.supplyId, rec.quantity, entry.method, {
+          acquiredHour: Math.max(0, nowHour - (rec.ageHours || 0)),
+          note: "legacy",
+        });
+      });
+      ss.spoilage.migratedLegacy = true;
+    }
+
+    return ss.spoilage;
+  }
+
+  function computeShelfLifeHours(supplyId, method) {
+    const w = gameState.weatherState || {};
+    const region = gameState.region || "plains";
+    let base = 26;
+    if (supplyId === "fresh_meat" || method === "raw") {
+      base = 22;
+      if (w.tempC >= 28) base -= 8;
+      else if (w.tempC >= 22) base -= 4;
+      if (w.tempC <= 0) base += 8;
+      if (region === "mountains" || region === "blue_mountains") base += 6;
+      if (region === "snake_plain") base -= 4;
+    } else if (supplyId.indexOf("meal_") === 0 || method === "cooked") {
+      base = 28;
+      if (w.storm || w.precip === "rain") base -= 4;
+      if (w.tempC >= 27) base -= 6;
+      if (w.tempC <= 0) base += 5;
+    }
+    if (method === "smoked" || method === "dried") {
+      base = 120;
+      if (w.tempC <= 5 && w.precip === "none") base += 16;
+      if (region === "snake_plain") base -= 10;
+      if (region === "blue_mountains" || region === "willamette") base += 6;
+    }
+    if (supplyId === "dried_fruit") base = 140;
+    const warnLead = Math.max(6, base * 0.55);
+    const shelf = Math.max(10, base);
+    return { warn: warnLead, spoil: shelf };
+  }
+
+  function registerFoodBatch(supplyId, qty, method, context) {
+    if (!supplyId || !qty || qty <= 0) return null;
+    const spoilage = ensureSpoilageState();
+    const nowHour =
+      context && context.acquiredHour != null
+        ? context.acquiredHour
+        : getCurrentTrailHour(gameState);
+    const timing = computeShelfLifeHours(supplyId, method);
+    const warnHour = nowHour + timing.warn;
+    const spoilHour = nowHour + timing.spoil;
+
+    const merge = spoilage.batches.find(function (b) {
+      return (
+        b &&
+        b.supplyId === supplyId &&
+        b.method === method &&
+        Math.abs((b.acquiredHour || 0) - nowHour) <= 3 &&
+        b.status !== "spoiled"
+      );
+    });
+    if (merge) {
+      merge.qty += qty;
+      merge.warnHour = Math.min(merge.warnHour, warnHour);
+      merge.spoilHour = Math.min(merge.spoilHour, spoilHour);
+      return merge;
+    }
+
+    const batch = {
+      id: spoilage.nextBatchId++,
+      supplyId: supplyId,
+      qty: qty,
+      method: method || "cooked",
+      acquiredHour: nowHour,
+      warnHour: warnHour,
+      spoilHour: spoilHour,
+      regionAtAcquire: gameState.region,
+      note: context && context.note ? context.note : context && context.recipeId,
+      status: "fresh",
     };
-    Object.keys(defaults).forEach(function (k) {
-      if (!p[k]) p[k] = Object.assign({}, defaults[k]);
-      else {
-        const base = defaults[k];
-        if (typeof p[k].quantity !== "number") p[k].quantity = base.quantity;
-        if (typeof p[k].ageHours !== "number") p[k].ageHours = base.ageHours;
-        if (typeof p[k].shelfLifeHours !== "number") p[k].shelfLifeHours = base.shelfLifeHours;
-      }
+    spoilage.batches.push(batch);
+    return batch;
+  }
+
+  function consumeFromBatches(supplyId, units) {
+    if (!supplyId || !units || units <= 0) return;
+    const spoilage = ensureSpoilageState();
+    const relevant = spoilage.batches
+      .filter(function (b) {
+        return b && b.supplyId === supplyId && b.qty > 0;
+      })
+      .sort(function (a, b) {
+        return a.spoilHour - b.spoilHour;
+      });
+    let remaining = units;
+    for (let i = 0; i < relevant.length && remaining > 0; i++) {
+      const batch = relevant[i];
+      const take = Math.min(batch.qty, remaining);
+      batch.qty -= take;
+      remaining -= take;
+      if (batch.qty <= 0) batch.status = batch.status === "spoiled" ? "spoiled" : "used";
+    }
+    cleanupEmptyBatches(spoilage, getCurrentTrailHour(gameState));
+  }
+
+  function cleanupEmptyBatches(spoilageState, nowHour) {
+    if (!spoilageState) return;
+    spoilageState.batches = spoilageState.batches.filter(function (b) {
+      if (!b) return false;
+      if (b.qty > 0) return true;
+      if (b.status === "spoiled" && nowHour - (b.spoilHour || 0) > 48) return false;
+      return b.status !== "used";
     });
   }
 
-  function tickPerishables(hours) {
-    ensureSpoilageState();
-    const p = gameState.spoilage.perishables;
-    const keys = Object.keys(p);
-    keys.forEach(function (k) {
-      const entry = p[k];
-      entry.ageHours += hours;
-      if (entry.ageHours > entry.shelfLifeHours && entry.quantity > 0) {
-        const decay = Math.min(entry.quantity, (entry.ageHours - entry.shelfLifeHours) * 0.02);
-        entry.quantity = Math.max(0, entry.quantity - decay);
-        if (k === "freshMeat") gameState.supplies.fresh_meat = Math.max(0, (gameState.supplies.fresh_meat || 0) - decay);
+  function updateSpoilageForHour() {
+    const ss = ensureStoryState();
+    const spoilage = ensureSpoilageState();
+    const nowHour = getCurrentTrailHour(gameState);
+    const turning = new Set();
+    const spoiledLoss = {};
+    spoilage.batches.forEach(function (batch) {
+      if (!batch || batch.qty <= 0) return;
+      if (batch.status === "fresh" && nowHour >= batch.warnHour) {
+        batch.status = "turning";
+        turning.add(batch.supplyId);
+      }
+      if (batch.status !== "spoiled" && nowHour >= batch.spoilHour) {
+        batch.status = "spoiled";
+        spoiledLoss[batch.supplyId] = (spoiledLoss[batch.supplyId] || 0) + batch.qty;
+        gameState.supplies[batch.supplyId] = Math.max(
+          0,
+          (gameState.supplies[batch.supplyId] || 0) - batch.qty
+        );
+        batch.qty = 0;
       }
     });
+    cleanupEmptyBatches(spoilage, nowHour);
+
+    if (turning.size > 0) {
+      const names = Array.from(turning)
+        .map(function (id) {
+          const item = SUPPLY_ITEMS.find(function (s) {
+            return s.id === id;
+          });
+          return item ? item.name.toLowerCase() : id;
+        })
+        .join(", ");
+      addLog("Some food stores are beginning to turn (" + names + ").", { tone: "warning" });
+    }
+    const spoiledKeys = Object.keys(spoiledLoss);
+    if (spoiledKeys.length) {
+      const parts = spoiledKeys.map(function (id) {
+        const item = SUPPLY_ITEMS.find(function (s) {
+          return s.id === id;
+        });
+        const label = item ? item.name.toLowerCase() : id;
+        return Math.round(spoiledLoss[id]) + " " + (item ? item.unit : "units") + " " + label;
+      });
+      addLog(
+        "Spoilage spoils part of your stores: " +
+          parts.join(", ") +
+          ". The heat and handling aren't kind to provisions.",
+        { tone: "warning" }
+      );
+      ss.risk.bad_food = true;
+    }
+  }
+
+  function summarizeFreshness(supplyId) {
+    const spoilage = ensureSpoilageState();
+    const summary = { fresh: 0, turning: 0, spoiled: 0, total: 0 };
+    spoilage.batches.forEach(function (b) {
+      if (!b || b.supplyId !== supplyId) return;
+      if (b.status === "spoiled") summary.spoiled += b.qty;
+      else if (b.status === "turning") summary.turning += b.qty;
+      else summary.fresh += b.qty;
+      summary.total += b.qty;
+    });
+    return summary;
+  }
+
+  function freshnessHintForSupply(supplyId) {
+    const summary = summarizeFreshness(supplyId);
+    if (!summary || summary.total <= 0) return null;
+    const turningShare = summary.turning / summary.total;
+    const spoiledShare = summary.spoiled / summary.total;
+    if (spoiledShare > 0.4) return "mostly spoiled";
+    if (spoiledShare > 0.1) return "some spoiled";
+    if (turningShare > 0.35) return "turning soon";
+    if (turningShare > 0.15) return "a few portions turning";
+    return "fresh";
   }
 
   function ensureTraillinesState() {
@@ -3207,6 +3524,7 @@
         lastPresetSwapDayKey: null,
         lastHourCampTasks: {},
         lastHourTaskFailures: {},
+        spoilage: { batches: [], nextBatchId: 1, migratedLegacy: false },
       };
     }
     const ss = gameState.storyState;
@@ -3226,6 +3544,10 @@
     if (!ss.lastPresetSwapDayKey) ss.lastPresetSwapDayKey = null;
     if (!ss.lastHourCampTasks) ss.lastHourCampTasks = {};
     if (!ss.lastHourTaskFailures) ss.lastHourTaskFailures = {};
+    if (!ss.spoilage) ss.spoilage = { batches: [], nextBatchId: 1, migratedLegacy: false };
+    if (!Array.isArray(ss.spoilage.batches)) ss.spoilage.batches = [];
+    if (typeof ss.spoilage.nextBatchId !== "number") ss.spoilage.nextBatchId = 1;
+    if (typeof ss.spoilage.migratedLegacy !== "boolean") ss.spoilage.migratedLegacy = false;
     return ss;
   }
 
@@ -6405,6 +6727,7 @@
 
     const lbsUsed = neededUnits * perUnit;
     gameState.supplies[itemId] = stock - neededUnits;
+    consumeFromBatches(itemId, neededUnits);
 
     // NEW – long‑term diet tracking
     applyNutritionFromFood(itemId, lbsUsed);
@@ -6578,14 +6901,16 @@
     }
 
     const made = { meal_simple: 0, meal_hearty: 0, meal_feast: 0 };
+    const recipeTally = {};
     let burnedMeals = 0;
+    let preservedQty = 0;
 
     function haveLbs(id, lbs) {
       const item = SUPPLY_ITEMS.find(function (i) {
         return i.id === id;
       });
       if (!item) return false;
-      const qty     = gameState.supplies[id] || 0;
+      const qty = gameState.supplies[id] || 0;
       const perUnit = item.weight || 1;
       return qty * perUnit >= lbs - 1e-4;
     }
@@ -6595,142 +6920,104 @@
         return i.id === id;
       });
       if (!item) return false;
-      const perUnit     = item.weight || 1;
+      const perUnit = item.weight || 1;
       const unitsNeeded = lbs / perUnit;
-      const have        = gameState.supplies[id] || 0;
+      const have = gameState.supplies[id] || 0;
       if (have < unitsNeeded - 1e-4) return false;
       gameState.supplies[id] = have - unitsNeeded;
       return true;
     }
 
-    function tryFeastType() {
-      if (!allowFeast) return null;
-      // Trail stew: fresh meat + bit of flour + dried fruit/roots.
-      if (
-        haveLbs("fresh_meat", 0.6) &&
-        haveLbs("flour", 0.2) &&
-        haveLbs("dried_fruit", 0.2)
-      ) {
-        if (
-          !takeLbs("fresh_meat", 0.6) ||
-          !takeLbs("flour", 0.2) ||
-          !takeLbs("dried_fruit", 0.2)
-        ) {
-          return null;
-        }
-        return "trail_stew";
-      }
-      // Fallback: rich meat‑heavy fry‑up.
-      if (haveLbs("fresh_meat", 0.8) && haveLbs("flour", 0.1)) {
-        if (!takeLbs("fresh_meat", 0.8) || !takeLbs("flour", 0.1)) return null;
-        return "meat_feast";
-      }
-      return null;
+    function haveIngredients(recipe) {
+      if (!recipe.ingredients || !recipe.ingredients.length) return true;
+      return recipe.ingredients.every(function (ing) {
+        return haveLbs(ing.id, ing.lbs);
+      });
     }
 
-    function tryHeartyType() {
-      if (!allowHearty) return null;
-      // Classic beans & bacon pot.
-      if (haveLbs("beans_rice", 0.4) && haveLbs("bacon", 0.35)) {
-        if (!takeLbs("beans_rice", 0.4) || !takeLbs("bacon", 0.35)) return null;
-        return "beans_bacon";
-      }
-      // Thick mush & bacon for a hearty breakfast.
-      if (block === "morning" && haveLbs("flour", 0.45) && haveLbs("bacon", 0.25)) {
-        if (!takeLbs("flour", 0.45) || !takeLbs("bacon", 0.25)) return null;
-        return "mush_bacon";
-      }
-      return null;
+    function consumeIngredients(recipe) {
+      if (!recipe.ingredients || !recipe.ingredients.length) return true;
+      if (!haveIngredients(recipe)) return false;
+      recipe.ingredients.forEach(function (ing) {
+        takeLbs(ing.id, ing.lbs);
+      });
+      return true;
     }
 
-    function trySimpleType() {
-      // Bread / mush from flour/beans/hardtack/dried fruit.
-      const options = [
-        { id: "flour",      lbs: 0.4,  type: "bread" },
-        { id: "beans_rice", lbs: 0.4,  type: "bean_mush" },
-        { id: "hardtack",   lbs: 0.35, type: "hardtack" },
-        { id: "dried_fruit",lbs: 0.3,  type: "fruit_mush" },
-      ];
-      for (let i = 0; i < options.length; i++) {
-        const opt = options[i];
-        if (haveLbs(opt.id, opt.lbs) && takeLbs(opt.id, opt.lbs)) {
-          return opt.type;
-        }
+    function recipeMatches(recipe) {
+      if (!recipe) return false;
+      if (recipe.tier === "meal_feast" && !allowFeast) return false;
+      if (recipe.tier === "meal_hearty" && !allowHearty) return false;
+      if (recipe.kind === "preserve") {
+        if (effort !== "proper") return false;
+        if ((gameState.supplies.fresh_meat || 0) < 3.5) return false;
       }
-      return null;
+      if (recipe.blocks && recipe.blocks.length && recipe.blocks.indexOf(block) === -1) return false;
+      if (recipe.regionTags && recipe.regionTags.length) {
+        if (recipe.regionTags.indexOf(gameState.region) === -1) return false;
+      }
+      return haveIngredients(recipe);
     }
 
-    const dishSamples = [];
+    function recipeWeight(recipe) {
+      let w = recipe.weight || 1;
+      if (recipe.regionTags && recipe.regionTags.indexOf(gameState.region) >= 0) w += 0.8;
+      if (effort === "proper") w += 0.5;
+      if (skillOutcome.outcome === "success") w += 0.4;
+      if (recipe.tier === "meal_feast") w += skill * 0.35;
+      return w;
+    }
+
+    function pickRecipe() {
+      const candidates = RECIPE_DEFS.filter(function (r) {
+        return recipeMatches(r);
+      });
+      if (!candidates.length) return null;
+      const weighted = candidates.map(function (r) {
+        return { def: r, weight: recipeWeight(r) };
+      });
+      const picked = weightedPick(weighted);
+      return picked ? picked.def : candidates[0];
+    }
 
     for (let i = 0; i < maxMeals; i++) {
       if (fuelAvailable < fuelPerMeal) break;
-
-      let tier = null;
-      let dishType = null;
-
-      if (block === "morning") {
-        // Morning: mostly simple mush / slapjacks, occasional hearty pan.
-        dishType = trySimpleType();
-        tier     = dishType ? "meal_simple" : null;
-        if (!tier) {
-          const ht = tryHeartyType();
-          if (ht) {
-            dishType = ht;
-            tier     = "meal_hearty";
-          }
-        }
-      } else if (block === "evening") {
-        // Evening: stew and beans get priority.
-        const feastRoll = Math.random();
-        if (feastRoll < 0.4) {
-          const ft = tryFeastType();
-          if (ft) {
-            dishType = ft;
-            tier     = "meal_feast";
-          }
-        }
-        if (!tier) {
-          const ht = tryHeartyType();
-          if (ht) {
-            dishType = ht;
-            tier     = "meal_hearty";
-          }
-        }
-        if (!tier) {
-          const st = trySimpleType();
-          if (st) {
-            dishType = st;
-            tier     = "meal_simple";
-          }
-        }
-      } else {
-        // Noon / night: quick fry‑ups if anything at all.
-        const st = trySimpleType();
-        if (st) {
-          dishType = st;
-          tier     = "meal_simple";
-        }
-      }
-
-      if (!tier) break;
-
+      const recipe = pickRecipe();
+      if (!recipe) break;
+      if (!consumeIngredients(recipe)) continue;
       fuelAvailable -= fuelPerMeal;
-
-      if (Math.random() < burnChance) {
+      const isPreserve = recipe.kind === "preserve";
+      const burnRoll = !isPreserve && Math.random() < burnChance;
+      if (burnRoll) {
         burnedMeals++;
         continue;
       }
-
-      made[tier]++;
-      if (dishSamples.length < 3 && dishType) {
-        dishSamples.push(dishType);
+      const method =
+        recipe.preservationMethod || recipe.method || (recipe.kind === "preserve" ? "smoked" : "cooked");
+      if (recipe.tier) {
+        const yieldMeals = recipe.yieldMeals || 1;
+        made[recipe.tier] += yieldMeals;
+        registerFoodBatch(recipe.tier, yieldMeals, method, {
+          recipeId: recipe.id,
+          note: recipe.name,
+        });
       }
+      if (recipe.outputSupply) {
+        const gain = recipe.outputQty || 1;
+        gameState.supplies[recipe.outputSupply] =
+          (gameState.supplies[recipe.outputSupply] || 0) + gain;
+        preservedQty += gain;
+        registerFoodBatch(recipe.outputSupply, gain, method, {
+          recipeId: recipe.id,
+          note: recipe.name,
+        });
+      }
+      recipeTally[recipe.name] = (recipeTally[recipe.name] || 0) + 1;
     }
 
-    const totalMeals =
-      made.meal_simple + made.meal_hearty + made.meal_feast;
+    const totalMeals = made.meal_simple + made.meal_hearty + made.meal_feast;
 
-    if (totalMeals <= 0) {
+    if (totalMeals <= 0 && preservedQty <= 0) {
       if (fuelAvailable < fuelPerMeal) {
         addLog(
           person.name +
@@ -6747,10 +7034,10 @@
 
     if (!s.meal_simple) s.meal_simple = 0;
     if (!s.meal_hearty) s.meal_hearty = 0;
-    if (!s.meal_feast)  s.meal_feast  = 0;
+    if (!s.meal_feast) s.meal_feast = 0;
     s.meal_simple += made.meal_simple;
     s.meal_hearty += made.meal_hearty;
-    s.meal_feast  += made.meal_feast;
+    s.meal_feast += made.meal_feast;
 
     // Adjust fuel stores back into wood vs chips.
     const fuelUsed = fuelBefore - fuelAvailable;
@@ -6763,14 +7050,12 @@
       s.buffalo_chips = (s.buffalo_chips || 0) - useFromChips;
     }
 
-    person.morale = clamp(
-      person.morale + 2 + Math.round(skill / 2),
-      0,
-      100
-    );
+    if (totalMeals > 0) {
+      person.morale = clamp(person.morale + 2 + Math.round(skill / 2), 0, 100);
+    }
 
-    // Brew coffee alongside hearty breakfasts / suppers when possible.
     if (
+      totalMeals > 0 &&
       (block === "morning" || block === "evening") &&
       (made.meal_hearty + made.meal_feast) > 0
     ) {
@@ -6788,51 +7073,24 @@
         ? "steady"
         : "hearty";
 
-    if (block === "morning") {
-      if (made.meal_hearty + made.meal_feast > 0) {
+    const recipeNames = Object.keys(recipeTally);
+    const dishList = recipeNames.slice(0, 3).join(", ");
+    if (totalMeals > 0) {
+      if (dishList) {
         desc =
           "a " +
           rLabel +
-          " breakfast of mush, slapjacks, and bacon";
+          " meal of " +
+          dishList +
+          (recipeNames.length > 3 ? " and more from the pot" : "");
+      } else if (block === "evening") {
+        desc = "a " + rLabel + " supper from whatever could be coaxed from the larder";
       } else {
-        desc =
-          "simple trail mush and bacon for breakfast";
+        desc = totalMeals + " hot serving" + (totalMeals > 1 ? "s" : "");
       }
-    } else if (block === "evening") {
-      if (made.meal_hearty + made.meal_feast > 0) {
-        let stewName = "beans and bacon";
-        if (made.meal_feast > 0) {
-          const loc = (gameState.locationName || "").toLowerCase();
-          if (loc.indexOf("salmon falls") >= 0) {
-            stewName = "salmon pot with traded roots and herbs";
-          } else if (
-            gameState.region === "plains" ||
-            gameState.region === "central_plains"
-          ) {
-            stewName = "buffalo or antelope stew with dumplings";
-          } else if (
-            gameState.region === "snake_plain" ||
-            gameState.region === "columbia"
-          ) {
-            stewName = "game and dried-fruit stew simmered in a big pot";
-          } else if (
-            gameState.region === "blue_mountains" ||
-            gameState.region === "willamette"
-          ) {
-            stewName =
-              "elk or venison stew thickened with flour and whatever roots can be found";
-          }
-        }
-        desc =
-          "a " +
-          rLabel +
-          " supper pot of " +
-          stewName;
-      } else {
-        desc = "warm bread and bacon for supper";
-      }
-    } else {
-      desc = totalMeals + " quick hot meal" + (totalMeals > 1 ? "s" : "");
+    }
+    if (preservedQty > 0) {
+      desc += (desc ? "; " : "") + "some cuts are smoked for the road";
     }
 
     let burnDesc = "";
@@ -6849,27 +7107,26 @@
 
     if (skillOutcome.outcome === "success") {
       burnDesc += " The stew tastes better than usual; spirits lift.";
-      const diners = getAllPeople().filter(function (p) { return p && p.alive; });
+      const diners = getAllPeople().filter(function (p) {
+        return p && p.alive;
+      });
       diners.forEach(function (p) {
         p.morale = clamp(p.morale + 1, 0, 100);
       });
     } else if (skillOutcome.outcome === "fail") {
       burnDesc += " The meal is thin and smoky—some food is wasted.";
-      totalMeals = Math.max(1, totalMeals - 1);
       if (ss.lastHourTaskFailures) ss.lastHourTaskFailures.burnedMealById = person.id;
     }
 
-    addLog(
-      person.name +
-        " cooks for the camp: " +
-        desc +
-        " (" +
+    const servingsLabel = totalMeals > 0
+      ? " (" +
         totalMeals +
         " serving" +
         (totalMeals > 1 ? "s" : "") +
-        " prepared)." +
-        burnDesc
-    );
+        " prepared)"
+      : "";
+
+    addLog(person.name + " cooks for the camp: " + desc + servingsLabel + "." + burnDesc);
   }
 
 
@@ -6912,10 +7169,7 @@
     if (meat > 0) {
       gameState.supplies.fresh_meat =
         (gameState.supplies.fresh_meat || 0) + meat;
-      ensureSpoilageState();
-      gameState.spoilage.perishables.freshMeat.quantity =
-        (gameState.spoilage.perishables.freshMeat.quantity || 0) + meat;
-      gameState.spoilage.perishables.freshMeat.ageHours = 0;
+      registerFoodBatch("fresh_meat", meat, "raw", { note: "hunting" });
       person.morale = clamp(person.morale + 4, 0, 100);
       addLog(
         person.name +
@@ -7410,10 +7664,10 @@
         gameState.milesTraveled || 0
       );
     }
-    tickPerishables(1);
     tickAfflictionsForHour();
     maybeTriggerIllnessForHour();
     updateNeedsAndMoodForHour();
+    updateSpoilageForHour();
     showCompanionThoughtForHour();
     eventDirectorTick();
 
@@ -10635,6 +10889,27 @@
     const waterGal = s.water || 0;
     const med      = s.med_kits || 0;
 
+    function blendFreshness(ids) {
+      const summary = { total: 0, turning: 0, spoiled: 0 };
+      ids.forEach(function (id) {
+        const s = summarizeFreshness(id);
+        summary.total += s.total;
+        summary.turning += s.turning;
+        summary.spoiled += s.spoiled;
+      });
+      if (summary.total <= 0) return null;
+      const turningShare = summary.turning / summary.total;
+      const spoiledShare = summary.spoiled / summary.total;
+      if (spoiledShare > 0.4) return "mostly spoiled";
+      if (spoiledShare > 0.1) return "some spoiled";
+      if (turningShare > 0.3) return "turning soon";
+      if (turningShare > 0.12) return "watch the pots";
+      return "fresh";
+    }
+
+    const cookedFresh = blendFreshness(["meal_simple", "meal_hearty", "meal_feast"]);
+    const meatFresh = blendFreshness(["fresh_meat"]);
+
     const simple = Math.round(s.meal_simple || 0);
     const hearty = Math.round(s.meal_hearty || 0);
     const feast  = Math.round(s.meal_feast  || 0);
@@ -10649,7 +10924,9 @@
     html +=
       '<div class="ot-supplies-label">Cooked meals available</div><div class="ot-supplies-value">' +
       Math.round(cookedMeals) +
-      " servings</div>";
+      " servings" +
+      (cookedFresh && cookedMeals > 0 ? " · " + cookedFresh : "") +
+      "</div>";
 
     html +=
       '<div class="ot-supplies-label"></div><div class="ot-supplies-value">' +
@@ -10662,6 +10939,15 @@
           " feast"
         : "") +
       "</div>";
+
+    if ((s.fresh_meat || 0) > 0) {
+      html +=
+        '<div class="ot-supplies-label">Fresh meat on hand</div><div class="ot-supplies-value">' +
+        Math.round(s.fresh_meat || 0) +
+        " lb" +
+        (meatFresh ? " · " + meatFresh : "") +
+        "</div>";
+    }
 
     html +=
       '<div class="ot-supplies-label">Water on hand</div><div class="ot-supplies-value">' +
@@ -10791,10 +11077,11 @@
 
       const tdQty = document.createElement("td");
       const qty = gameState.supplies[id] || 0;
+      const hint = freshnessHintForSupply(id);
       if (item.category === "FOOD_PREPARED") {
-        tdQty.textContent = Math.round(qty) + " meals";
+        tdQty.textContent = Math.round(qty) + " meals" + (hint ? " · " + hint : "");
       } else {
-        tdQty.textContent = Math.round(qty) + " " + item.unit;
+        tdQty.textContent = Math.round(qty) + " " + item.unit + (hint && id === "fresh_meat" ? " · " + hint : "");
       }
       tr.appendChild(tdQty);
 
@@ -12374,6 +12661,141 @@
         "{name}'s eyes are distant. 'I'm not sure I have another dawn in me.'",
       ],
     },
+    {
+      id: "plains_sunrise_upbeat",
+      moods: ["Upbeat"],
+      regions: ["plains", "central_plains"],
+      weatherTags: ["clear"],
+      minHoursBetweenUses: 24,
+      weight: 3,
+      templates: [
+        "Sunrise spills across the prairie grass. {name} smiles, 'Days like this make the miles feel kind.'",
+      ],
+    },
+    {
+      id: "rain_muck_uneasy",
+      moods: ["Uneasy"],
+      regions: ["central_plains", "high_plains"],
+      weatherTags: ["rain"],
+      minHoursBetweenUses: 18,
+      weight: 3,
+      templates: [
+        "Mud sucks at the wheels. {name} mutters, 'We'll be scraping muck off everything for days.'",
+      ],
+    },
+    {
+      id: "snake_heat_worn",
+      moods: ["Worn"],
+      regions: ["snake_plain"],
+      weatherTags: ["heat"],
+      minHoursBetweenUses: 28,
+      weight: 4,
+      templates: [
+        "Heat shimmers off the dry ground. {name} wipes sweat away. 'Snake Country is sucking the strength out of us.'",
+      ],
+    },
+    {
+      id: "mountain_snow_broken",
+      moods: ["Worn", "Broken"],
+      regions: ["mountains", "blue_mountains"],
+      weatherTags: ["snow", "cold_snap"],
+      minHoursBetweenUses: 36,
+      weight: 3,
+      templates: [
+        "Snow stings exposed skin. {name} whispers, 'If winter catches us up here, we're done.'",
+      ],
+    },
+    {
+      id: "columbia_push_uneasy",
+      moods: ["Uneasy", "Worn"],
+      regions: ["columbia"],
+      minHoursBetweenUses: 30,
+      weight: 2,
+      templates: [
+        "River spray mists the wagon canvas. {name} keeps glancing at the cliffs. 'No room for mistakes now.'",
+      ],
+    },
+    {
+      id: "willamette_relief_upbeat",
+      moods: ["Upbeat", "Uneasy"],
+      regions: ["willamette"],
+      weatherTags: ["clear"],
+      minHoursBetweenUses: 40,
+      weight: 2,
+      templates: [
+        "Green slopes open ahead. {name} laughs softly, 'Smells like home soil might really be close.'",
+      ],
+    },
+    {
+      id: "romance_budding_glance",
+      moods: ["Upbeat", "Uneasy"],
+      socialTags: ["romance_budding"],
+      minHoursBetweenUses: 48,
+      weight: 2,
+      templates: [
+        "In the firelight, {name} keeps stealing quiet glances toward the other side of camp.",
+      ],
+    },
+    {
+      id: "feud_grit_teeth",
+      moods: ["Uneasy", "Worn"],
+      socialTags: ["feud_active", "resentment"],
+      minHoursBetweenUses: 42,
+      weight: 3,
+      templates: [
+        "{name} grinds their teeth as chores are divided. 'Some folks aren't pulling their weight.'",
+      ],
+    },
+    {
+      id: "triangle_watchful",
+      moods: ["Uneasy"],
+      socialTags: ["triangle"],
+      minHoursBetweenUses: 60,
+      weight: 1,
+      templates: [
+        "Eyes linger a little too long across the fire. {name} senses tension in the quiet conversation nearby.",
+      ],
+    },
+    {
+      id: "water_short_risk",
+      moods: ["Uneasy", "Worn"],
+      riskTags: ["water_shortage"],
+      minHoursBetweenUses: 28,
+      weight: 3,
+      templates: [
+        "Canteens slosh mostly with air. {name} says, 'We need a river soon or the oxen will fold.'",
+      ],
+    },
+    {
+      id: "spoiled_meal_worry",
+      moods: ["Uneasy"],
+      riskTags: ["bad_food"],
+      minHoursBetweenUses: 34,
+      weight: 2,
+      templates: [
+        "{name} pokes at supper. 'Hope this pot doesn't sit long. I've no wish to get sick out here.'",
+      ],
+    },
+    {
+      id: "schedule_slip_worn",
+      moods: ["Worn"],
+      riskTags: ["behind_schedule"],
+      minHoursBetweenUses: 40,
+      weight: 3,
+      templates: [
+        "{name} studies the sun. 'Days are getting shorter and we're still miles back.'",
+      ],
+    },
+    {
+      id: "old_graves_refrain",
+      moods: ["Uneasy", "Worn"],
+      regions: ["central_plains", "high_plains"],
+      minHoursBetweenUses: 72,
+      weight: 2,
+      templates: [
+        "Fresh graves pass by the trail. {name} falls quiet. 'They started just like us.'",
+      ],
+    },
   ];
 
   function ensureThoughtHistory() {
@@ -12425,6 +12847,7 @@
     const risk = (gameState.storyState && gameState.storyState.risk) || {};
     const weather = gameState.weatherState || {};
     const region = gameState.region;
+    const ss = ensureStoryState();
     const history = ensureThoughtHistory();
     const nowHour = Math.floor((gameState.date ? gameState.date.getTime() : Date.now()) / 3600000);
     const weatherTags = [];
@@ -12432,8 +12855,38 @@
     if (weather.precip === "rain") weatherTags.push("rain");
     if (weather.precip === "snow") weatherTags.push("snow");
     if (weather.precip === "none") weatherTags.push("clear");
+    if (typeof weather.tempC === "number") {
+      if (weather.tempC >= 28) weatherTags.push("heat");
+      if (weather.tempC <= 0) weatherTags.push("cold_snap");
+    }
     const riskTags = Object.keys(risk).filter(function (k) {
       return risk[k];
+    });
+
+    const socialTags = [];
+    function addSocialTag(tag) {
+      if (socialTags.indexOf(tag) === -1) socialTags.push(tag);
+    }
+    const arcs = (ss && ss.socialArcs) || {};
+    Object.keys(arcs).forEach(function (key) {
+      const arc = arcs[key];
+      if (!arc || key.indexOf(person.id) === -1) return;
+      if (arc.tag === "romance") {
+        if ((arc.stage || 0) >= 2) addSocialTag("romance_budding");
+        if ((arc.stage || 0) >= 4) addSocialTag("romance_steady");
+      }
+      if (arc.tag === "triangle") addSocialTag("triangle");
+      if (arc.tag === "feud") {
+        if ((arc.stage || 0) >= 1) addSocialTag("feud_active");
+        if (arc.status === "truce") addSocialTag("feud_truce");
+      }
+    });
+    const rels = person.relationships || {};
+    Object.keys(rels).forEach(function (rid) {
+      const rel = rels[rid];
+      if (!rel) return;
+      if (rel.opinion >= 65) addSocialTag("loyal_friend");
+      if (rel.opinion <= -35) addSocialTag("resentment");
     });
 
     const candidates = THOUGHT_DEFS.filter(function (t) {
@@ -12450,6 +12903,12 @@
           return riskTags.indexOf(tag) >= 0;
         });
         if (!matchRisk) return false;
+      }
+      if (t.socialTags && t.socialTags.length) {
+        const matchSocial = t.socialTags.some(function (tag) {
+          return socialTags.indexOf(tag) >= 0;
+        });
+        if (!matchSocial) return false;
       }
       const last = history.lastUsedByThoughtId[t.id];
       if (last != null && t.minHoursBetweenUses && nowHour - last < t.minHoursBetweenUses) return false;
