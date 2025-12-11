@@ -858,6 +858,53 @@
   margin-top: 2px;
 }
 
+.ot-chore-strip {
+  display: grid;
+  grid-template-columns: 120px 120px 1fr;
+  align-items: center;
+  padding: 4px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  gap: 8px;
+}
+
+.ot-chore-strip .ot-chore-name {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.ot-chore-strip .ot-chore-role {
+  font-size: 11px;
+  color: #c8c1b3;
+}
+
+.ot-chore-strip .ot-chore-summary {
+  font-size: 11px;
+  color: #d7cfbf;
+}
+
+.ot-chore-timeline {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(10px, 1fr));
+  gap: 2px;
+}
+
+.ot-chore-timeline span {
+  height: 8px;
+  border-radius: 2px;
+  display: block;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.ot-ct-cook { background: linear-gradient(135deg, rgba(247,207,127,0.4), rgba(240,183,91,0.25)); }
+.ot-ct-water { background: linear-gradient(135deg, rgba(107,170,247,0.5), rgba(62,115,182,0.35)); }
+.ot-ct-guard { background: linear-gradient(135deg, rgba(255,255,255,0.5), rgba(120,120,140,0.45)); }
+.ot-ct-repair { background: linear-gradient(135deg, rgba(200,255,200,0.4), rgba(120,180,120,0.4)); }
+.ot-ct-doctor { background: linear-gradient(135deg, rgba(255,120,120,0.4), rgba(200,80,80,0.35)); }
+.ot-ct-craft { background: linear-gradient(135deg, rgba(200,180,255,0.4), rgba(140,120,200,0.35)); }
+.ot-ct-forage { background: linear-gradient(135deg, rgba(150,200,130,0.4), rgba(110,160,100,0.35)); }
+.ot-ct-rest { background: rgba(255,255,255,0.08); }
+.ot-ct-empty { background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.08); }
+
 /* Camp tasks overlay */
 #ot-camp-overlay {
   position: fixed;
@@ -1508,6 +1555,13 @@
           Camp tasks planner
         </div>
         <div id="oldtrail-camp-menu-widget"></div>
+        <div class="ot-panel-body-sm" id="ot-camp-chore-wrapper" style="margin-top:6px;">
+          <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+            <div class="ot-text-muted" style="flex:1">Night chores are based on current work roles. Edit priorities to adjust who does what.</div>
+            <button id="ot-btn-edit-roles" class="ot-btn-outline" style="padding:4px 6px; font-size:11px;">Edit roles</button>
+          </div>
+          <div id="ot-camp-chore-strips" class="ot-panel-body-sm" style="background: rgba(255,255,255,0.03); border-radius:8px;"></div>
+        </div>
         <div
           id="ot-camp-roles-summary"
           class="ot-panel-body-sm ot-text-muted"
@@ -2038,6 +2092,38 @@
       thirstDrainPerHour: 5.2,
     },
   };
+
+  const SOUND_DEFS = {
+    campfire_loop: "audio/campfire-loop.ogg",
+    craft_tick: "audio/craft-tick.ogg",
+    log_pop: "audio/log-pop.ogg",
+  };
+  const soundCache = {};
+  function loadSound(key) {
+    if (!SOUND_DEFS[key]) return null;
+    if (soundCache[key]) return soundCache[key];
+    try {
+      const audio = new Audio(SOUND_DEFS[key]);
+      audio.preload = "auto";
+      soundCache[key] = audio;
+      return audio;
+    } catch (e) {
+      soundCache[key] = null;
+      return null;
+    }
+  }
+  function playSound(key, opts) {
+    const audio = loadSound(key);
+    if (!audio) return;
+    try {
+      audio.loop = !!(opts && opts.loop);
+      audio.volume = opts && opts.volume != null ? opts.volume : 0.35;
+      audio.currentTime = 0;
+      audio.play();
+    } catch (e) {
+      // ignore audio issues in browsers that block autoplay
+    }
+  }
 
   const TASKS = [
     { id: "auto", label: "Let them decide (auto)" },
@@ -2741,6 +2827,59 @@
     },
   ];
 
+  const REGIONAL_RECIPES = [
+    {
+      id: "beans_bacon",
+      name: "Beans & bacon pot",
+      regionTags: ["plains", "great_plains"],
+      inputs: { beans_rice: 2, bacon: 1, salt_soda: 0.2 },
+      outputMeals: 3,
+      morale: 2,
+      skill: "cooking",
+      difficulty: 1,
+    },
+    {
+      id: "cornmeal_mush",
+      name: "Cornmeal mush",
+      regionTags: ["plains", "great_plains", "columbia"],
+      inputs: { flour: 1.2, sugar: 0.2 },
+      outputMeals: 2,
+      morale: 1,
+      skill: "cooking",
+      difficulty: 0,
+    },
+    {
+      id: "salmon_stew",
+      name: "Salmon stew",
+      regionTags: ["columbia", "snake_plain"],
+      inputs: { fresh_meat: 2, salt_soda: 0.2 },
+      outputMeals: 3,
+      morale: 3,
+      skill: "cooking",
+      difficulty: 2,
+    },
+    {
+      id: "mountain_stew",
+      name: "Mountain barley stew",
+      regionTags: ["rockies", "blue_mountains"],
+      inputs: { beans_rice: 1.5, dried_fruit: 0.5, bacon: 0.5 },
+      outputMeals: 3,
+      morale: 3,
+      skill: "cooking",
+      difficulty: 2,
+    },
+    {
+      id: "trail_hardtack_hash",
+      name: "Hardtack hash",
+      regionTags: ["plains", "columbia", "great_plains"],
+      inputs: { hardtack: 1, bacon: 0.5 },
+      outputMeals: 2,
+      morale: 0,
+      skill: "cooking",
+      difficulty: 0,
+    },
+  ];
+
   /* ========= STATE ========================================================= */
 
   const dom = {};
@@ -2803,6 +2942,8 @@
     tensionDebug: false,
     showStorytellerDebug: false,
     spoilage: null,
+    campPlan: null,
+    thoughtHistory: null,
   };
 
   function defaultTraillinesState() {
@@ -2812,6 +2953,41 @@
       fogMaxMile: gameState.milesTraveled || 0,
       lastFrameTime: null,
     };
+  }
+
+  function ensureSpoilageState() {
+    if (!gameState.spoilage) gameState.spoilage = {};
+    if (!gameState.spoilage.perishables) gameState.spoilage.perishables = {};
+    const p = gameState.spoilage.perishables;
+    const defaults = {
+      freshMeat: { quantity: 0, ageHours: 0, shelfLifeHours: 72 },
+      vegFruit: { quantity: 0, ageHours: 0, shelfLifeHours: 96 },
+      cookedStew: { quantity: 0, ageHours: 0, shelfLifeHours: 48 },
+    };
+    Object.keys(defaults).forEach(function (k) {
+      if (!p[k]) p[k] = Object.assign({}, defaults[k]);
+      else {
+        const base = defaults[k];
+        if (typeof p[k].quantity !== "number") p[k].quantity = base.quantity;
+        if (typeof p[k].ageHours !== "number") p[k].ageHours = base.ageHours;
+        if (typeof p[k].shelfLifeHours !== "number") p[k].shelfLifeHours = base.shelfLifeHours;
+      }
+    });
+  }
+
+  function tickPerishables(hours) {
+    ensureSpoilageState();
+    const p = gameState.spoilage.perishables;
+    const keys = Object.keys(p);
+    keys.forEach(function (k) {
+      const entry = p[k];
+      entry.ageHours += hours;
+      if (entry.ageHours > entry.shelfLifeHours && entry.quantity > 0) {
+        const decay = Math.min(entry.quantity, (entry.ageHours - entry.shelfLifeHours) * 0.02);
+        entry.quantity = Math.max(0, entry.quantity - decay);
+        if (k === "freshMeat") gameState.supplies.fresh_meat = Math.max(0, (gameState.supplies.fresh_meat || 0) - decay);
+      }
+    });
   }
 
   function ensureTraillinesState() {
@@ -3802,12 +3978,28 @@
         cooking: 0,
         woodcutting: 0,
         doctoring: 0,
+        repair: 0,
+        guard: 0,
+        craft: 0,
+        foraging: 0,
       };
     }
-    ["travel", "hunting", "cooking", "woodcutting", "doctoring"].forEach(function (k) {
+    [
+      "travel",
+      "hunting",
+      "cooking",
+      "woodcutting",
+      "doctoring",
+      "repair",
+      "guard",
+      "craft",
+      "foraging",
+    ].forEach(function (k) {
       if (typeof person.skillXP[k] !== "number") {
         person.skillXP[k] = 0;
       }
+      if (!person.skills) person.skills = {};
+      if (typeof person.skills[k] !== "number") person.skills[k] = 1;
     });
   }
 
@@ -3817,6 +4009,10 @@
     if (id === "cooking") return "cooking";
     if (id === "woodcutting") return "woodcraft";
     if (id === "doctoring") return "doctoring";
+    if (id === "repair") return "repair";
+    if (id === "guard") return "guard duty";
+    if (id === "craft") return "crafting";
+    if (id === "foraging") return "foraging";
     return id;
   }
 
@@ -4177,6 +4373,8 @@
     dom.btnCampAuto = document.getElementById("ot-btn-camp-auto");
     dom.campSummaryNote = document.getElementById("ot-camp-summary-note");
     dom.campRolesSummary = document.getElementById("ot-camp-roles-summary");
+    dom.campChoreStrips = document.getElementById("ot-camp-chore-strips");
+    dom.btnEditRoles = document.getElementById("ot-btn-edit-roles");
     dom.craftingWidget = document.getElementById("oldtrail-crafting-widget");
     dom.thoughtsBubble = document.getElementById("oldtrail-thoughts-bubble");
 
@@ -4238,6 +4436,10 @@
         cooking: 1,
         woodcutting: 1,
         doctoring: 1,
+        repair: 1,
+        guard: 1,
+        craft: 1,
+        foraging: 1,
       },
       task: "travel",
       alive: true,
@@ -4248,6 +4450,10 @@
         cooking: 0,
         woodcutting: 0,
         doctoring: 0,
+        repair: 0,
+        guard: 0,
+        craft: 0,
+        foraging: 0,
       },
       afflictions: [],
       lastBreakHour: 0,
@@ -5965,6 +6171,29 @@
 
 
 
+  function rollSkillOutcome(person, taskId, difficulty, context) {
+    ensurePersonDelegationFields(person);
+    const skillTag = taskId === "repair" ? "repair" : taskId === "guard" ? "guard" : taskId === "craft" ? "craft" : taskId === "doctor" ? "doctoring" : taskId === "forage" ? "foraging" : taskId === "cook" ? "cooking" : taskId;
+    const skill = (person.skills && person.skills[skillTag]) || 0;
+    const moraleBonus = ((person.morale || 50) - 50) / 8;
+    const fatiguePenalty = Math.max(0, 60 - (person.energy || 50)) / 6;
+    const weather = context && context.weather ? context.weather : gameState.weatherState || {};
+    const weatherPenalty = weather.storm ? 6 : weather.precip === "rain" ? 3 : 0;
+    const base = skill * 10 + moraleBonus - fatiguePenalty - weatherPenalty;
+    const luck = (Math.random() - 0.5) * 20;
+    const target = (difficulty || 0) * 10;
+    const score = base - target + luck;
+    let outcome = "partial";
+    if (score > 12) outcome = "success";
+    else if (score < -8) outcome = "fail";
+    return {
+      outcome: outcome,
+      roll: score,
+      target: target,
+      quality: score,
+    };
+  }
+
   function performCooking(person, context) {
     const s = gameState.supplies;
     let fuelBefore = (s.firewood || 0) + (s.buffalo_chips || 0);
@@ -5987,6 +6216,10 @@
     const effort =
       context && context.campQuality === "proper" ? "proper" : "quick";
 
+    const skillOutcome = rollSkillOutcome(person, "cook", effort === "proper" ? 1 : 0, {
+      weather: wState,
+    });
+
     // How many meals can we plausibly turn out in this hour?
     let maxMealsBase = 1 + skill;
     if (block === "evening") maxMealsBase += 1;
@@ -5998,6 +6231,7 @@
     let fuelAvailable = fuelBefore;
 
     let burnChance = 0.32 - skill * 0.05;
+    burnChance -= skillOutcome.quality * 0.003;
     if (wetFuel) burnChance += 0.12;
     if (effort === "proper") burnChance -= 0.07;
     burnChance = clamp(burnChance, 0.06, 0.55);
@@ -6284,6 +6518,17 @@
       }
     }
 
+    if (skillOutcome.outcome === "success") {
+      burnDesc += " The stew tastes better than usual; spirits lift.";
+      const diners = getAllPeople().filter(function (p) { return p && p.alive; });
+      diners.forEach(function (p) {
+        p.morale = clamp(p.morale + 1, 0, 100);
+      });
+    } else if (skillOutcome.outcome === "fail") {
+      burnDesc += " The meal is thin and smoky—some food is wasted.";
+      totalMeals = Math.max(1, totalMeals - 1);
+    }
+
     addLog(
       person.name +
         " cooks for the camp: " +
@@ -6337,6 +6582,10 @@
     if (meat > 0) {
       gameState.supplies.fresh_meat =
         (gameState.supplies.fresh_meat || 0) + meat;
+      ensureSpoilageState();
+      gameState.spoilage.perishables.freshMeat.quantity =
+        (gameState.spoilage.perishables.freshMeat.quantity || 0) + meat;
+      gameState.spoilage.perishables.freshMeat.ageHours = 0;
       person.morale = clamp(person.morale + 4, 0, 100);
       addLog(
         person.name +
@@ -6489,8 +6738,13 @@
         (gameState.supplies.axles || 0) +
         (gameState.supplies.tongues || 0) >
       0;
-    const skill = person.skills.woodcutting || 1;
-    const gain = hasParts ? 4 + skill * 1.5 : 2 + skill;
+    const skill = person.skills.repair || person.skills.woodcutting || 1;
+    const outcome = rollSkillOutcome(person, "repair", hasParts ? 1 : 0, {
+      weather: gameState.weatherState,
+    });
+    let gain = hasParts ? 4 + skill * 1.5 : 2 + skill;
+    if (outcome.outcome === "success") gain += 2;
+    if (outcome.outcome === "fail") gain = Math.max(1, gain * 0.5);
     gameState.wagonCondition = clamp(
       gameState.wagonCondition + gain,
       0,
@@ -6498,7 +6752,12 @@
     );
     addLog(
       person.name +
-      " spends the hour tightening bolts, checking wheels, and greasing the wagon."
+      " spends the hour tightening bolts, checking wheels, and greasing the wagon." +
+        (outcome.outcome === "fail"
+          ? " A few fixes don't hold; more work will be needed."
+          : outcome.outcome === "success"
+          ? " The repairs feel solid and sure."
+          : "")
     );
   }
 
@@ -6534,8 +6793,11 @@
     }
     const target = patients[0];
     const skill = (person.skills && person.skills.doctoring) || 0;
+    const outcome = rollSkillOutcome(person, "doctor", 1, { weather: gameState.weatherState });
     const hasMedicine = (gameState.supplies && gameState.supplies.med_kits) > 0;
-    const relief = 0.4 + skill * 0.25;
+    let relief = 0.4 + skill * 0.25;
+    if (outcome.outcome === "success") relief += 0.6;
+    if (outcome.outcome === "fail") relief *= 0.6;
     let usedMedicine = false;
     target.afflictions.forEach(function (aff) {
       if (!aff || aff.resolved) return;
@@ -6567,7 +6829,12 @@
         target.name +
         (usedMedicine
           ? " with splints and precious medicine."
-          : " with cloths, rest, and steady hands."),
+          : " with cloths, rest, and steady hands.") +
+        (outcome.outcome === "fail"
+          ? " The care steadies things but no real improvement comes."
+          : outcome.outcome === "success"
+          ? " The patient seems better already."
+          : ""),
       { characters: [person.id, target.id], tone: "event" }
     );
   }
@@ -6657,7 +6924,14 @@
       performRepair(person);
     } else if (task === "guard") {
       person.energy = clamp(person.energy - 2, 0, 100);
-      gameState.guardLevel += 0.5;
+      const guardOutcome = rollSkillOutcome(person, "guard", 1, {
+        weather: gameState.weatherState,
+      });
+      const guardGain = guardOutcome.outcome === "success" ? 0.8 : guardOutcome.outcome === "fail" ? 0.3 : 0.5;
+      gameState.guardLevel += guardGain;
+      if (guardOutcome.outcome === "fail" && Math.random() < 0.3) {
+        addLog(person.name + " struggles to stay awake on watch.", { tone: "warning" });
+      }
     } else if (task === "doctor") {
       person.energy = clamp(person.energy - 2, 0, 100);
       person.morale = clamp(person.morale + 0.5, 0, 100);
@@ -6733,10 +7007,24 @@
 
     people.forEach(function (p, idx) {
       if (!p) return;
-      const t =
-        resolvedTasks && resolvedTasks[idx]
-          ? resolvedTasks[idx]
-          : p.task || "travel";
+      const plan = gameState.campPlan;
+      const planHour =
+        plan && typeof plan.startHour === "number"
+          ? gameState.date.getHours() - plan.startHour
+          : null;
+      let plannedTask = null;
+      if (plan && plan.people && planHour != null && planHour >= 0) {
+        const entry = plan.people.find(function (row) {
+          return row.personId === p.id;
+        });
+        if (entry && entry.timeline) {
+          const slot = entry.timeline.find(function (t) {
+            return t.hourOffset === planHour;
+          });
+          plannedTask = slot ? slot.taskId : null;
+        }
+      }
+      const t = plannedTask || (resolvedTasks && resolvedTasks[idx] ? resolvedTasks[idx] : p.task || "travel");
       performTask(p, t, context);
     });
 
@@ -6766,6 +7054,7 @@
         gameState.milesTraveled || 0
       );
     }
+    tickPerishables(1);
     tickAfflictionsForHour();
     maybeTriggerIllnessForHour();
     updateNeedsAndMoodForHour();
@@ -7121,6 +7410,98 @@
   }
 
   const EVENT_DEFS = [
+    {
+      id: "camp_flooded_low_ground",
+      kind: "minor",
+      condition: function (ctx) {
+        return (
+          ctx.mode === "camp" &&
+          ctx.block === "night" &&
+          ctx.weather &&
+          ctx.weather.storm &&
+          (ctx.location || "").toLowerCase().indexOf("river") >= 0
+        );
+      },
+      weight: function (ctx) {
+        return 6 + (ctx.guardCoverage < 0.8 ? 1 : 0);
+      },
+      run: function (ctx) {
+        const people = ctx.people || [];
+        people.forEach(function (p) {
+          p.warmth = clamp(p.warmth - 4, 0, 100);
+          p.morale = clamp(p.morale - 2, 0, 100);
+        });
+        addLog(
+          "Low ground and heavy rain flood the tents. Bedding soaks through and everyone shivers toward dawn.",
+          { tone: "warning", tag: "DAY " + ctx.dayTag, location: ctx.location }
+        );
+      },
+    },
+    {
+      id: "camp_tents_blown_down",
+      kind: "minor",
+      condition: function (ctx) {
+        return ctx.mode === "camp" && ctx.weather && ctx.weather.windKph >= 30;
+      },
+      weight: function (ctx) {
+        return 5 + (ctx.guardCoverage < 1 ? 2 : 0);
+      },
+      run: function (ctx) {
+        const people = ctx.people || [];
+        people.forEach(function (p) {
+          p.energy = clamp(p.energy - 4, 0, 100);
+          p.warmth = clamp(p.warmth - 3, 0, 100);
+        });
+        gameState.wagonCondition = clamp(gameState.wagonCondition - 4, 0, 100);
+        addLog(
+          "Wind tears at loose ropes. A tent comes down in the dark; everyone stumbles out, cold and tired.",
+          { tone: "warning", tag: "DAY " + ctx.dayTag, location: ctx.location }
+        );
+      },
+    },
+    {
+      id: "camp_thief_slips_in",
+      kind: "minor",
+      condition: function (ctx) {
+        return ctx.mode === "camp" && ctx.guardCoverage < 0.6 && ctx.block === "night";
+      },
+      weight: function () {
+        return 4;
+      },
+      run: function (ctx) {
+        let stole = false;
+        if ((gameState.supplies.flour || 0) > 5) {
+          gameState.supplies.flour = Math.max(0, gameState.supplies.flour - 5);
+          stole = true;
+        }
+        if ((gameState.supplies.ammo || 0) > 0 && Math.random() < 0.4) {
+          gameState.supplies.ammo = Math.max(0, gameState.supplies.ammo - 1);
+          stole = true;
+        }
+        addLog(
+          stole
+            ? "With few eyes on watch, a thief slips between wagons and makes off with some supplies."
+            : "A shadow noses around camp but finds little worth taking before vanishing into the dark.",
+          { tone: stole ? "warning" : "event", tag: "DAY " + ctx.dayTag, location: ctx.location }
+        );
+      },
+    },
+    {
+      id: "camp_guard_spots_threat",
+      kind: "breather",
+      condition: function (ctx) {
+        return ctx.mode === "camp" && ctx.guardCoverage >= 1.2 && ctx.block === "night";
+      },
+      weight: function () {
+        return 5;
+      },
+      run: function (ctx) {
+        addLog(
+          "A watchful guard hears movement beyond the firelight and warns the camp in time. Everyone settles again, a little more at ease.",
+          { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location }
+        );
+      },
+    },
     {
       id: "clear_skies_breather",
       kind: "breather",
@@ -7905,6 +8286,12 @@
       weather: weather,
       people: people,
       location: gameState.locationName || "On the trail",
+      mode: gameState.mode,
+      block: getScheduleBlock(gameState.date),
+      guardCoverage:
+        gameState.campPlan && gameState.campPlan.guardCoverage != null
+          ? gameState.campPlan.guardCoverage
+          : gameState.guardLevel || 0,
       avgMorale: gameState.lastAvgMorale || 60,
       rivalPair: rivalPair,
       strongBondPair: strongBondPair,
@@ -9366,6 +9753,8 @@
       return;
     }
 
+    playSound("campfire_loop", { loop: true, volume: 0.18 });
+
     const block = getScheduleBlock(gameState.date);
 
     // Track this on the daily rhythm object (used for next-day bonus/penalty)
@@ -9374,6 +9763,7 @@
 
     // Let the delegation system pick good chores for camp mode
     resetTasksForCurrentMode();
+    buildCampPlanForNight(hours, campQuality);
 
     if (campQuality === "proper") {
       addLog(
@@ -9526,6 +9916,12 @@
 
     if (dom.btnOpenPriorities) {
       dom.btnOpenPriorities.addEventListener("click", function () {
+        renderPrioritiesModal();
+        dom.prioritiesModal.classList.add("active");
+      });
+    }
+    if (dom.btnEditRoles) {
+      dom.btnEditRoles.addEventListener("click", function () {
         renderPrioritiesModal();
         dom.prioritiesModal.classList.add("active");
       });
@@ -9818,27 +10214,151 @@
     })();
   }
 
-  function renderCampRolesSummary() {
-    if (!dom.campRolesSummary) return;
+  function buildCampPlanForNight(hours, campQuality) {
     const people = getAllPeople().filter(function (p) {
       return p && p.alive;
     });
-    if (!people.length) {
-      dom.campRolesSummary.textContent = "";
+    const windowHours = Math.max(4, Math.min(hours ? hours + 4 : 6, 8));
+    const workHours = Math.max(1, Math.min(hours || 2, 4));
+    const guardNeed = campQuality === "proper" ? 1.2 : 0.8;
+    const tasksOrder = ["cook", "fetch_water", "repair", "doctor", "guard", "craft", "gather_wood"];
+    const plan = {
+      nightId: (gameState.date ? gameState.date.getTime() : Date.now()) + "_" + (campQuality || "camp"),
+      startHour: gameState.date ? gameState.date.getHours() : 0,
+      totalHours: windowHours,
+      campQuality: campQuality || "camp",
+      guardCoverage: 0,
+      people: [],
+    };
+
+    people.forEach(function (p) {
+      ensurePersonDelegationFields(p);
+      const priorities = p.priorities || {};
+      const scored = tasksOrder
+        .map(function (tId) {
+          const def = JOB_DEFS.find(function (j) {
+            return j.taskId === tId;
+          });
+          const prio = def ? priorities[def.id] || 0 : 0;
+          const skillVal = def && def.relatedSkill ? p.skills[def.relatedSkill] || 0 : 0;
+          return { taskId: tId, score: prio > 0 ? prio * 10 - skillVal : 999 };
+        })
+        .sort(function (a, b) {
+          return a.score - b.score;
+        })
+        .filter(function (s) {
+          return s.score < 999;
+        });
+
+      const timeline = [];
+      for (let h = 0; h < windowHours; h++) {
+        const slotTask = h < workHours && scored[h] ? scored[h].taskId : "rest";
+        timeline.push({ hourOffset: h, taskId: slotTask });
+      }
+      const summary = { cookHours: 0, fetchWaterHours: 0, guardHours: 0, doctorHours: 0, repairHours: 0, craftHours: 0, forageHours: 0, restHours: 0 };
+      timeline.forEach(function (slot) {
+        if (slot.taskId === "cook") summary.cookHours += 1;
+        else if (slot.taskId === "fetch_water") summary.fetchWaterHours += 1;
+        else if (slot.taskId === "guard") summary.guardHours += 1;
+        else if (slot.taskId === "doctor") summary.doctorHours += 1;
+        else if (slot.taskId === "repair") summary.repairHours += 1;
+        else if (slot.taskId === "craft") summary.craftHours += 1;
+        else if (slot.taskId === "gather_wood") summary.forageHours += 1;
+        else summary.restHours += 1;
+      });
+
+      plan.people.push({ personId: p.id, name: p.name, summary: summary, timeline: timeline });
+    });
+
+    plan.guardCoverage = plan.people.reduce(function (sum, entry) {
+      return sum + entry.summary.guardHours * 0.5;
+    }, 0);
+    if (plan.guardCoverage < guardNeed && plan.people.length) {
+      const bestGuard = plan.people.reduce(function (best, entry) {
+        const person = people.find(function (pp) { return pp.id === entry.personId; });
+        const skill = person && person.skills ? person.skills.guard || person.skills.travel || 0 : 0;
+        return !best || skill > best.skill ? { entry: entry, skill: skill } : best;
+      }, null);
+      if (bestGuard) {
+        bestGuard.entry.timeline[0].taskId = "guard";
+        bestGuard.entry.summary.guardHours += 1;
+        plan.guardCoverage += 0.5;
+      }
+    }
+
+    gameState.campPlan = plan;
+    return plan;
+  }
+
+  function renderCampChoreStrips(plan) {
+    if (!dom.campChoreStrips) return;
+    dom.campChoreStrips.innerHTML = "";
+    if (!plan || !plan.people || !plan.people.length) return;
+    plan.people.forEach(function (entry) {
+      const row = document.createElement("div");
+      row.className = "ot-chore-strip";
+      const name = document.createElement("div");
+      name.className = "ot-chore-name";
+      name.textContent = entry.name || entry.personId;
+      const role = document.createElement("div");
+      role.className = "ot-chore-role";
+      const summary = entry.summary || {};
+      const roleBits = [];
+      if (summary.cookHours) roleBits.push("Cook");
+      if (summary.fetchWaterHours) roleBits.push("Water");
+      if (summary.guardHours) roleBits.push("Guard");
+      if (summary.repairHours) roleBits.push("Repair");
+      if (roleBits.length === 0) roleBits.push("Rest");
+      role.textContent = roleBits.join(" · ");
+      const text = document.createElement("div");
+      text.className = "ot-chore-summary";
+      text.textContent =
+        (summary.cookHours ? summary.cookHours + "h cook, " : "") +
+        (summary.fetchWaterHours ? summary.fetchWaterHours + "h water, " : "") +
+        (summary.guardHours ? summary.guardHours + "h guard, " : "") +
+        (summary.repairHours ? summary.repairHours + "h repair, " : "") +
+        (summary.restHours ? summary.restHours + "h rest" : "");
+      const tl = document.createElement("div");
+      tl.className = "ot-chore-timeline";
+      const colorMap = {
+        cook: "ot-ct-cook",
+        fetch_water: "ot-ct-water",
+        guard: "ot-ct-guard",
+        repair: "ot-ct-repair",
+        doctor: "ot-ct-doctor",
+        craft: "ot-ct-craft",
+        gather_wood: "ot-ct-forage",
+        rest: "ot-ct-rest",
+        sleep: "ot-ct-rest",
+      };
+      const timeline = entry.timeline || [];
+      for (let i = 0; i < plan.totalHours; i++) {
+        const slot = timeline[i] || { taskId: "rest" };
+        const span = document.createElement("span");
+        span.className = colorMap[slot.taskId] || "ot-ct-empty";
+        tl.appendChild(span);
+      }
+      row.appendChild(name);
+      row.appendChild(role);
+      const summaryWrap = document.createElement("div");
+      summaryWrap.appendChild(text);
+      summaryWrap.appendChild(tl);
+      row.appendChild(summaryWrap);
+      dom.campChoreStrips.appendChild(row);
+    });
+  }
+
+  function renderCampRolesSummary() {
+    if (!dom.campRolesSummary) return;
+    const plan = gameState.campPlan || buildCampPlanForNight(2, "preview");
+    if (!plan || !plan.people || !plan.people.length) {
+      dom.campRolesSummary.textContent = "Assign priorities to shape camp chores.";
+      renderCampChoreStrips(null);
       return;
     }
-    const taskLabel = function (taskId) {
-      const t = TASKS.find(function (x) {
-        return x.id === taskId;
-      });
-      return t ? t.label : taskId;
-    };
-    dom.campRolesSummary.innerHTML = people
-      .map(function (p) {
-        const role = taskLabel(p.task || "auto");
-        return '<div><strong>' + p.name + "</strong>: " + role + "</div>";
-      })
-      .join("");
+    dom.campRolesSummary.textContent =
+      "Night plan: " + plan.people.length + " people, guard " + plan.guardCoverage.toFixed(1) + "h";
+    renderCampChoreStrips(plan);
   }
 
   function buildCraftingWidget() {
@@ -9944,10 +10464,28 @@
       rec.inputs.forEach(function (inp) {
         gameState.supplies[inp.key] = (gameState.supplies[inp.key] || 0) - inp.amount;
       });
+      const crafter =
+        gameState.selectedIndex === 0
+          ? gameState.leader
+          : gameState.companions[gameState.selectedIndex - 1] || gameState.leader;
+      const outcome = rollSkillOutcome(crafter || gameState.leader, "craft", 1, {
+        weather: gameState.weatherState,
+      });
+      let made = rec.output.amount;
+      if (outcome.outcome === "success") made += 1;
+      if (outcome.outcome === "fail") made = Math.max(1, Math.floor(made * 0.5));
       gameState.supplies[rec.output.key] =
-        (gameState.supplies[rec.output.key] || 0) + rec.output.amount;
-      setStatus("Crafted " + rec.output.amount + " " + rec.name + ".");
-      addLog("Crafted " + rec.name + " at camp.", { tone: "event" });
+        (gameState.supplies[rec.output.key] || 0) + made;
+      setStatus("Crafted " + made + " " + rec.name + " (" + outcome.outcome + ").");
+      addLog(
+        "Crafted " +
+          rec.name +
+          " at camp (" +
+          outcome.outcome +
+          ").",
+        { tone: outcome.outcome === "fail" ? "warning" : "event" }
+      );
+      playSound("craft_tick");
       renderSupplies();
       renderRecipeRequirements(rec);
     }
@@ -10148,6 +10686,7 @@
       requestAnimationFrame(function () {
         entry.classList.add("ot-entry-in");
       });
+      playSound("log_pop");
       return entry;
     }
 
@@ -10215,6 +10754,78 @@
   }
 
   let thoughtIndex = 0;
+  const THOUGHT_DEFS = [
+    {
+      id: "clear_morning_plains",
+      moods: ["Upbeat"],
+      regions: ["plains", "great_plains"],
+      weatherTags: ["clear"],
+      riskTags: [],
+      minHoursBetweenUses: 36,
+      weight: 3,
+      templates: [
+        "{name} squints into golden grass. 'Hard to believe this ocean of prairie ever ends.'",
+      ],
+    },
+    {
+      id: "stormy_night",
+      moods: ["Uneasy", "Worn"],
+      weatherTags: ["storm"],
+      minHoursBetweenUses: 24,
+      weight: 4,
+      templates: [
+        "Wind shakes the wagon canvas. {name} mutters, 'Hope the ropes hold.'",
+      ],
+    },
+    {
+      id: "river_anxiety",
+      moods: ["Uneasy"],
+      regions: ["snake_plain", "columbia"],
+      weatherTags: ["rain"],
+      riskTags: ["water_shortage"],
+      minHoursBetweenUses: 30,
+      weight: 3,
+      templates: [
+        "Looking toward the river, {name} whispers, 'Water's a gift and a threat both.'",
+      ],
+    },
+    {
+      id: "behind_schedule",
+      moods: ["Worn"],
+      riskTags: ["behind_schedule"],
+      minHoursBetweenUses: 48,
+      weight: 4,
+      templates: [
+        "'We can't afford to dawdle,' {name} says quietly. 'Snow won't wait for us.'",
+      ],
+    },
+    {
+      id: "mountain_awe",
+      moods: ["Upbeat", "Uneasy"],
+      regions: ["rockies", "blue_mountains"],
+      minHoursBetweenUses: 48,
+      weight: 2,
+      templates: [
+        "{name} watches the peaks. 'Those ridges look close until you try to cross them.'",
+      ],
+    },
+    {
+      id: "broken_morale",
+      moods: ["Broken"],
+      minHoursBetweenUses: 60,
+      weight: 5,
+      templates: [
+        "{name}'s eyes are distant. 'I'm not sure I have another dawn in me.'",
+      ],
+    },
+  ];
+
+  function ensureThoughtHistory() {
+    if (!gameState.thoughtHistory) gameState.thoughtHistory = { lastUsedByThoughtId: {} };
+    if (!gameState.thoughtHistory.lastUsedByThoughtId)
+      gameState.thoughtHistory.lastUsedByThoughtId = {};
+    return gameState.thoughtHistory;
+  }
   function initThoughtBubble() {
     if (window.oldTrailThoughts) return;
     const root = document.getElementById("oldtrail-thoughts-bubble");
@@ -10256,19 +10867,53 @@
   function companionThoughtLine(person) {
     if (!person) return "";
     const risk = (gameState.storyState && gameState.storyState.risk) || {};
-    if (person.moodState === "Broken")
-      return "I don't know how much longer I can keep this up.";
-    if (risk.water_shortage) return "We need good water soon or trouble will find us.";
-    if (risk.starvation) return "Meals are thin; a hearty supper would lift spirits.";
-    if (risk.cold_exposure) return "My fingers still feel numb from the cold.";
-    if (person.hunger < 40) return "I could use a warm meal.";
-    if (person.thirst < 40) return "Water skins feel light; hope the next creek runs clear.";
-    if (person.energy < 35) return "My legs ache; a long rest would do me good.";
-    if (person.moodState === "Upbeat")
-      return "The sky tonight almost makes me forget the miles.";
-    if (gameState.highRiverRisk)
-      return "The rivers run high—we must take care at crossings.";
-    return "Quietly watching the firelight dance on the wagon hoops.";
+    const weather = gameState.weatherState || {};
+    const region = gameState.region;
+    const history = ensureThoughtHistory();
+    const nowHour = Math.floor((gameState.date ? gameState.date.getTime() : Date.now()) / 3600000);
+    const weatherTags = [];
+    if (weather.storm) weatherTags.push("storm");
+    if (weather.precip === "rain") weatherTags.push("rain");
+    if (weather.precip === "snow") weatherTags.push("snow");
+    if (weather.precip === "none") weatherTags.push("clear");
+    const riskTags = Object.keys(risk).filter(function (k) {
+      return risk[k];
+    });
+
+    const candidates = THOUGHT_DEFS.filter(function (t) {
+      if (t.moods && t.moods.length && t.moods.indexOf(person.moodState) === -1) return false;
+      if (t.regions && t.regions.length && t.regions.indexOf(region) === -1) return false;
+      if (t.weatherTags && t.weatherTags.length) {
+        const match = t.weatherTags.some(function (tag) {
+          return weatherTags.indexOf(tag) >= 0;
+        });
+        if (!match) return false;
+      }
+      if (t.riskTags && t.riskTags.length) {
+        const matchRisk = t.riskTags.some(function (tag) {
+          return riskTags.indexOf(tag) >= 0;
+        });
+        if (!matchRisk) return false;
+      }
+      const last = history.lastUsedByThoughtId[t.id];
+      if (last != null && t.minHoursBetweenUses && nowHour - last < t.minHoursBetweenUses) return false;
+      return true;
+    });
+
+    if (!candidates.length) {
+      return person.moodState === "Broken"
+        ? "I don't know how much longer I can keep this up."
+        : "Quietly watching the firelight dance on the wagon hoops.";
+    }
+
+    const weighted = candidates.map(function (c) {
+      return { def: c, weight: c.weight || 1 };
+    });
+    const pick = weightedPick(weighted);
+    const chosen = pick ? pick.def : candidates[0];
+    history.lastUsedByThoughtId[chosen.id] = nowHour;
+    const template = choice(chosen.templates || ["..."]);
+    return template.replace("{name}", person.name);
   }
 
   function showCompanionThoughtForHour() {
