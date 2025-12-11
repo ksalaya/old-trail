@@ -52,3 +52,21 @@ Illness & Medical – future work
 - Wire more granular water planning UI (boil vs. filter vs. raw) directly into water risk weighting and storyteller events.
 - Extend fort/mission care into interactive choice events with costs, time delays, and partial recoveries (EVENT_DEFS fort_hospital_care).
 - Add visual affordances for improving/declining afflictions in the alerts strip (renderAfflictionAlerts) and companion detail.
+
+Camp & Chores – follow-ups
+--------------------------
+- Manual per-hour chore editing with drag/drop or arrow controls layered on top of the generated camp plan (ot-camp-overlay, campPlan timeline).
+- Let the camp planner preview different camp macro lengths (proper vs. rushed vs. extended) before committing to time advancement.
+
+Spoilage & Recipes – follow-ups
+-------------------------------
+- Finer-grained spoilage that tracks batches by harvest/cook time and preservation method, with UI hints when supplies turn.
+- More regional recipes, preservation (smoking/drying) steps, and meal quality tiers tied to skill outcomes and risk events.
+
+Thought Library & Narrative – follow-ups
+---------------------------------------
+- Add larger pools of mood/region/weather-aware thoughts, including social/relationship-aware arcs and recurring lines with callbacks to past events.
+
+Audio & Polish – follow-ups
+---------------------------
+- More sound cues (guard scares, illness events, crafting failure), volume sliders, and accessibility toggles to reduce animations/screen shake for sensitive players.
