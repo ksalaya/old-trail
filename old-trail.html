@@ -1231,6 +1231,33 @@
   background: linear-gradient(135deg, #5e646c, #1f242b);
 }
 
+.ot-cascade-person {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  font-size: 12px;
+}
+
+.ot-cascade-person-name {
+  width: 120px;
+  color: #f7cf7f;
+  font-weight: 600;
+}
+
+.ot-cascade-person-track {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.ot-cascade-chip {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
 /* Small responsive tweak */
 
 @media (max-width: 900px) {
@@ -1641,6 +1668,7 @@
             <div id="ot-cascade-summary"></div>
             <div id="ot-cascade-highlights"></div>
             <div id="ot-cascade-timeline" aria-label="Cascade timeline"></div>
+            <div id="ot-cascade-people" aria-label="Companion timelines"></div>
           </div>
         </div>
 
@@ -2388,6 +2416,44 @@
       cost: 0.05,
       weight: 1,
       recommended: 0,
+      perishable: true,
+      defaultMethod: "raw",
+    },
+    {
+      id: "pickled_veg",
+      name: "Pickled vegetables",
+      category: "FOOD",
+      unit: "lb",
+      cost: 0,
+      weight: 1,
+      recommended: 0,
+      perishable: true,
+      defaultMethod: "pickled",
+      readOnly: true,
+    },
+    {
+      id: "salted_meat",
+      name: "Salted meat",
+      category: "FOOD",
+      unit: "lb",
+      cost: 0,
+      weight: 1,
+      recommended: 0,
+      perishable: true,
+      defaultMethod: "salted",
+      readOnly: true,
+    },
+    {
+      id: "trail_jerky",
+      name: "Trail jerky",
+      category: "FOOD",
+      unit: "lb",
+      cost: 0,
+      weight: 0.6,
+      recommended: 0,
+      perishable: true,
+      defaultMethod: "dried",
+      readOnly: true,
     },
     {
       id: "meal_simple",
@@ -2548,6 +2614,9 @@
     hardtack: { lbsPerServing: 0.4, hungerGain: 14, moraleGain: 0 },
     dried_fruit: { lbsPerServing: 0.3, hungerGain: 10, moraleGain: 1 },
     fresh_meat: { lbsPerServing: 0.5, hungerGain: 24, moraleGain: 2, warmthGain: 1 },
+    pickled_veg: { lbsPerServing: 0.35, hungerGain: 16, moraleGain: 2 },
+    salted_meat: { lbsPerServing: 0.45, hungerGain: 22, moraleGain: 1, warmthGain: 1 },
+    trail_jerky: { lbsPerServing: 0.35, hungerGain: 20, moraleGain: 1, warmthGain: 1 },
     meal_simple: {
       lbsPerServing: 0.5,
       hungerGain: 28,
@@ -2604,6 +2673,9 @@
     beans_rice:  { staples: 0.8, meatFat: 0.4 },
     bacon:       { meatFat: 1.2 },
     fresh_meat:  { meatFat: 1.0, fruitVeg: 0.2 }, // fresh meat carries a little vitamin C
+    pickled_veg:{ fruitVeg: 1.2, staples: 0.3 },
+    salted_meat:{ meatFat: 0.9 },
+    trail_jerky:{ meatFat: 0.8 },
     dried_fruit: { fruitVeg: 1.8 },
     meal_simple: { staples: 0.7, meatFat: 0.4, fruitVeg: 0.3 },
     meal_hearty: { staples: 0.6, meatFat: 0.6, fruitVeg: 0.5 },
@@ -3043,6 +3115,50 @@
       icon: "SM",
     },
     {
+      id: "pickle_veg",
+      name: "Pickled crock",
+      pattern: "111000111",
+      inputs: [
+        { key: "dried_fruit", amount: 1 },
+        { key: "salt_soda", amount: 0.5 },
+        { key: "water", amount: 1 },
+      ],
+      output: { key: "pickled_veg", amount: 3 },
+      hoursCost: 2,
+      skillTag: "cooking",
+      desc: "Pack vegetables or fruit with brine for trail-stable bites.",
+      icon: "PV",
+    },
+    {
+      id: "salt_meat",
+      name: "Salt meat",
+      pattern: "101010101",
+      inputs: [
+        { key: "fresh_meat", amount: 3 },
+        { key: "salt_soda", amount: 1.2 },
+      ],
+      output: { key: "salted_meat", amount: 3 },
+      hoursCost: 1.5,
+      skillTag: "cooking",
+      desc: "Rub meat down with salt to hold a few extra weeks.",
+      icon: "SL",
+    },
+    {
+      id: "make_jerky",
+      name: "Cut trail jerky",
+      pattern: "101001101",
+      inputs: [
+        { key: "fresh_meat", amount: 2.5 },
+        { key: "fuel", amount: 0.5 },
+        { key: "salt_soda", amount: 0.4 },
+      ],
+      output: { key: "trail_jerky", amount: 2.2 },
+      hoursCost: 2.5,
+      skillTag: "cooking",
+      desc: "Slow-dry strips into chewy jerky.",
+      icon: "JK",
+    },
+    {
       id: "repaired_shoes",
       name: "Repair shoes",
       pattern: "010111010",
@@ -3151,6 +3267,39 @@
       skill: "cooking",
       difficulty: 0,
     },
+    {
+      id: "platte_pickled_stew",
+      name: "Platte pickled stew",
+      regionTags: ["plains", "central_plains"],
+      inputs: { pickled_veg: 1, salted_meat: 1.2, beans_rice: 0.6 },
+      outputMeals: 3,
+      morale: 3,
+      skill: "cooking",
+      difficulty: 2,
+      note: "Brined vegetables stretch scarce fresh forage on the Platte.",
+    },
+    {
+      id: "snake_fish_jerky",
+      name: "Snake River jerky pot",
+      regionTags: ["snake_plain", "columbia"],
+      inputs: { trail_jerky: 1.4, beans_rice: 0.8, dried_fruit: 0.4 },
+      outputMeals: 3,
+      morale: 2,
+      skill: "cooking",
+      difficulty: 2,
+      note: "Smoky strips simmered soft with beans.",
+    },
+    {
+      id: "willamette_harvest_feast",
+      name: "Willamette harvest pot",
+      regionTags: ["willamette", "columbia"],
+      inputs: { pickled_veg: 1.2, bacon: 0.5, flour: 0.5 },
+      outputMeals: 4,
+      morale: 4,
+      skill: "cooking",
+      difficulty: 2,
+      note: "Late trail vegetables and smoked pork for a morale bump near the end.",
+    },
   ];
 
   /* ========= STATE ========================================================= */
@@ -3162,6 +3311,7 @@
   const gameState = {
     phase: "start",
     leader: null,
+    actingLeaderId: null,
     companions: [],
     selectedIndex: 0, // 0 = leader
     supplies: {},
@@ -3217,6 +3367,8 @@
     spoilage: null,
     campPlan: null,
     thoughtHistory: null,
+    socialHistory: null,
+    routeChoices: null,
   };
 
   function defaultTraillinesState() {
@@ -3236,6 +3388,16 @@
     const doy = getDayOfYear(date);
     const hour = date.getHours();
     return Math.max(0, (doy - startDay) * 24 + hour);
+  }
+
+  function getSeasonTagForDate(date) {
+    const d = date || new Date();
+    const m = d.getMonth();
+    if (m <= 1) return "winter";
+    if (m <= 4) return "spring";
+    if (m <= 7) return "summer";
+    if (m <= 9) return "fall";
+    return "late_fall";
   }
 
   function ensureSpoilageState() {
@@ -3269,9 +3431,24 @@
     return ss.spoilage;
   }
 
+  function getSpoilageRateMultiplierForClimate(region, seasonTag, weatherState) {
+    const r = region || "plains";
+    const s = seasonTag || getSeasonTagForDate(gameState.date);
+    const w = weatherState || {};
+    let mult = 1;
+    if (w.tempC >= 30) mult += 0.25;
+    if (w.tempC >= 20 && (w.precip === "rain" || w.precip === "storm")) mult += 0.15;
+    if (w.tempC <= 2) mult -= 0.12;
+    if (r === "mountains" || r === "blue_mountains") mult -= 0.08;
+    if (r === "snake_plain" && s === "summer") mult += 0.18;
+    if (r === "columbia" && s === "late_fall") mult -= 0.05;
+    return Math.max(0.55, mult);
+  }
+
   function computeShelfLifeHours(supplyId, method) {
     const w = gameState.weatherState || {};
     const region = gameState.region || "plains";
+    const climateMult = getSpoilageRateMultiplierForClimate(region, getSeasonTagForDate(gameState.date), w);
     let base = 26;
     if (supplyId === "fresh_meat" || method === "raw") {
       base = 22;
@@ -3285,6 +3462,12 @@
       if (w.storm || w.precip === "rain") base -= 4;
       if (w.tempC >= 27) base -= 6;
       if (w.tempC <= 0) base += 5;
+    } else if (method === "pickled") {
+      base = 160;
+      if (w.tempC >= 28) base -= 12;
+    } else if (method === "salted") {
+      base = 96;
+      if (w.tempC >= 28) base -= 10;
     }
     if (method === "smoked" || method === "dried") {
       base = 120;
@@ -3292,10 +3475,43 @@
       if (region === "snake_plain") base -= 10;
       if (region === "blue_mountains" || region === "willamette") base += 6;
     }
-    if (supplyId === "dried_fruit") base = 140;
+    if (supplyId === "dried_fruit" || supplyId === "trail_jerky") base = 140;
+    base = base / climateMult;
     const warnLead = Math.max(6, base * 0.55);
     const shelf = Math.max(10, base);
     return { warn: warnLead, spoil: shelf };
+  }
+
+  function isPerishableSupply(id) {
+    const item = SUPPLY_ITEMS.find(function (s) {
+      return s.id === id;
+    });
+    if (item && typeof item.perishable === "boolean") return item.perishable;
+    return ["fresh_meat", "meal_simple", "meal_hearty", "meal_feast", "cooked_meals", "pickled_veg", "salted_meat", "trail_jerky"]
+      .indexOf(id) >= 0;
+  }
+
+  function registerSpoilageForPerishables(currentSupplies, itemsDelta, options) {
+    const delta = itemsDelta || {};
+    Object.keys(delta).forEach(function (id) {
+      const qty = delta[id];
+      if (!qty || qty <= 0 || !isPerishableSupply(id)) return;
+      const item = SUPPLY_ITEMS.find(function (s) {
+        return s.id === id;
+      });
+      const method =
+        (options && options.methodMap && options.methodMap[id]) ||
+        (item && item.defaultMethod) ||
+        (options && options.method) ||
+        "cooked";
+      registerFoodBatch(id, qty, method, {
+        acquiredHour:
+          options && options.acquiredHour != null
+            ? options.acquiredHour
+            : getCurrentTrailHour(gameState),
+        note: options && options.note,
+      });
+    });
   }
 
   function registerFoodBatch(supplyId, qty, method, context) {
@@ -3535,7 +3751,16 @@
     if (!ss.risk) ss.risk = {};
     if (!ss.riskDurations) ss.riskDurations = {};
     if (!Array.isArray(ss.cascadeLog)) ss.cascadeLog = [];
+    if (!ss.personCascade) ss.personCascade = {};
     if (!ss.socialArcs) ss.socialArcs = {};
+    if (!ss.leadershipDisputeState)
+      ss.leadershipDisputeState = {
+        active: false,
+        heat: 0,
+        challengerId: null,
+        leaderId: null,
+        lastHour: null,
+      };
     if (!ss.lastRiskSnapshot) ss.lastRiskSnapshot = {};
     if (!Array.isArray(ss.recentEvents)) ss.recentEvents = [];
     if (!ss.presetId) ss.presetId = gameState.storytellerPresetId || "classic";
@@ -3578,13 +3803,44 @@
       lifelineBias: 1.35,
       pacingSummary: "Plains: calm · Rockies: gentle slopes · Columbia: careful finish",
       regionCurves: {
-        plains: { tensionRiskScale: 0.18, baseDrift: -0.02, minClamp: 5, maxClamp: 55, label: "quiet early miles" },
-        central_plains: { tensionRiskScale: 0.2, baseDrift: 0.01, minClamp: 6, maxClamp: 60, label: "long grasslands" },
+        plains: {
+          tensionRiskScale: 0.18,
+          baseDrift: -0.02,
+          minClamp: 5,
+          maxClamp: 55,
+          label: "quiet early miles",
+          seasons: {
+            spring: { baseDrift: -0.03 },
+            summer: { baseDrift: 0.04, maxClamp: 60 },
+          },
+        },
+        central_plains: {
+          tensionRiskScale: 0.2,
+          baseDrift: 0.01,
+          minClamp: 6,
+          maxClamp: 60,
+          label: "long grasslands",
+          seasons: { summer: { baseDrift: 0.05, tensionRiskScale: 0.22 } },
+        },
         high_plains: { tensionRiskScale: 0.24, baseDrift: 0.06, minClamp: 10, maxClamp: 65, label: "windy heights" },
-        mountains: { tensionRiskScale: 0.3, baseDrift: 0.12, minClamp: 22, maxClamp: 75, label: "gentle mountain danger" },
+        mountains: {
+          tensionRiskScale: 0.3,
+          baseDrift: 0.12,
+          minClamp: 22,
+          maxClamp: 75,
+          label: "gentle mountain danger",
+          seasons: { fall: { baseDrift: 0.18, minClamp: 28 } },
+        },
         snake_plain: { tensionRiskScale: 0.3, baseDrift: 0.1, minClamp: 20, maxClamp: 78, label: "dry and watchful" },
         blue_mountains: { tensionRiskScale: 0.32, baseDrift: 0.14, minClamp: 22, maxClamp: 80, label: "hilly grind" },
-        columbia: { tensionRiskScale: 0.34, baseDrift: 0.18, minClamp: 28, maxClamp: 85, label: "careful finish" },
+        columbia: {
+          tensionRiskScale: 0.34,
+          baseDrift: 0.18,
+          minClamp: 28,
+          maxClamp: 85,
+          label: "careful finish",
+          seasons: { late_fall: { baseDrift: 0.22, minClamp: 32 } },
+        },
       },
     },
     classic: {
@@ -3613,13 +3869,13 @@
       lifelineBias: 1.0,
       pacingSummary: "Plains: steady · Rockies: spikes · Columbia: hard push",
       regionCurves: {
-        plains: { tensionRiskScale: 0.22, baseDrift: 0.02, minClamp: 9, maxClamp: 70, label: "broad calm" },
-        central_plains: { tensionRiskScale: 0.25, baseDrift: 0.05, minClamp: 10, maxClamp: 78, label: "river watches" },
+        plains: { tensionRiskScale: 0.22, baseDrift: 0.02, minClamp: 9, maxClamp: 70, label: "broad calm", seasons: { spring: { baseDrift: 0 }, summer: { baseDrift: 0.06 } } },
+        central_plains: { tensionRiskScale: 0.25, baseDrift: 0.05, minClamp: 10, maxClamp: 78, label: "river watches", seasons: { summer: { tensionRiskScale: 0.28 } } },
         high_plains: { tensionRiskScale: 0.3, baseDrift: 0.12, minClamp: 18, maxClamp: 85, label: "storms & wind" },
-        mountains: { tensionRiskScale: 0.34, baseDrift: 0.16, minClamp: 22, maxClamp: 92, label: "steeper risks" },
+        mountains: { tensionRiskScale: 0.34, baseDrift: 0.16, minClamp: 22, maxClamp: 92, label: "steeper risks", seasons: { fall: { baseDrift: 0.22, minClamp: 28 } } },
         snake_plain: { tensionRiskScale: 0.33, baseDrift: 0.14, minClamp: 20, maxClamp: 90, label: "dry stretches" },
         blue_mountains: { tensionRiskScale: 0.35, baseDrift: 0.18, minClamp: 24, maxClamp: 94, label: "grinding passes" },
-        columbia: { tensionRiskScale: 0.38, baseDrift: 0.2, minClamp: 28, maxClamp: 100, label: "river cliffs" },
+        columbia: { tensionRiskScale: 0.38, baseDrift: 0.2, minClamp: 28, maxClamp: 100, label: "river cliffs", seasons: { late_fall: { baseDrift: 0.26 } } },
       },
     },
     harsh: {
@@ -3648,13 +3904,13 @@
       lifelineBias: 0.74,
       pacingSummary: "Plains: uneasy · Rockies: spikes · Columbia: knife-edge",
       regionCurves: {
-        plains: { tensionRiskScale: 0.32, baseDrift: 0.08, minClamp: 14, maxClamp: 90, label: "rough start" },
-        central_plains: { tensionRiskScale: 0.36, baseDrift: 0.12, minClamp: 16, maxClamp: 95, label: "storms and mud" },
+        plains: { tensionRiskScale: 0.32, baseDrift: 0.08, minClamp: 14, maxClamp: 90, label: "rough start", seasons: { spring: { baseDrift: 0.04 }, summer: { baseDrift: 0.12 } } },
+        central_plains: { tensionRiskScale: 0.36, baseDrift: 0.12, minClamp: 16, maxClamp: 95, label: "storms and mud", seasons: { summer: { tensionRiskScale: 0.4 } } },
         high_plains: { tensionRiskScale: 0.42, baseDrift: 0.2, minClamp: 22, maxClamp: 100, label: "wind and rattles" },
-        mountains: { tensionRiskScale: 0.48, baseDrift: 0.26, minClamp: 30, maxClamp: 100, label: "spiky mountain danger" },
+        mountains: { tensionRiskScale: 0.48, baseDrift: 0.26, minClamp: 30, maxClamp: 100, label: "spiky mountain danger", seasons: { fall: { baseDrift: 0.32 } } },
         snake_plain: { tensionRiskScale: 0.46, baseDrift: 0.24, minClamp: 28, maxClamp: 100, label: "harsh dry crossings" },
         blue_mountains: { tensionRiskScale: 0.5, baseDrift: 0.3, minClamp: 32, maxClamp: 100, label: "thin patience" },
-        columbia: { tensionRiskScale: 0.54, baseDrift: 0.34, minClamp: 36, maxClamp: 100, label: "knife-edge finale" },
+        columbia: { tensionRiskScale: 0.54, baseDrift: 0.34, minClamp: 36, maxClamp: 100, label: "knife-edge finale", seasons: { late_fall: { baseDrift: 0.38, minClamp: 40 } } },
       },
     },
   };
@@ -3711,6 +3967,9 @@
     if (typeof person.morale !== "number") person.morale = 60;
     if (typeof person.lastBreakHour !== "number") person.lastBreakHour = 0;
     if (!person.activeBreak) person.activeBreak = null;
+    if (!person.taskHistory)
+      person.taskHistory = { recent: [], totals: {} };
+    if (!Array.isArray(person.cascadeHistory)) person.cascadeHistory = [];
     return person;
   }
 
@@ -4388,6 +4647,16 @@
     return arr;
   }
 
+  function getActiveLeader() {
+    if (gameState.actingLeaderId) {
+      const acting = getAllPeople().find(function (p) {
+        return p && p.id === gameState.actingLeaderId && p.alive;
+      });
+      if (acting) return acting;
+    }
+    return gameState.leader;
+  }
+
   function addAffliction(person, afflictionId, opts) {
     const def = AFFLICTION_DEFS[afflictionId];
     if (!person || !def) return null;
@@ -4869,6 +5138,7 @@
     dom.cascadeSummary = document.getElementById("ot-cascade-summary");
     dom.cascadeHighlights = document.getElementById("ot-cascade-highlights");
     dom.cascadeTimeline = document.getElementById("ot-cascade-timeline");
+    dom.cascadePeople = document.getElementById("ot-cascade-people");
     dom.footerStatus = document.getElementById("ot-footer-status");
     dom.btnAdvance1 = document.getElementById("ot-btn-advance-1");
     dom.btnAdvance4 = document.getElementById("ot-btn-advance-4");
@@ -5704,6 +5974,38 @@
     }
   }
 
+  function ensureSocialHistory() {
+    if (!gameState.socialHistory) gameState.socialHistory = { rescues: [] };
+    if (!Array.isArray(gameState.socialHistory.rescues)) gameState.socialHistory.rescues = [];
+    return gameState.socialHistory;
+  }
+
+  function recordRescueEvent(rescuer, rescued, cause, ctx) {
+    if (!rescuer || !rescued) return;
+    const hist = ensureSocialHistory();
+    hist.rescues.push({
+      rescuerId: rescuer.id,
+      rescuedId: rescued.id,
+      hour: getCurrentTrailHour(gameState),
+      region: gameState.region,
+      location: gameState.locationName,
+      cause: cause || "rescue",
+    });
+    if (hist.rescues.length > 24) hist.rescues.shift();
+    recordCascadePersonEvent(rescuer.id, "lifeline", { linkId: rescued.id, cause: cause });
+    recordCascadePersonEvent(rescued.id, "rescued", { linkId: rescuer.id, cause: cause });
+  }
+
+  function noteTaskHistory(person, taskId) {
+    if (!person || !taskId) return;
+    ensurePersonStoryFields(person);
+    const h = getCurrentTrailHour(gameState);
+    if (!person.taskHistory) person.taskHistory = { recent: [], totals: {} };
+    person.taskHistory.recent.push({ task: taskId, hour: h });
+    if (person.taskHistory.recent.length > 72) person.taskHistory.recent.shift();
+    person.taskHistory.totals[taskId] = (person.taskHistory.totals[taskId] || 0) + 1;
+  }
+
   /* ========= OUTFITTING LOGIC ============================================= */
 
   const outfitDom = {
@@ -5860,6 +6162,10 @@
     const barrels = gameState.supplies.water_barrels || 0;
     if (!gameState.supplies.water) gameState.supplies.water = 0;
     gameState.supplies.water += barrels * 30;
+    registerSpoilageForPerishables(gameState.supplies, gameState.supplies, {
+      note: "starting pantry",
+      acquiredHour: getCurrentTrailHour(gameState),
+    });
     addLog("You roll out from " + gameState.locationName + " and head west.");
     showScreen("travel");
     saveGame();
@@ -7485,6 +7791,7 @@
     } else if (task === "guard") {
       gainSkillXP(person, "travel", 0.5);
     }
+    noteTaskHistory(person, task);
 
     // Task-specific effects
     if (task === "travel" && isTravelMode) {
@@ -7603,6 +7910,7 @@
       huntedById: null,
     };
     ss.lastHourTaskFailures = {};
+    coolLeadershipDisputeState();
 
     // Track daily rhythm and diet per calendar day
     ensureDayRhythmForDate(gameState.date);
@@ -7832,6 +8140,31 @@
 
   /* ========= STORYTELLER / MOOD SYSTEM ==================================== */
 
+  function recordCascadePersonEvent(personId, type, extra) {
+    if (!personId) return;
+    const person = getAllPeople().find(function (p) {
+      return p && p.id === personId;
+    });
+    if (person) {
+      ensurePersonStoryFields(person);
+      person.cascadeHistory.push({
+        hour: getCurrentTrailHour(gameState),
+        day: getDayKey(gameState.date),
+        type: type,
+        extra: extra || {},
+      });
+      if (person.cascadeHistory.length > 24) person.cascadeHistory.shift();
+    }
+    const ss = ensureStoryState();
+    if (!ss.personCascade[personId]) ss.personCascade[personId] = [];
+    ss.personCascade[personId].push({
+      hour: getCurrentTrailHour(gameState),
+      type: type,
+      extra: extra || {},
+    });
+    if (ss.personCascade[personId].length > 30) ss.personCascade[personId].shift();
+  }
+
   function recordStoryBeat(kind, category, message, extra) {
     const ss = ensureStoryState();
     const dayTag =
@@ -7845,7 +8178,11 @@
       category: category,
       message: message,
       extra: extra || {},
+      hour: getCurrentTrailHour(gameState),
     });
+    if (extra && extra.personId) recordCascadePersonEvent(extra.personId, category || kind, extra);
+    if (extra && extra.rescuer) recordCascadePersonEvent(extra.rescuer, "lifeline", extra);
+    if (extra && extra.rescued) recordCascadePersonEvent(extra.rescued, "rescued", extra);
     if (ss.cascadeLog.length > 80) {
       ss.cascadeLog.shift();
     }
@@ -7909,6 +8246,64 @@
         dom.cascadeTimeline.appendChild(lab);
       }
     });
+  }
+
+  function renderCascadePeopleTracks() {
+    if (!dom.cascadePeople) return;
+    const ss = ensureStoryState();
+    const people = getAllPeople().filter(function (p) {
+      return p;
+    });
+    dom.cascadePeople.innerHTML = "";
+    if (!people.length) return;
+    const toLabel = function (type) {
+      if (type === "injury" || type === "illness") return "injury";
+      if (type === "lifeline") return "lifeline";
+      if (type === "rescued") return "rescued";
+      if (type === "breakdown") return "breakdown";
+      if (type === "death") return "loss";
+      return type || "event";
+    };
+    people.forEach(function (p) {
+      const row = document.createElement("div");
+      row.className = "ot-cascade-person";
+      const name = document.createElement("div");
+      name.className = "ot-cascade-person-name";
+      name.textContent = p.name + (p.id === gameState.actingLeaderId ? " (acting)" : "");
+      row.appendChild(name);
+      const track = document.createElement("div");
+      track.className = "ot-cascade-person-track";
+      const hist =
+        (p.cascadeHistory && p.cascadeHistory.length ? p.cascadeHistory : [])
+          .concat(ss.personCascade[p.id] || [])
+          .slice(-12);
+      if (!hist.length) {
+        const chip = document.createElement("div");
+        chip.className = "ot-cascade-chip";
+        chip.textContent = "No major notes";
+        track.appendChild(chip);
+      } else {
+        hist.forEach(function (entry) {
+          if (!entry) return;
+          const chip = document.createElement("div");
+          chip.className = "ot-cascade-chip";
+          chip.textContent = toLabel(entry.type);
+          track.appendChild(chip);
+        });
+      }
+      row.appendChild(track);
+      dom.cascadePeople.appendChild(row);
+    });
+  }
+
+  function coolLeadershipDisputeState() {
+    const ss = ensureStoryState();
+    const state = ss.leadershipDisputeState;
+    if (!state || !state.active) return;
+    const now = getCurrentTrailHour(gameState);
+    state.heat = Math.max(0, (state.heat || 0) - 0.2);
+    state.lastHour = now;
+    if (state.heat <= 0.5) state.active = false;
   }
 
   function updateRiskFlags() {
@@ -8088,6 +8483,7 @@
       person.name + " died on the trail",
       { personId: person.id }
     );
+    recordCascadePersonEvent(person.id, "death", { location: gameState.locationName });
     const anyAlive = getAllPeople().some(function (p) {
       return p && p.alive;
     });
@@ -8096,28 +8492,42 @@
     }
   }
 
+  function getStoryTensionTargetForContext(storyState, ctx, preset) {
+    const basePreset = preset || STORYTELLER_PRESETS.classic;
+    const regionKey = ctx && ctx.regionKey;
+    const seasonTag = (ctx && ctx.seasonTag) || getSeasonTagForDate(gameState.date);
+    const regionCurve =
+      (basePreset.regionCurves && regionKey && basePreset.regionCurves[regionKey]) || null;
+    let combined = regionCurve || {};
+    if (regionCurve && regionCurve.seasons && seasonTag && regionCurve.seasons[seasonTag]) {
+      combined = Object.assign({}, regionCurve, regionCurve.seasons[seasonTag]);
+    }
+    return {
+      baseDrift:
+        combined.baseDrift != null ? combined.baseDrift : basePreset.tensionBaseDrift,
+      minClamp: combined.minClamp != null ? combined.minClamp : basePreset.tensionMin,
+      maxClamp: combined.maxClamp != null ? combined.maxClamp : basePreset.tensionMax,
+      riskScale:
+        combined.tensionRiskScale != null
+          ? combined.tensionRiskScale
+          : basePreset.tensionRiskScale,
+    };
+  }
+
   function updateStoryTension(storyState, ctx) {
     const preset =
       STORYTELLER_PRESETS[storyState.presetId || gameState.storytellerPresetId] ||
       STORYTELLER_PRESETS.classic;
-    const regionCurve =
-      (preset.regionCurves && ctx && ctx.regionKey && preset.regionCurves[ctx.regionKey]) ||
-      null;
+    const target = getStoryTensionTargetForContext(storyState, ctx, preset);
     const activeRisk = ctx.riskCount + (ctx.risk.extended_starvation ? 2 : 0);
     const moralePull =
       ctx.avgMorale > 75 ? -0.35 : ctx.avgMorale < 40 ? 0.45 : ctx.avgMorale < 55 ? 0.15 : 0;
-    const riskScale = regionCurve && regionCurve.tensionRiskScale != null
-      ? regionCurve.tensionRiskScale
-      : preset.tensionRiskScale;
-    const drift = (regionCurve && regionCurve.baseDrift != null
-      ? regionCurve.baseDrift
-      : preset.tensionBaseDrift) + (ctx.risk.behind_schedule ? 0.02 : 0);
+    const riskScale = target.riskScale != null ? target.riskScale : preset.tensionRiskScale;
+    const drift = target.baseDrift + (ctx.risk.behind_schedule ? 0.02 : 0);
     const riskPull = activeRisk * riskScale;
     let next = (storyState.tension || 0) + drift + riskPull + moralePull;
-    const minClamp = regionCurve && regionCurve.minClamp != null ? regionCurve.minClamp : preset.tensionMin;
-    const maxClamp = regionCurve && regionCurve.maxClamp != null ? regionCurve.maxClamp : preset.tensionMax;
-    if (minClamp != null) next = Math.max(minClamp, next);
-    if (maxClamp != null) next = Math.min(maxClamp, next);
+    if (target.minClamp != null) next = Math.max(target.minClamp, next);
+    if (target.maxClamp != null) next = Math.min(target.maxClamp, next);
     storyState.tension = clamp(next, 0, 100);
   }
 
@@ -8501,6 +8911,7 @@
           hoursLeft: 12,
           source: "river",
         });
+        recordRescueEvent(rescuer, victim, "river_swept", ctx);
         gameState.wagonCondition = clamp(gameState.wagonCondition - 10, 0, 100);
         ctx.storyState.risk.overloaded_wagon = true;
       },
@@ -8871,6 +9282,13 @@
         addThought(challenger, { id: "spoke_up", label: "Spoke up", value: 3, hoursLeft: 10, source: "social" });
         addThought(leader, { id: "challenged", label: "Challenged authority", value: -4, hoursLeft: 12, source: "social" });
         ctx.storyState.risk.low_morale = true;
+        ctx.storyState.leadershipDisputeState = {
+          active: true,
+          heat: 4.5,
+          challengerId: challenger.id,
+          leaderId: leader.id,
+          lastHour: getCurrentTrailHour(gameState),
+        };
         recordStoryBeat(
           "leadership",
           "leadership",
@@ -8880,6 +9298,63 @@
             leader: leader.id,
           }
         );
+      },
+    },
+    {
+      id: "leadership_council_choice",
+      kind: "major",
+      minTension: 26,
+      condition: function (ctx) {
+        const state = ctx.storyState.leadershipDisputeState || {};
+        return state.active && (state.heat || 0) >= 3 && !ctx.storyState.eventFlags.leader_council;
+      },
+      weight: function () {
+        return 3;
+      },
+      run: function (ctx) {
+        const state = ctx.storyState.leadershipDisputeState || {};
+        const challenger = ctx.people.find(function (p) { return state.challengerId === p.id; }) || ctx.leadershipDisputePair && ctx.leadershipDisputePair.challenger;
+        const leader = getActiveLeader();
+        if (!challenger || !leader) return;
+        ctx.storyState.eventFlags.leader_council = true;
+        let choiceIdx = 1;
+        if (typeof window !== "undefined" && window.prompt) {
+          const resp = window.prompt(
+            "Leadership council: 1) Back " +
+              leader.name +
+              "  2) Elevate " +
+              challenger.name +
+              " as acting leader  3) Demand compromise",
+            "1"
+          );
+          const num = parseInt(resp, 10);
+          if (!isNaN(num)) choiceIdx = num;
+        }
+        const struggling = ctx.risk.low_morale || ctx.risk.behind_schedule || (ctx.storyState.tension || 0) > 45;
+        if (choiceIdx === 2 && struggling && !ctx.storyState.eventFlags.leader_swap_done) {
+          gameState.actingLeaderId = challenger.id;
+          adjustOpinion(challenger, leader, 2, "acting_leader");
+          adjustOpinion(leader, challenger, -6, "acting_leader");
+          addLog(
+            "Camp votes to let " +
+              challenger.name +
+              " lead decisions for a stretch while " +
+              leader.name +
+              " steps back.",
+            { tone: "event", characters: [challenger.id, leader.id] }
+          );
+          recordStoryBeat("leadership", "leadership", challenger.name + " became acting leader", { personId: challenger.id });
+          ctx.storyState.eventFlags.leader_swap_done = true;
+        } else if (choiceIdx === 3) {
+          addLog("You broker a compromise: the challenger scouts and the leader keeps final say.", { tone: "event" });
+          adjustOpinion(challenger, leader, -1, "compromise");
+          ctx.storyState.leadershipDisputeState.heat = Math.max(0, (ctx.storyState.leadershipDisputeState.heat || 0) - 2);
+        } else {
+          addLog(leader.name + " keeps the reins after a tense vote.", { tone: "event" });
+          adjustOpinion(challenger, leader, -4, "shut_down");
+          ctx.storyState.leadershipDisputeState.heat = Math.max(0, (ctx.storyState.leadershipDisputeState.heat || 0) - 1);
+        }
+        recordCascadePersonEvent(challenger.id, "leadership", { target: leader.id, choice: choiceIdx });
       },
     },
     // Relationship arcs
@@ -9171,6 +9646,58 @@
         recordStoryBeat("social", "romance", "A love triangle cooled into uneasy distance", {
           triangle: triangleKey,
         });
+      },
+    },
+    {
+      id: "romance_triangle_choice",
+      kind: "minor",
+      minTension: 18,
+      maxTension: 70,
+      condition: function (ctx) {
+        const tri = ctx.loveTriangle;
+        if (!tri) return false;
+        const triangleKey = "triangle:" + getPairKey(tri.a, tri.b) + ":" + tri.c.id;
+        const arc = ctx.storyState.socialArcs[triangleKey];
+        return arc && arc.stage >= 2 && !ctx.storyState.eventFlags[triangleKey + ":choice"];
+      },
+      weight: function () {
+        return 3;
+      },
+      run: function (ctx) {
+        const tri = ctx.loveTriangle;
+        if (!tri) return;
+        const triangleKey = "triangle:" + getPairKey(tri.a, tri.b) + ":" + tri.c.id;
+        let pick = 1;
+        if (typeof window !== "undefined" && window.prompt) {
+          const resp = window.prompt(
+            "Handle the tension: 1) Bless the couple 2) Ask them to cool it 3) Ask all to focus on survival",
+            "1"
+          );
+          const num = parseInt(resp, 10);
+          if (!isNaN(num)) pick = num;
+        }
+        if (pick === 1) {
+          adjustOpinion(tri.a, tri.b, 4, "triangle_choice");
+          adjustOpinion(tri.b, tri.a, 3, "triangle_choice");
+          addThought(tri.c, { id: "triangle_left_out", label: "Left out", value: -6, hoursLeft: 16, source: "social" });
+          addLog(tri.a.name + " and " + tri.b.name + " pair off openly. " + tri.c.name + " keeps their distance.", { tone: "social" });
+        } else if (pick === 2) {
+          addThought(tri.a, { id: "triangle_pause", label: "Agreed to pause", value: -2, hoursLeft: 10, source: "social" });
+          addThought(tri.b, { id: "triangle_pause2", label: "Agreed to pause", value: -2, hoursLeft: 10, source: "social" });
+          adjustOpinion(tri.c, tri.a, 2, "triangle_pause");
+          adjustOpinion(tri.c, tri.b, 2, "triangle_pause");
+          addLog("You ask the would-be couple to cool things until the next fort.", { tone: "social" });
+        } else {
+          addLog("You shut the talk down and steer conversation back to maps and chores.", { tone: "warning" });
+          [tri.a, tri.b, tri.c].forEach(function (p) {
+            addThought(p, { id: "triangle_shut", label: "Tension shelved", value: -1, hoursLeft: 8, source: "social" });
+          });
+        }
+        ctx.storyState.socialArcs[triangleKey] = Object.assign({}, ctx.storyState.socialArcs[triangleKey], {
+          stage: Math.max(2, ctx.storyState.socialArcs[triangleKey].stage || 1),
+        });
+        ctx.storyState.eventFlags[triangleKey + ":choice"] = true;
+        recordStoryBeat("social", "romance", "Triangle handled by camp council", { triangle: triangleKey });
       },
     },
     {
@@ -9609,7 +10136,104 @@
         adjustOpinion(rescuer, rescued, 4, "river_rescue");
         adjustOpinion(rescued, rescuer, 10, "river_rescue");
         addThought(rescued, { id: "saved_life", label: "Saved from the current", value: 10, hoursLeft: 36, source: "social" });
+        recordRescueEvent(rescuer, rescued, "river_rescue", ctx);
         recordStoryBeat("social", "river", "A river rescue strengthened bonds", { rescuer: rescuer.id, rescued: rescued.id });
+      },
+    },
+    {
+      id: "snake_three_islands_choice",
+      kind: "major",
+      minTension: 24,
+      condition: function (ctx) {
+        return ctx.regionKey === "snake_plain" && ctx.dayTag > 60 && !ctx.storyState.eventFlags.snake_three_islands;
+      },
+      weight: function () {
+        return 4;
+      },
+      run: function (ctx) {
+        ctx.storyState.eventFlags.snake_three_islands = true;
+        let pick = 1;
+        if (typeof window !== "undefined" && window.prompt) {
+          const resp = window.prompt("Three Islands Crossing: 1) Pay for the ferry 2) Caulk and float 3) Scout upstream", "1");
+          const num = parseInt(resp, 10);
+          if (!isNaN(num)) pick = num;
+        }
+        if (pick === 1 && (gameState.money || 0) >= 8) {
+          gameState.money -= 8;
+          addLog("You pay for the shaky ferry and make the crossing damp but intact.", { tone: "event" });
+          recordStoryBeat("route", "water", "Ferry crossing at Three Islands", {});
+        } else if (pick === 2) {
+          gameState.wagonCondition = clamp(gameState.wagonCondition - 8, 0, 100);
+          ctx.storyState.risk.soaked = true;
+          addLog("You seal the wagon and shove off. The current spins you but you scrape through, soaked and rattled.", { tone: "warning" });
+          recordStoryBeat("route", "water", "Floated the Snake after debate", {});
+        } else {
+          gameState.lastHourMiles = Math.max(0, (gameState.lastHourMiles || 0) - 1);
+          addLog("Scouting upstream burns daylight but finds a calmer braid of the river.", { tone: "event" });
+          recordStoryBeat("route", "water", "Scouted for a better Snake crossing", {});
+        }
+      },
+    },
+    {
+      id: "fort_clinic_volunteer",
+      kind: "breather",
+      maxTension: 70,
+      condition: function (ctx) {
+        return (ctx.location || "").toLowerCase().indexOf("fort") >= 0 && !ctx.storyState.eventFlags.fort_clinic_help;
+      },
+      weight: function (ctx) {
+        return ctx.risk.long_illness ? 6 : 3;
+      },
+      run: function (ctx) {
+        ctx.storyState.eventFlags.fort_clinic_help = true;
+        let pick = 1;
+        if (typeof window !== "undefined" && window.confirm) {
+          pick = window.confirm("Volunteer extra supplies and labor for the fort clinic?") ? 1 : 2;
+        }
+        if (pick === 1) {
+          const spent = Math.min(gameState.supplies.medicine || 0, 2);
+          gameState.supplies.medicine = Math.max(0, (gameState.supplies.medicine || 0) - spent);
+          const friendA = ctx.people && ctx.people.length ? choice(ctx.people) : null;
+          const friendB = ctx.people && ctx.people.length ? choice(ctx.people) : null;
+          if (friendA && friendB) adjustOpinion(friendA, friendB, 1, "clinic_help");
+          addLog("You leave medicine and hands to the clinic. The surgeon promises priority if you return ill.", { tone: "morale" });
+          recordStoryBeat("historic", "illness", "Assisted a mission clinic", {});
+          ctx.storyState.eventFlags.fort_clinic_favor = true;
+        } else {
+          addLog("You nod politely and move on, keeping your scarce supplies.", { tone: "info" });
+        }
+      },
+    },
+    {
+      id: "blue_mountains_cutoff",
+      kind: "major",
+      minTension: 18,
+      condition: function (ctx) {
+        return ctx.regionKey === "blue_mountains" && !ctx.storyState.eventFlags.blue_cutoff;
+      },
+      weight: function () {
+        return 3;
+      },
+      run: function (ctx) {
+        ctx.storyState.eventFlags.blue_cutoff = true;
+        let pick = 1;
+        if (typeof window !== "undefined" && window.prompt) {
+          const resp = window.prompt("Take the steep Toll Gate Road shortcut? 1) Yes 2) Stay on the longer valley road", "2");
+          const num = parseInt(resp, 10);
+          if (!isNaN(num)) pick = num;
+        }
+        gameState.routeChoices = gameState.routeChoices || {};
+        if (pick === 1) {
+          gameState.routeChoices.blue_cutoff = "toll";
+          gameState.money = Math.max(0, (gameState.money || 0) - 5);
+          ctx.storyState.risk.overloaded_wagon = true;
+          addLog("You choose the toll gate climb. It's shorter but punishing on the wagon.", { tone: "warning" });
+          recordStoryBeat("route", "route", "Chose the Toll Gate Road shortcut", {});
+        } else {
+          gameState.routeChoices.blue_cutoff = "valley";
+          addLog("You follow the valley road, safer but days longer. Everyone breathes easier.", { tone: "event" });
+          recordStoryBeat("route", "route", "Stayed on the safer valley road", {});
+        }
       },
     },
     {
@@ -9953,14 +10577,7 @@
         : getDayOfYear(gameState.date);
 
     const regionKey = gameState.region || "plains";
-    const seasonTag = (function () {
-      const m = (gameState.date || new Date()).getMonth();
-      if (m <= 1) return "winter";
-      if (m <= 4) return "spring";
-      if (m <= 7) return "summer";
-      if (m <= 9) return "fall";
-      return "late_fall";
-    })();
+    const seasonTag = getSeasonTagForDate(gameState.date);
 
     const riskKeys = Object.keys(ss.risk || {}).filter(function (k) {
       return ss.risk[k];
@@ -10140,8 +10757,9 @@
 
   function renderLeaderStatus() {
     dom.leaderStatus.innerHTML = "";
-    if (!gameState.leader) return;
-    renderBars(dom.leaderStatus, gameState.leader);
+    const activeLeader = getActiveLeader();
+    if (!activeLeader) return;
+    renderBars(dom.leaderStatus, activeLeader);
     const acute = [];
     getAllPeople().forEach(function (p) {
       activeAfflictions(p).forEach(function (a) {
@@ -10219,6 +10837,7 @@
       dom.cascadeSummary.appendChild(section);
     });
     renderCascadeTimeline(timeline);
+    renderCascadePeopleTracks();
   }
 
   function renderPartyManifest() {
@@ -10244,7 +10863,9 @@
       left.appendChild(name);
       const role = document.createElement("div");
       role.className = "ot-manifest-role";
-      role.textContent = idx === 0 ? "Leader" : "Companion";
+      const isActing = gameState.actingLeaderId && p.id === gameState.actingLeaderId;
+      const isLeader = idx === 0;
+      role.textContent = isActing ? "Acting leader" : isLeader ? "Leader" : "Companion";
       const affs = activeAfflictions(p);
       if (affs.length) {
         name.textContent = p.name + " ✶";
@@ -11452,6 +12073,10 @@
       if (gameState.showStorytellerDebug == null)
         gameState.showStorytellerDebug = false;
       if (!gameState.spoilage) gameState.spoilage = { lastDayKey: null };
+      if (!gameState.socialHistory) gameState.socialHistory = { rescues: [] };
+      if (!Array.isArray(gameState.socialHistory.rescues)) gameState.socialHistory.rescues = [];
+      if (!gameState.routeChoices) gameState.routeChoices = {};
+      if (!gameState.actingLeaderId) gameState.actingLeaderId = null;
 
       ensureTraillinesState();
       ensureExplorerState();
@@ -13095,6 +13720,42 @@
         "Every step past {location}, {name} remembers being hauled up from the muck. 'I owe {rescuer} more than supper,' they think.",
       ],
     },
+    {
+      id: "chores_burden",
+      moods: ["Uneasy", "Worn"],
+      socialTags: ["chores_skew"],
+      minHoursBetweenUses: 26,
+      templates: [
+        "'{leader} keeps handing me the guard shift,' {name} grumbles. 'Do they think I enjoy staring into the dark?'",
+      ],
+    },
+    {
+      id: "leadership_grit",
+      moods: ["Uneasy"],
+      socialTags: ["leadership_conflict"],
+      minHoursBetweenUses: 36,
+      templates: [
+        "Camp hushes when {leader} walks by. {name} whispers, 'We need one voice, not bickering—storm's coming.'",
+      ],
+    },
+    {
+      id: "rescue_callback",
+      moods: ["Upbeat", "Uneasy"],
+      socialTags: ["recent_rescue"],
+      minHoursBetweenUses: 32,
+      templates: [
+        "Ever since the ferry, {name} can't help glancing at the rope burns. 'I owe {rescuer} supper for life,' they think.",
+      ],
+    },
+    {
+      id: "acting_leader_check",
+      moods: ["Uneasy", "Worn"],
+      socialTags: ["leadership_conflict"],
+      minHoursBetweenUses: 48,
+      templates: [
+        "{name} weighs the map in hand. 'Maybe letting {leader} call the shots for now keeps us together,' they muse.",
+      ],
+    },
   ];
 
   function buildThoughtContext(person, gameState, storyState) {
@@ -13208,8 +13869,11 @@
       if (arc.tag === "feud") ctx.social.inFeudArc = true;
       if (arc.status === "truce") pushTag(ctx.cascadeTags, "feud_truce");
     });
+    if (storyState && storyState.leadershipDisputeState && storyState.leadershipDisputeState.active) {
+      ctx.social.leadershipConflict = true;
+    }
 
-    const leader = gameState.leader;
+    const leader = getActiveLeader();
     if (leader && leader.id !== person.id) {
       ctx.social.leaderPerson = leader;
       const relToLeader = leader && rels[leader.id];
@@ -13239,6 +13903,22 @@
     else if (tasks.repairedById === person.id) ctx.tasks.lastChore = "repair";
     else if (tasks.guardedByIds && tasks.guardedByIds.indexOf(person.id) >= 0) ctx.tasks.lastChore = "guard";
 
+    if (person.taskHistory && person.taskHistory.recent && person.taskHistory.recent.length) {
+      const recent = person.taskHistory.recent.filter(function (entry) {
+        return entry && entry.hour >= getCurrentTrailHour(gameState) - 48;
+      });
+      const tally = {};
+      recent.forEach(function (entry) {
+        tally[entry.task] = (tally[entry.task] || 0) + 1;
+      });
+      const maxTask = Object.keys(tally).reduce(function (best, key) {
+        return !best || tally[key] > tally[best] ? key : best;
+      }, null);
+      if (maxTask && tally[maxTask] >= Math.max(3, recent.length * 0.6)) {
+        ctx.tasks.skew = maxTask;
+      }
+    }
+
     ctx.socialTagList = [];
     if (ctx.social.inRomanceArc) pushTag(ctx.socialTagList, "romance_arc");
     if (ctx.social.inFeudArc) pushTag(ctx.socialTagList, "feud_arc");
@@ -13246,6 +13926,7 @@
     if (ctx.social.leadershipConflict) pushTag(ctx.socialTagList, "leadership_conflict");
     if (ctx.social.gratitudeDoctor) pushTag(ctx.socialTagList, "gratitude_doctor");
     if (ctx.tasks.lastChore) pushTag(ctx.socialTagList, "chores_rivalry");
+    if (ctx.tasks.skew) pushTag(ctx.socialTagList, "chores_skew");
     if (ctx.social.lastRescue) pushTag(ctx.socialTagList, "recent_rescue");
 
     return ctx;

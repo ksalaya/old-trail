@@ -103,3 +103,21 @@ Thought Library & Narrative – future
 - Track explicit rescue events per pair so {rescuer} and river/fort callbacks can name the right helper after multiple incidents.
 - Add lightweight leadership dispute state that outlives a single event so related thoughts can cool down gradually.
 - Carry longer task history (beyond last-hour camp chores) to fuel ongoing cook/guard/navigation rivalries in the thought library.
+
+STORYTELLER & EVENTS – Phase 3
+------------------------------
+- Tune the new region/season tension targets from playtest telemetry and surface curve labels in the HUD hover.
+- Add additional triangle/leadership choice variants, including reconciliation beats and clearer costs for swapping acting leaders.
+- Hook route choice flags into future hazards/rewards (alternate river depths, toll gate mishaps, or calmer descents).
+
+Spoilage & Recipes – later expansions
+------------------------------------
+- Add UI affordances for spoilage batches (age badges in inventory, warnings before buying perishables at forts).
+- Broaden preservation set: pickled eggs/fruit leathers, fat rendering/tallow storage, and camp smokehouse upgrades.
+- Expand regional meals that consume preserved goods and vary morale/nutrition by climate (e.g., canyon fish jerky stews).
+
+Thought Library & Narrative – later work
+---------------------------------------
+- Larger pools of rescue callbacks and running jokes that escalate across multiple incidents.
+- More leadership/acting-leader banter plus feud-to-friend pipelines triggered by shared hardship.
+- Visual polish for the cascade tracks (icons per type, time-sliced rows) and integration with expedition stats on the end screen.
