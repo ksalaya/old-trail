@@ -285,6 +285,13 @@
   margin-bottom: 4px;
 }
 
+.ot-preset-pacing {
+  font-size: 11px;
+  color: #d6d3cc;
+  margin-top: 4px;
+  line-height: 1.35;
+}
+
 @media (max-width: 760px) {
   .ot-preset-cards {
     grid-template-columns: 1fr;
@@ -1152,6 +1159,78 @@
   text-transform: uppercase;
 }
 
+/* STORYTELLER PHASE 2+ : Cascade timeline */
+.ot-cascade-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ot-cascade-timeline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0;
+}
+
+.ot-cascade-node {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #3a3d4f;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #f6f3ea;
+}
+
+.ot-cascade-connector {
+  flex: 1 1 30px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
+  min-width: 28px;
+}
+
+.ot-cascade-label {
+  font-size: 11px;
+  color: #dcd8ce;
+  min-width: 72px;
+}
+
+.ot-cascade-node.social {
+  background: linear-gradient(135deg, #5c3c6d, #2c1e33);
+}
+
+.ot-cascade-node.hunger {
+  background: linear-gradient(135deg, #6d3f2c, #2c1b12);
+}
+
+.ot-cascade-node.water,
+.ot-cascade-node.illness {
+  background: linear-gradient(135deg, #355c7a, #1a2838);
+}
+
+.ot-cascade-node.romance {
+  background: linear-gradient(135deg, #804460, #301c2a);
+}
+
+.ot-cascade-node.feud,
+.ot-cascade-node.leadership {
+  background: linear-gradient(135deg, #7a3f3f, #2f1818);
+}
+
+.ot-cascade-node.lifeline {
+  background: linear-gradient(135deg, #3f7a56, #1a2f22);
+}
+
+.ot-cascade-node.loss {
+  background: linear-gradient(135deg, #5e646c, #1f242b);
+}
+
 /* Small responsive tweak */
 
 @media (max-width: 900px) {
@@ -1431,22 +1510,23 @@
 
         <div class="ot-panel">
           <div class="ot-panel-header">Narrator</div>
-          <div class="ot-panel-body ot-panel-body-sm">
-            <div class="ot-narrator-row">
-              <div id="ot-narrator-label" class="ot-text-muted"></div>
-              <button id="ot-btn-toggle-narrator" class="ot-link-button" type="button">
-                Change narrator
-              </button>
-            </div>
-            <div id="ot-narrator-picker" class="ot-narrator-picker" style="display: none; margin-top: 6px;">
-              <select id="ot-storyteller-midrun" class="ot-select"></select>
-              <div id="ot-narrator-hint" class="ot-panel-body-sm ot-text-muted" style="margin-top: 4px;"></div>
-            </div>
-            <div class="ot-panel-body-sm ot-text-muted" style="margin-top: 6px;">
-              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                <input type="checkbox" id="ot-tension-debug" />
-                <span>Show tension debug</span>
-              </label>
+            <div class="ot-panel-body ot-panel-body-sm">
+              <div class="ot-narrator-row">
+                <div id="ot-narrator-label" class="ot-text-muted"></div>
+                <button id="ot-btn-toggle-narrator" class="ot-link-button" type="button">
+                  Change narrator
+                </button>
+              </div>
+              <div id="ot-narrator-picker" class="ot-narrator-picker" style="display: none; margin-top: 6px;">
+                <select id="ot-storyteller-midrun" class="ot-select"></select>
+                <div id="ot-narrator-hint" class="ot-panel-body-sm ot-text-muted" style="margin-top: 4px;"></div>
+              </div>
+              <div id="ot-narrator-rules" class="ot-panel-body-sm ot-text-muted" style="margin-top: 4px;"></div>
+              <div class="ot-panel-body-sm ot-text-muted" style="margin-top: 6px;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                  <input type="checkbox" id="ot-tension-debug" />
+                  <span>Show tension debug</span>
+                </label>
               <div id="ot-tension-readout" class="ot-panel-body-sm ot-text-muted"></div>
             </div>
           </div>
@@ -1557,7 +1637,11 @@
 
         <div class="ot-panel" id="ot-cascade-panel" style="display: none;">
           <div class="ot-panel-header">Trail story highlights</div>
-          <div class="ot-panel-body" id="ot-cascade-summary"></div>
+          <div class="ot-panel-body ot-cascade-wrapper">
+            <div id="ot-cascade-summary"></div>
+            <div id="ot-cascade-highlights"></div>
+            <div id="ot-cascade-timeline" aria-label="Cascade timeline"></div>
+          </div>
         </div>
 
         <div class="ot-panel">
@@ -3118,6 +3202,11 @@
         lastRiskSnapshot: {},
         recentEvents: [],
         presetId: gameState.storytellerPresetId || "classic",
+        presetSwapsTotal: 0,
+        presetSwapsThisWeek: 0,
+        lastPresetSwapDayKey: null,
+        lastHourCampTasks: {},
+        lastHourTaskFailures: {},
       };
     }
     const ss = gameState.storyState;
@@ -3132,6 +3221,11 @@
     if (!ss.lastRiskSnapshot) ss.lastRiskSnapshot = {};
     if (!Array.isArray(ss.recentEvents)) ss.recentEvents = [];
     if (!ss.presetId) ss.presetId = gameState.storytellerPresetId || "classic";
+    if (typeof ss.presetSwapsTotal !== "number") ss.presetSwapsTotal = 0;
+    if (typeof ss.presetSwapsThisWeek !== "number") ss.presetSwapsThisWeek = 0;
+    if (!ss.lastPresetSwapDayKey) ss.lastPresetSwapDayKey = null;
+    if (!ss.lastHourCampTasks) ss.lastHourCampTasks = {};
+    if (!ss.lastHourTaskFailures) ss.lastHourTaskFailures = {};
     return ss;
   }
 
@@ -3160,6 +3254,16 @@
       minHoursBetweenMinor: 7,
       breatherBias: 1.45,
       lifelineBias: 1.35,
+      pacingSummary: "Plains: calm · Rockies: gentle slopes · Columbia: careful finish",
+      regionCurves: {
+        plains: { tensionRiskScale: 0.18, baseDrift: -0.02, minClamp: 5, maxClamp: 55, label: "quiet early miles" },
+        central_plains: { tensionRiskScale: 0.2, baseDrift: 0.01, minClamp: 6, maxClamp: 60, label: "long grasslands" },
+        high_plains: { tensionRiskScale: 0.24, baseDrift: 0.06, minClamp: 10, maxClamp: 65, label: "windy heights" },
+        mountains: { tensionRiskScale: 0.3, baseDrift: 0.12, minClamp: 22, maxClamp: 75, label: "gentle mountain danger" },
+        snake_plain: { tensionRiskScale: 0.3, baseDrift: 0.1, minClamp: 20, maxClamp: 78, label: "dry and watchful" },
+        blue_mountains: { tensionRiskScale: 0.32, baseDrift: 0.14, minClamp: 22, maxClamp: 80, label: "hilly grind" },
+        columbia: { tensionRiskScale: 0.34, baseDrift: 0.18, minClamp: 28, maxClamp: 85, label: "careful finish" },
+      },
     },
     classic: {
       id: "classic",
@@ -3185,6 +3289,16 @@
       minHoursBetweenMinor: 4,
       breatherBias: 1.0,
       lifelineBias: 1.0,
+      pacingSummary: "Plains: steady · Rockies: spikes · Columbia: hard push",
+      regionCurves: {
+        plains: { tensionRiskScale: 0.22, baseDrift: 0.02, minClamp: 9, maxClamp: 70, label: "broad calm" },
+        central_plains: { tensionRiskScale: 0.25, baseDrift: 0.05, minClamp: 10, maxClamp: 78, label: "river watches" },
+        high_plains: { tensionRiskScale: 0.3, baseDrift: 0.12, minClamp: 18, maxClamp: 85, label: "storms & wind" },
+        mountains: { tensionRiskScale: 0.34, baseDrift: 0.16, minClamp: 22, maxClamp: 92, label: "steeper risks" },
+        snake_plain: { tensionRiskScale: 0.33, baseDrift: 0.14, minClamp: 20, maxClamp: 90, label: "dry stretches" },
+        blue_mountains: { tensionRiskScale: 0.35, baseDrift: 0.18, minClamp: 24, maxClamp: 94, label: "grinding passes" },
+        columbia: { tensionRiskScale: 0.38, baseDrift: 0.2, minClamp: 28, maxClamp: 100, label: "river cliffs" },
+      },
     },
     harsh: {
       id: "harsh",
@@ -3210,6 +3324,16 @@
       minHoursBetweenMinor: 3,
       breatherBias: 0.62,
       lifelineBias: 0.74,
+      pacingSummary: "Plains: uneasy · Rockies: spikes · Columbia: knife-edge",
+      regionCurves: {
+        plains: { tensionRiskScale: 0.32, baseDrift: 0.08, minClamp: 14, maxClamp: 90, label: "rough start" },
+        central_plains: { tensionRiskScale: 0.36, baseDrift: 0.12, minClamp: 16, maxClamp: 95, label: "storms and mud" },
+        high_plains: { tensionRiskScale: 0.42, baseDrift: 0.2, minClamp: 22, maxClamp: 100, label: "wind and rattles" },
+        mountains: { tensionRiskScale: 0.48, baseDrift: 0.26, minClamp: 30, maxClamp: 100, label: "spiky mountain danger" },
+        snake_plain: { tensionRiskScale: 0.46, baseDrift: 0.24, minClamp: 28, maxClamp: 100, label: "harsh dry crossings" },
+        blue_mountains: { tensionRiskScale: 0.5, baseDrift: 0.3, minClamp: 32, maxClamp: 100, label: "thin patience" },
+        columbia: { tensionRiskScale: 0.54, baseDrift: 0.34, minClamp: 36, maxClamp: 100, label: "knife-edge finale" },
+      },
     },
   };
 
@@ -3439,6 +3563,13 @@
       "-" +
       date.getDate()
     );
+  }
+
+  function getWeekKey(date) {
+    const start = gameState.startDayOfYear || getDayOfYear(date);
+    const dayIndex = Math.max(0, getDayOfYear(date) - start);
+    const week = Math.floor(dayIndex / 7);
+    return date.getFullYear() + "-w" + week;
   }
 
   function ensureDayRhythmForDate(date) {
@@ -4414,6 +4545,8 @@
     dom.suppliesOverview = document.getElementById("ot-supplies-overview");
     dom.cascadePanel = document.getElementById("ot-cascade-panel");
     dom.cascadeSummary = document.getElementById("ot-cascade-summary");
+    dom.cascadeHighlights = document.getElementById("ot-cascade-highlights");
+    dom.cascadeTimeline = document.getElementById("ot-cascade-timeline");
     dom.footerStatus = document.getElementById("ot-footer-status");
     dom.btnAdvance1 = document.getElementById("ot-btn-advance-1");
     dom.btnAdvance4 = document.getElementById("ot-btn-advance-4");
@@ -4458,6 +4591,7 @@
     dom.narratorLabel = document.getElementById("ot-narrator-label");
     dom.narratorPicker = document.getElementById("ot-narrator-picker");
     dom.narratorHint = document.getElementById("ot-narrator-hint");
+    dom.narratorRules = document.getElementById("ot-narrator-rules");
     dom.btnToggleNarrator = document.getElementById("ot-btn-toggle-narrator");
     dom.storytellerCards = document.getElementById("ot-storyteller-cards");
     dom.storytellerExample = document.getElementById("ot-storyteller-example");
@@ -4661,6 +4795,7 @@
     const ss = ensureStoryState();
     gameState.storytellerPresetId = preset.id;
     ss.presetId = preset.id;
+    ss.lastPresetSwapDayKey = ss.lastPresetSwapDayKey || getWeekKey(gameState.date || new Date());
     if (opts && opts.resetTimers) {
       ss.hoursSinceMajorEvent = Math.min(
         ss.hoursSinceMajorEvent || 0,
@@ -4683,6 +4818,40 @@
     return preset;
   }
 
+  function ensurePresetSwapWeek() {
+    const ss = ensureStoryState();
+    const wk = getWeekKey(gameState.date || new Date());
+    if (ss.lastPresetSwapDayKey !== wk) {
+      ss.presetSwapsThisWeek = 0;
+      ss.lastPresetSwapDayKey = wk;
+    }
+  }
+
+  function canSwapStorytellerPreset(targetId) {
+    ensurePresetSwapWeek();
+    const ss = ensureStoryState();
+    const started = (gameState.milesTraveled || 0) > 0 && gameState.phase !== "start";
+    if (!started) {
+      return { ok: true, reason: "Free to choose before departure." };
+    }
+    if (gameState.mode !== "camp") {
+      return { ok: false, reason: "You can only change narrator while camped." };
+    }
+    const limit = 2;
+    if (ss.presetSwapsThisWeek >= limit) {
+      return { ok: false, reason: "You've already changed narrators twice this week." };
+    }
+    return { ok: true, reason: "Narrator shift allowed." };
+  }
+
+  function noteStorytellerSwap() {
+    ensurePresetSwapWeek();
+    const ss = ensureStoryState();
+    ss.presetSwapsTotal = (ss.presetSwapsTotal || 0) + 1;
+    ss.presetSwapsThisWeek = (ss.presetSwapsThisWeek || 0) + 1;
+    ss.lastPresetSwapDayKey = getWeekKey(gameState.date || new Date());
+  }
+
   function storytellerIcon(key) {
     switch (key) {
       case "quill":
@@ -4698,12 +4867,41 @@
     }
   }
 
+  function renderNarratorRules() {
+    if (!dom.narratorRules) return;
+    const ss = ensureStoryState();
+    ensurePresetSwapWeek();
+    const limit = 2;
+    if ((gameState.milesTraveled || 0) <= 0 || gameState.phase === "start") {
+      dom.narratorRules.textContent = "Free to pick any narrator before departure.";
+      return;
+    }
+    dom.narratorRules.textContent =
+      "Swaps this week: " + (ss.presetSwapsThisWeek || 0) + "/" + limit + " (camp only)";
+  }
+
   function renderStorytellerCards(selectedId) {
     if (!dom.storytellerCards) return;
     dom.storytellerCards.innerHTML = "";
     const exampleFor = function (preset) {
       if (preset.examples && preset.examples.length) return preset.examples[0];
       return preset.exampleStory || preset.description || preset.hint || "";
+    };
+    const pacingLine = function (preset) {
+      if (preset.pacingSummary) return preset.pacingSummary;
+      if (preset.regionCurves) {
+        const keys = ["plains", "mountains", "columbia"].filter(function (k) {
+          return preset.regionCurves[k];
+        });
+        if (keys.length) {
+          return keys
+            .map(function (k) {
+              return (preset.regionCurves[k].label || k) + "";
+            })
+            .join(" · ");
+        }
+      }
+      return "Early calm, sharper late miles.";
     };
     Object.keys(STORYTELLER_PRESETS).forEach(function (key) {
       const preset = STORYTELLER_PRESETS[key];
@@ -4730,10 +4928,14 @@
       const hint = document.createElement("div");
       hint.className = "ot-panel-body-sm ot-preset-meta";
       hint.textContent = preset.personality || preset.description || preset.hint || "";
+      const pacing = document.createElement("div");
+      pacing.className = "ot-preset-pacing";
+      pacing.textContent = pacingLine(preset);
 
       body.appendChild(title);
       body.appendChild(tagline);
       body.appendChild(hint);
+      body.appendChild(pacing);
 
       card.appendChild(icon);
       card.appendChild(body);
@@ -4771,11 +4973,20 @@
           card.classList.add("ot-show-detail");
           return;
         }
+        const swapCheck = canSwapStorytellerPreset(preset.id);
+        if (!swapCheck.ok) {
+          if (dom.narratorHint) dom.narratorHint.textContent = swapCheck.reason;
+          return;
+        }
         setStorytellerPreset(preset.id, { resetTimers: true });
+        if ((gameState.milesTraveled || 0) > 0) {
+          noteStorytellerSwap();
+        }
         if (dom.storytellerPreset) dom.storytellerPreset.value = preset.id;
         renderStorytellerDescription(preset.id);
         renderStorytellerOptions(dom.storytellerMidrun, preset.id);
         renderStorytellerCards(preset.id);
+        renderNarratorRules();
         saveGame();
       });
       dom.storytellerCards.appendChild(card);
@@ -4794,7 +5005,8 @@
       dom.narratorLabel.title = preset.tagline || preset.description || "";
     }
     if (dom.narratorHint) {
-      dom.narratorHint.textContent = preset.tagline || preset.description || "";
+      const pacing = preset.pacingSummary ? " · " + preset.pacingSummary : "";
+      dom.narratorHint.textContent = (preset.tagline || preset.description || "") + pacing;
     }
     if (dom.storytellerExample) {
       dom.storytellerExample.textContent =
@@ -4802,6 +5014,7 @@
           ? preset.examples[0]
           : preset.exampleStory) || preset.description || "";
     }
+    renderNarratorRules();
   }
 
   function startNewGameFromForm() {
@@ -6309,6 +6522,7 @@
   }
 
   function performCooking(person, context) {
+    const ss = ensureStoryState();
     const s = gameState.supplies;
     let fuelBefore = (s.firewood || 0) + (s.buffalo_chips || 0);
     if (fuelBefore <= 0.05) {
@@ -6623,6 +6837,7 @@
 
     let burnDesc = "";
     if (burnedMeals > 0) {
+      if (ss.lastHourTaskFailures) ss.lastHourTaskFailures.burnedMealById = person.id;
       if (wetFuel && skill <= 2) {
         burnDesc =
           " The damp chips smoke and sputter; a few biscuits end up scorched on the bottom and doughy on top.";
@@ -6641,6 +6856,7 @@
     } else if (skillOutcome.outcome === "fail") {
       burnDesc += " The meal is thin and smoky—some food is wasted.";
       totalMeals = Math.max(1, totalMeals - 1);
+      if (ss.lastHourTaskFailures) ss.lastHourTaskFailures.burnedMealById = person.id;
     }
 
     addLog(
@@ -6760,6 +6976,7 @@
   }
 
   function performFetchWater(person) {
+    const ss = ensureStoryState();
     let factor = 0.5;
     const name = gameState.locationName.toLowerCase();
     let quality = "stagnant";
@@ -6821,6 +7038,7 @@
     } else {
       factor *= 1.05;
       gameState.lastWaterBoiled = false;
+      if (ss.lastHourTaskFailures) ss.lastHourTaskFailures.riskyWaterById = person.id;
       addThought(person, {
         id: "water_risky",
         label: "Drank questionable water",
@@ -6838,6 +7056,9 @@
     gameState.supplies.water += gallons;
     gameState.waterQuality = qualityTag;
     gameState.lastWaterSourceType = quality;
+    if (ss.lastHourTaskFailures && qualityTag === "alkali") {
+      ss.lastHourTaskFailures.alkaliWaterById = person.id;
+    }
     addLog(
       person.name +
         " hauls water for camp — about " +
@@ -6847,6 +7068,7 @@
   }
 
   function performRepair(person) {
+    const ss = ensureStoryState();
     const hasParts =
       (gameState.supplies.wheels || 0) +
         (gameState.supplies.axles || 0) +
@@ -6864,6 +7086,9 @@
       0,
       100
     );
+    if (ss.lastHourTaskFailures && outcome.outcome === "fail") {
+      ss.lastHourTaskFailures.badRepairById = person.id;
+    }
     addLog(
       person.name +
       " spends the hour tightening bolts, checking wheels, and greasing the wagon." +
@@ -6956,6 +7181,7 @@
   function performTask(person, taskIdOverride, context) {
     if (!person || !person.alive) return;
 
+    const ss = ensureStoryState();
     const w = gameState.weatherState || {};
     const rationCfg = RATION_CONFIG[gameState.rations] || RATION_CONFIG.filling;
 
@@ -7022,19 +7248,23 @@
       }
     } else if (task === "hunt") {
       person.energy = clamp(person.energy - 4, 0, 100);
+      if (ss.lastHourCampTasks) ss.lastHourCampTasks.huntedById = person.id;
       performHunt(person);
     } else if (task === "gather_wood") {
       person.energy = clamp(person.energy - 3.5, 0, 100);
       performGatherWood(person);
     } else if (task === "fetch_water") {
       person.energy = clamp(person.energy - 3, 0, 100);
+      if (ss.lastHourCampTasks) ss.lastHourCampTasks.fetchedWaterById = person.id;
       performFetchWater(person);
     } else if (task === "cook") {
       person.energy = clamp(person.energy - 2.5, 0, 100);
       // IMPORTANT: pass context so camp-quality & meal macros work
+      if (ss.lastHourCampTasks) ss.lastHourCampTasks.cookedById = person.id;
       performCooking(person, context || null);
     } else if (task === "repair") {
       person.energy = clamp(person.energy - 3, 0, 100);
+      if (ss.lastHourCampTasks) ss.lastHourCampTasks.repairedById = person.id;
       performRepair(person);
     } else if (task === "guard") {
       person.energy = clamp(person.energy - 2, 0, 100);
@@ -7043,6 +7273,9 @@
       });
       const guardGain = guardOutcome.outcome === "success" ? 0.8 : guardOutcome.outcome === "fail" ? 0.3 : 0.5;
       gameState.guardLevel += guardGain;
+      if (ss.lastHourCampTasks && ss.lastHourCampTasks.guardedByIds) {
+        ss.lastHourCampTasks.guardedByIds.push(person.id);
+      }
       if (guardOutcome.outcome === "fail" && Math.random() < 0.3) {
         addLog(person.name + " struggles to stay awake on watch.", { tone: "warning" });
       }
@@ -7107,6 +7340,15 @@
   function advanceOneHour(context) {
     const ss = ensureStoryState();
     gameState.date = new Date(gameState.date.getTime() + 60 * 60 * 1000);
+
+    ss.lastHourCampTasks = {
+      guardedByIds: [],
+      cookedById: null,
+      fetchedWaterById: null,
+      repairedById: null,
+      huntedById: null,
+    };
+    ss.lastHourTaskFailures = {};
 
     // Track daily rhythm and diet per calendar day
     ensureDayRhythmForDate(gameState.date);
@@ -7355,6 +7597,66 @@
     }
   }
 
+  function buildCascadeTimeline(storyState) {
+    const entries = (storyState.cascadeLog || []).slice(-30);
+    const iconFor = function (cat) {
+      switch (cat) {
+        case "water":
+        case "illness":
+          return "💧";
+        case "hunger":
+          return "🍞";
+        case "romance":
+          return "❤️";
+        case "feud":
+          return "⚔";
+        case "leadership":
+          return "⚖";
+        case "lifeline":
+          return "✶";
+        case "loss":
+          return "✝";
+        default:
+          return "●";
+      }
+    };
+    return entries.map(function (entry) {
+      const cat = entry.category || entry.kind || "route";
+      return {
+        day: entry.day,
+        label: entry.day ? "Day " + entry.day : "",
+        cls: cat,
+        icon: iconFor(cat),
+      };
+    });
+  }
+
+  function renderCascadeTimeline(nodes) {
+    if (!dom.cascadeTimeline) return;
+    dom.cascadeTimeline.innerHTML = "";
+    if (!nodes || !nodes.length) return;
+    nodes.forEach(function (node, idx) {
+      const wrap = document.createElement("div");
+      wrap.style.display = "flex";
+      wrap.style.alignItems = "center";
+      if (idx > 0) {
+        const connector = document.createElement("div");
+        connector.className = "ot-cascade-connector";
+        dom.cascadeTimeline.appendChild(connector);
+      }
+      const dot = document.createElement("div");
+      dot.className = "ot-cascade-node " + (node.cls || "");
+      dot.textContent = node.icon || "●";
+      dom.cascadeTimeline.appendChild(dot);
+      if (node.label) {
+        const lab = document.createElement("div");
+        lab.className = "ot-cascade-label";
+        lab.textContent = node.label;
+        dom.cascadeTimeline.appendChild(lab);
+      }
+    });
+  }
+
   function updateRiskFlags() {
     const ss = ensureStoryState();
     const previous = Object.assign({}, ss.lastRiskSnapshot || {});
@@ -7544,14 +7846,24 @@
     const preset =
       STORYTELLER_PRESETS[storyState.presetId || gameState.storytellerPresetId] ||
       STORYTELLER_PRESETS.classic;
+    const regionCurve =
+      (preset.regionCurves && ctx && ctx.regionKey && preset.regionCurves[ctx.regionKey]) ||
+      null;
     const activeRisk = ctx.riskCount + (ctx.risk.extended_starvation ? 2 : 0);
     const moralePull =
       ctx.avgMorale > 75 ? -0.35 : ctx.avgMorale < 40 ? 0.45 : ctx.avgMorale < 55 ? 0.15 : 0;
-    const riskPull = activeRisk * preset.tensionRiskScale;
-    const drift = preset.tensionBaseDrift + (ctx.risk.behind_schedule ? 0.02 : 0);
+    const riskScale = regionCurve && regionCurve.tensionRiskScale != null
+      ? regionCurve.tensionRiskScale
+      : preset.tensionRiskScale;
+    const drift = (regionCurve && regionCurve.baseDrift != null
+      ? regionCurve.baseDrift
+      : preset.tensionBaseDrift) + (ctx.risk.behind_schedule ? 0.02 : 0);
+    const riskPull = activeRisk * riskScale;
     let next = (storyState.tension || 0) + drift + riskPull + moralePull;
-    if (preset.tensionMin != null) next = Math.max(preset.tensionMin, next);
-    if (preset.tensionMax != null) next = Math.min(preset.tensionMax, next);
+    const minClamp = regionCurve && regionCurve.minClamp != null ? regionCurve.minClamp : preset.tensionMin;
+    const maxClamp = regionCurve && regionCurve.maxClamp != null ? regionCurve.maxClamp : preset.tensionMax;
+    if (minClamp != null) next = Math.max(minClamp, next);
+    if (maxClamp != null) next = Math.min(maxClamp, next);
     storyState.tension = clamp(next, 0, 100);
   }
 
@@ -8160,6 +8472,11 @@
           source: "morale",
         });
         ctx.storyState.tension = clamp(ctx.storyState.tension + 3, 0, 100);
+        ctx.storyState.eventFlags.recentBreak = {
+          personId: p.id,
+          day: ctx.dayTag,
+          severity: "minor",
+        };
       },
     },
     {
@@ -8193,6 +8510,11 @@
           hoursLeft: 18,
           source: "morale",
         });
+        ctx.storyState.eventFlags.recentBreak = {
+          personId: p.id,
+          day: ctx.dayTag,
+          severity: "major",
+        };
       },
     },
     {
@@ -8227,6 +8549,11 @@
           );
           addThought(p, { id: "hunt_failure", label: "Lonely, cold hunt", value: -6, hoursLeft: 12, source: "morale" });
         }
+        ctx.storyState.eventFlags.recentBreak = {
+          personId: p.id,
+          day: ctx.dayTag,
+          severity: success ? "major_lifeline" : "major",
+        };
       },
     },
     {
@@ -8258,7 +8585,123 @@
         addThought(loser, { id: "humiliated", label: "Questioned leadership", value: -7, hoursLeft: 20, source: "social" });
       },
     },
+    {
+      id: "leadership_dispute",
+      kind: "major",
+      minTension: 30,
+      condition: function (ctx) {
+        return (
+          ctx.leadershipDisputePair &&
+          ctx.risk.low_morale &&
+          ctx.risk.behind_schedule &&
+          ctx.storyState.tension >= 30
+        );
+      },
+      weight: function () {
+        return 5;
+      },
+      run: function (ctx) {
+        const pair = ctx.leadershipDisputePair;
+        if (!pair) return;
+        const challenger = pair.challenger;
+        const leader = pair.leader;
+        addLog(
+          challenger.name +
+            " questions " +
+            leader.name +
+            " about the pace and risky calls. Voices rise until the camp gathers to settle it.",
+          { tone: "event", location: ctx.location, characters: [challenger.id, leader.id] }
+        );
+        adjustOpinion(challenger, leader, -6, "leadership_dispute");
+        adjustOpinion(leader, challenger, -3, "leadership_dispute");
+        addThought(challenger, { id: "spoke_up", label: "Spoke up", value: 3, hoursLeft: 10, source: "social" });
+        addThought(leader, { id: "challenged", label: "Challenged authority", value: -4, hoursLeft: 12, source: "social" });
+        ctx.storyState.risk.low_morale = true;
+        recordStoryBeat(
+          "leadership",
+          "leadership",
+          challenger.name + " challenged " + leader.name + " about the trail decisions",
+          {
+            challenger: challenger.id,
+            leader: leader.id,
+          }
+        );
+      },
+    },
     // Relationship arcs
+    {
+      id: "break_followup_apology",
+      kind: "breather",
+      maxTension: 64,
+      condition: function (ctx) {
+        const flag = ctx.storyState.eventFlags.recentBreak;
+        return (
+          flag &&
+          ctx.gameState.mode === "camp" &&
+          ctx.risk.low_morale &&
+          ctx.storyState.tension < 70
+        );
+      },
+      weight: function () {
+        return 5;
+      },
+      run: function (ctx) {
+        const flag = ctx.storyState.eventFlags.recentBreak;
+        if (!flag) return;
+        const person = ctx.people.find(function (p) {
+          return p && p.id === flag.personId;
+        });
+        if (!person) return;
+        addLog(
+          person.name +
+            " returns to the fire quietly, offering an apology and taking up small chores to make amends.",
+          { tone: "morale", location: ctx.location, characters: [person.id] }
+        );
+        person.morale = clamp((person.morale || 50) + 4, 0, 100);
+        ctx.people.forEach(function (p) {
+          if (!p || p.id === person.id) return;
+          adjustOpinion(p, person, 2, "break_followup");
+        });
+        ctx.storyState.eventFlags.recentBreak = null;
+        recordStoryBeat("break_followup", "social", person.name + " returned to duties after cooling off", {
+          personId: person.id,
+        });
+      },
+    },
+    {
+      id: "break_followup_resentment",
+      kind: "minor",
+      minTension: 24,
+      condition: function (ctx) {
+        const flag = ctx.storyState.eventFlags.recentBreak;
+        return flag && ctx.risk.low_morale && ctx.storyState.tension >= 60;
+      },
+      weight: function () {
+        return 4;
+      },
+      run: function (ctx) {
+        const flag = ctx.storyState.eventFlags.recentBreak;
+        if (!flag) return;
+        const person = ctx.people.find(function (p) {
+          return p && p.id === flag.personId;
+        });
+        if (!person) return;
+        addLog(
+          person.name +
+            " keeps to themselves after the outburst, doing only the bare minimum. The mood around camp stays brittle.",
+          { tone: "warning", location: ctx.location, characters: [person.id] }
+        );
+        person.morale = clamp((person.morale || 50) - 3, 0, 100);
+        ctx.storyState.eventFlags.recentBreak = null;
+        ctx.storyState.risk.low_morale = true;
+        recordStoryBeat(
+          "break_followup",
+          "social",
+          person.name + " stayed sullen after their break",
+          { personId: person.id }
+        );
+      },
+    },
     {
       id: "romance_under_stars",
       kind: "breather",
@@ -8397,6 +8840,275 @@
         });
         ctx.storyState.socialArcs[key] = Object.assign({}, arc, { stage: Math.max(4, arc.stage || 3) });
         recordStoryBeat("social", "romance", "A lasting commitment formed on the trail", { arc: key, stage: 4 });
+      },
+    },
+    {
+      id: "romance_triangle_tension",
+      kind: "minor",
+      minTension: 26,
+      maxTension: 78,
+      condition: function (ctx) {
+        const tri = ctx.loveTriangle;
+        if (!tri) return false;
+        const key = "romance:" + getPairKey(tri.a, tri.b);
+        const arc = ctx.storyState.socialArcs[key];
+        return arc && arc.stage >= 3;
+      },
+      weight: function () {
+        return 4;
+      },
+      run: function (ctx) {
+        const tri = ctx.loveTriangle;
+        if (!tri) return;
+        const triangleKey = "triangle:" + getPairKey(tri.a, tri.b) + ":" + tri.c.id;
+        const arc = ctx.storyState.socialArcs[triangleKey] || { stage: 0, tag: "triangle" };
+        addLog(
+          tri.c.name +
+            " walks in on " +
+            tri.a.name +
+            " and " +
+            tri.b.name +
+            " sharing an intimate moment by the fire. Awkward silence hangs in the air.",
+          { tone: "social", location: ctx.location, characters: [tri.a.id, tri.b.id, tri.c.id] }
+        );
+        addThought(tri.c, { id: "jealous", label: "Jealous", value: -5, hoursLeft: 12, source: "social" });
+        adjustOpinion(tri.c, tri.a, -4, "triangle" );
+        adjustOpinion(tri.c, tri.b, -4, "triangle" );
+        ctx.storyState.socialArcs[triangleKey] = Object.assign({}, arc, { stage: Math.max(1, arc.stage || 0) });
+        recordStoryBeat("social", "romance", tri.c.name + " felt shut out of a budding romance", {
+          triangle: triangleKey,
+        });
+      },
+    },
+    {
+      id: "romance_triangle_drift",
+      kind: "breather",
+      minTension: 12,
+      maxTension: 72,
+      condition: function (ctx) {
+        const tri = ctx.loveTriangle;
+        if (!tri) return false;
+        const triangleKey = "triangle:" + getPairKey(tri.a, tri.b) + ":" + tri.c.id;
+        const arc = ctx.storyState.socialArcs[triangleKey];
+        return arc && arc.stage >= 1 && ctx.storyState.risk.low_morale === false;
+      },
+      weight: function () {
+        return 3;
+      },
+      run: function (ctx) {
+        const tri = ctx.loveTriangle;
+        if (!tri) return;
+        const triangleKey = "triangle:" + getPairKey(tri.a, tri.b) + ":" + tri.c.id;
+        const arc = ctx.storyState.socialArcs[triangleKey] || { stage: 1, tag: "triangle" };
+        addLog(
+          "Around the evening fire, " +
+            tri.c.name +
+            " keeps to their own bedroll while " +
+            tri.a.name +
+            " and " +
+            tri.b.name +
+            " talk softly. The tension eases but leaves an ache.",
+          { tone: "morale", location: ctx.location, characters: [tri.a.id, tri.b.id, tri.c.id] }
+        );
+        adjustOpinion(tri.a, tri.b, 2, "triangle_soften");
+        adjustOpinion(tri.b, tri.a, 2, "triangle_soften");
+        addThought(tri.c, { id: "lonely_triangle", label: "Keeping distance", value: -2, hoursLeft: 10, source: "social" });
+        ctx.storyState.socialArcs[triangleKey] = Object.assign({}, arc, { stage: Math.max(2, arc.stage || 1) });
+        recordStoryBeat("social", "romance", "A love triangle cooled into uneasy distance", {
+          triangle: triangleKey,
+        });
+      },
+    },
+    {
+      id: "camp_gratitude_for_cook",
+      kind: "breather",
+      maxTension: 70,
+      condition: function (ctx) {
+        return (
+          ctx.mode === "camp" &&
+          ctx.lastHourCampTasks &&
+          ctx.lastHourCampTasks.cookedById &&
+          !ctx.lastHourTaskFailures.burnedMealById &&
+          (ctx.block === "evening" || ctx.block === "morning")
+        );
+      },
+      weight: function () {
+        return 6;
+      },
+      run: function (ctx) {
+        const cookId = ctx.lastHourCampTasks.cookedById;
+        const cook = ctx.people.find(function (p) {
+          return p && p.id === cookId;
+        });
+        if (!cook) return;
+        const others = ctx.people.filter(function (p) {
+          return p && p.id !== cookId;
+        });
+        addLog(
+          "Around the fire, the party quietly thanks " +
+            cook.name +
+            " for the meal. Warm bowls and softer voices make the camp feel closer.",
+          { tone: "morale", location: ctx.location, characters: [cook.id] }
+        );
+        cook.morale = clamp((cook.morale || 50) + 4, 0, 100);
+        others.slice(0, 2).forEach(function (p) {
+          adjustOpinion(p, cook, 3, "camp_gratitude");
+        });
+        recordStoryBeat("social", "gratitude", cook.name + " was thanked for cooking", { personId: cook.id });
+      },
+    },
+    {
+      id: "camp_blame_for_screwup",
+      kind: "minor",
+      minTension: 18,
+      condition: function (ctx) {
+        return (
+          (ctx.lastHourTaskFailures.burnedMealById || ctx.lastHourTaskFailures.badRepairById) &&
+          (ctx.risk.behind_schedule || ctx.risk.starvation)
+        );
+      },
+      weight: function () {
+        return 7;
+      },
+      run: function (ctx) {
+        const blameId =
+          ctx.lastHourTaskFailures.burnedMealById || ctx.lastHourTaskFailures.badRepairById;
+        const blamed = ctx.people.find(function (p) {
+          return p && p.id === blameId;
+        });
+        if (!blamed) return;
+        const accuser = choice(
+          ctx.people.filter(function (p) {
+            return p && p.id !== blameId;
+          })
+        );
+        addLog(
+          (accuser ? accuser.name + " snaps that " : "Someone snaps that ") +
+            " mistakes are slowing the wagon. Tempers fray as miles slip away.",
+          { tone: "warning", location: ctx.location, characters: [blameId] }
+        );
+        adjustOpinion(accuser || ctx.people[0], blamed, -5, "camp_blame");
+        blamed.morale = clamp((blamed.morale || 50) - 4, 0, 100);
+        ctx.storyState.risk.low_morale = true;
+        recordStoryBeat("social", "camp_blame", "Frustration over chores boiled over", {
+          personId: blameId,
+        });
+      },
+    },
+    {
+      id: "historic_kansas_river_delay",
+      kind: "minor",
+      minTension: 12,
+      maxTension: 70,
+      condition: function (ctx) {
+        const loc = (ctx.location || "").toLowerCase();
+        return ctx.regionKey === "plains" && loc.indexOf("kansas") >= 0 && ctx.block === "morning";
+      },
+      weight: function () {
+        return 6;
+      },
+      run: function (ctx) {
+        addLog(
+          "High spring water at the Kansas River forces a careful survey. You lose half a day scouting a safe ford.",
+          { tone: "warning", location: ctx.location }
+        );
+        ctx.storyState.risk.behind_schedule = true;
+        recordStoryBeat("historic", "route", "Kansas River delay slowed the party", { location: ctx.location });
+      },
+    },
+    {
+      id: "historic_snake_river_thirst",
+      kind: "major",
+      minTension: 28,
+      condition: function (ctx) {
+        return ctx.regionKey === "snake_plain" && ctx.risk.water_shortage;
+      },
+      weight: function () {
+        return 6;
+      },
+      run: function (ctx) {
+        addLog(
+          "The Snake country bakes under the sun. Water runs low and every mouthful is argued over.",
+          { tone: "warning", location: ctx.location }
+        );
+        ctx.people.forEach(function (p) {
+          if (!p) return;
+          p.thirst = clamp((p.thirst || 50) - 8, 0, 100);
+          addThought(p, { id: "snake_thirst", label: "Parched on the Snake", value: -4, hoursLeft: 10, source: "water" });
+        });
+        ctx.storyState.risk.water_shortage = true;
+        recordStoryBeat("historic", "water", "Snake River thirst tightened tempers", { location: ctx.location });
+      },
+    },
+    {
+      id: "historic_fort_clinic",
+      kind: "major",
+      minTension: 10,
+      condition: function (ctx) {
+        const atFort = (ctx.location || "").toLowerCase().indexOf("fort") >= 0;
+        const serious = ctx.people.some(function (p) {
+          return p && p.afflictions && p.afflictions.some(function (a) {
+            return a && !a.resolved && a.stage === "acute";
+          });
+        });
+        const flagKey = "historic_clinic_" + (ctx.location || "fort");
+        return atFort && serious && !ctx.storyState.eventFlags[flagKey];
+      },
+      weight: function () {
+        return 5;
+      },
+      run: function (ctx) {
+        const flagKey = "historic_clinic_" + (ctx.location || "fort");
+        ctx.storyState.eventFlags[flagKey] = true;
+        const cost = 25;
+        if ((ctx.gameState.money || 0) >= cost) {
+          ctx.gameState.money = Math.max(0, ctx.gameState.money - cost);
+          const patient = choice(
+            ctx.people.filter(function (p) {
+              return p && p.afflictions && p.afflictions.some(function (a) { return a && !a.resolved && a.stage === "acute"; });
+            })
+          );
+          if (patient) {
+            patient.afflictions.forEach(function (a) {
+              if (!a || a.resolved) return;
+              a.reliefHours = (a.reliefHours || 0) + 12;
+            });
+            addThought(patient, { id: "clinic_care", label: "Treated at the fort", value: 6, hoursLeft: 20, source: "illness" });
+          }
+          addLog(
+            "A mission doctor at the fort cleans wounds and mixes tonics. The care costs $" + cost + " but steadies the sick.",
+            { tone: "event", location: ctx.location }
+          );
+          recordStoryBeat("historic", "illness", "Fort clinic care eased an affliction", { location: ctx.location });
+        } else {
+          addLog("A small clinic sits by the palisade, but you cannot afford its medicines.", {
+            tone: "warning",
+            location: ctx.location,
+          });
+        }
+      },
+    },
+    {
+      id: "historic_rest_grande_ronde",
+      kind: "breather",
+      minTension: 10,
+      condition: function (ctx) {
+        return ctx.regionKey === "blue_mountains" && ctx.risk.behind_schedule && (ctx.risk.starvation || ctx.risk.cold_exposure);
+      },
+      weight: function () {
+        return 4;
+      },
+      run: function (ctx) {
+        addLog(
+          "In the Grande Ronde valley, grass and water are plentiful. You rest the stock and gather strength for the passes ahead.",
+          { tone: "morale", location: ctx.location }
+        );
+        ctx.storyState.risk.behind_schedule = false;
+        ctx.storyState.risk.starvation = false;
+        ctx.people.forEach(function (p) {
+          addThought(p, { id: "rest_valley", label: "Rested in a green valley", value: 5, hoursLeft: 14, source: "social" });
+        });
+        recordStoryBeat("lifeline", "lifeline", "Grande Ronde rest gave the party a breather", { location: ctx.location });
       },
     },
     {
@@ -8986,9 +9698,57 @@
         ? Math.max(1, getDayOfYear(gameState.date) - gameState.startDayOfYear + 1)
         : getDayOfYear(gameState.date);
 
+    const regionKey = gameState.region || "plains";
+    const seasonTag = (function () {
+      const m = (gameState.date || new Date()).getMonth();
+      if (m <= 1) return "winter";
+      if (m <= 4) return "spring";
+      if (m <= 7) return "summer";
+      if (m <= 9) return "fall";
+      return "late_fall";
+    })();
+
     const riskKeys = Object.keys(ss.risk || {}).filter(function (k) {
       return ss.risk[k];
     });
+
+    const loveTriangle = (function () {
+      if (!strongBondPair) return null;
+      const a = strongBondPair[0];
+      const b = strongBondPair[1];
+      for (let i = 0; i < people.length; i++) {
+        const c = people[i];
+        if (!c || c.id === a.id || c.id === b.id) continue;
+        const relAC = a.relationships && a.relationships[c.id];
+        const relBC = b.relationships && b.relationships[c.id];
+        if ((relAC && relAC.opinion >= 60) || (relBC && relBC.opinion >= 60)) {
+          return { a: a, b: b, c: c };
+        }
+      }
+      return null;
+    })();
+
+    const leadershipDisputePair = (function () {
+      const leader = gameState.leader;
+      if (!leader) return null;
+      let avgOpinion = 0;
+      let count = 0;
+      people.forEach(function (p) {
+        if (!p || p.id === leader.id) return;
+        const rel = p.relationships && p.relationships[leader.id];
+        if (rel) {
+          avgOpinion += rel.opinion || 0;
+          count++;
+        }
+      });
+      const mean = count > 0 ? avgOpinion / count : 0;
+      const challenger = people.find(function (p) {
+        if (!p || p.id === leader.id) return false;
+        const rel = p.relationships && p.relationships[leader.id];
+        return rel && (rel.opinion || 0) < mean - 12;
+      });
+      return challenger ? { challenger: challenger, leader: leader } : null;
+    })();
 
     return {
       gameState: gameState,
@@ -9011,6 +9771,12 @@
       pendingBreakPerson: pendingBreakPerson,
       dayTag: dayTag,
       socialArcs: ss.socialArcs || {},
+      regionKey: regionKey,
+      seasonTag: seasonTag,
+      loveTriangle: loveTriangle,
+      leadershipDisputePair: leadershipDisputePair,
+      lastHourCampTasks: ss.lastHourCampTasks || {},
+      lastHourTaskFailures: ss.lastHourTaskFailures || {},
     };
   }
 
@@ -9143,6 +9909,7 @@
     dom.cascadePanel.style.display = ended ? "block" : "none";
     if (!ended) return;
     const ss = ensureStoryState();
+    const timeline = buildCascadeTimeline(ss);
     const grouped = {
       hunger: [],
       illness: [],
@@ -9167,6 +9934,15 @@
       grouped[cat].push(entry);
     });
     dom.cascadeSummary.innerHTML = "";
+    if (dom.cascadeHighlights) {
+      const highlights = (ss.cascadeLog || []).slice(-6).reverse();
+      dom.cascadeHighlights.innerHTML = highlights
+        .map(function (entry) {
+          const day = entry.day ? "Day " + entry.day + " – " : "";
+          return "<div class=\"ot-panel-body-sm\">" + day + (entry.message || entry.kind || "Story beat") + "</div>";
+        })
+        .join("");
+    }
     Object.keys(labels).forEach(function (cat) {
       const list = grouped[cat] || [];
       if (!list.length) return;
@@ -9188,6 +9964,7 @@
       section.appendChild(ul);
       dom.cascadeSummary.appendChild(section);
     });
+    renderCascadeTimeline(timeline);
   }
 
   function renderPartyManifest() {
@@ -10603,7 +11380,14 @@
         const presetId = dom.storytellerMidrun.value || "classic";
         const oldPreset = gameState.storytellerPresetId || "classic";
         if (presetId === oldPreset) return;
+        const check = canSwapStorytellerPreset(presetId);
+        if (!check.ok) {
+          if (dom.narratorHint) dom.narratorHint.textContent = check.reason;
+          dom.storytellerMidrun.value = oldPreset;
+          return;
+        }
         setStorytellerPreset(presetId, { resetTimers: false });
+        noteStorytellerSwap();
         renderStorytellerDescription(presetId);
         const preset = STORYTELLER_PRESETS[presetId] || STORYTELLER_PRESETS.classic;
         const tone =
@@ -10614,6 +11398,7 @@
         addLog(tone, { tone: "meta" });
         saveGame();
         renderStorytellerOptions(dom.storytellerPreset, presetId);
+        renderNarratorRules();
       });
     }
     dom.btnAdvance1.addEventListener("click", function () {
