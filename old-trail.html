@@ -86,7 +86,7 @@
 }
 
 .ot-screen-travel {
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.25fr);
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.95fr);
 }
 
 .ot-panel {
@@ -442,13 +442,27 @@
   margin-bottom: 12px;
   border: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.75);
-  min-height: 170px;
+  min-height: 240px;
+}
+
+.ot-travel-main,
+.ot-travel-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ot-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-left: auto;
 }
 
 .ot-travel-view-toggle {
   display: inline-flex;
   gap: 4px;
-  margin-bottom: 6px;
   font-size: 10px;
 }
 
@@ -471,12 +485,36 @@
   opacity: 1;
 }
 
+.ot-map-launch {
+  padding: 6px 12px;
+}
+
 .ot-trail-canvas {
   display: block;
   width: 100%;
-  height: 180px;
+  height: 260px;
   image-rendering: crisp-edges;
   image-rendering: pixelated;
+}
+
+.ot-explorer-chip {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 6;
+  background: rgba(6, 8, 12, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 11px;
+  color: #f4efe3;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
+}
+
+.ot-explorer-chip div + div {
+  margin-top: 2px;
+  color: #cfc7b8;
 }
 
 /* View mode visibility helpers */
@@ -587,23 +625,31 @@
 
 .ot-bar-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 4px;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
 .ot-bar-label {
   font-size: 11px;
-  color: #bfb8ad;
-  margin-right: 10px;
+  color: #c4beb4;
+  min-width: 86px;
+}
+
+.ot-bar-shell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
 }
 
 .ot-bar {
   flex: 1;
-  height: 7px;
+  height: 10px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .ot-bar-fill {
@@ -619,6 +665,21 @@
 
 .ot-bar-fill.bad {
   background: linear-gradient(90deg, #ff7c7c, #dd3a3a);
+}
+
+.ot-bar-value {
+  font-size: 11px;
+  min-width: 40px;
+  text-align: right;
+  color: #f6f3ea;
+}
+
+.ot-manifest-meter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+  margin-left: 8px;
 }
 
 .ot-manifest-row {
@@ -711,6 +772,23 @@
 .ot-trail-dot-seen {
   background: rgba(245, 210, 139, 0.5);
   box-shadow: 0 0 0 1px rgba(245, 210, 139, 0.12);
+}
+
+.ot-map-modal-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.9fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.ot-map-modal-content {
+  max-width: 880px;
+}
+
+@media (max-width: 760px) {
+  .ot-map-modal-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Trail log */
@@ -1522,7 +1600,83 @@
   <!-- TRAVEL SCREEN -->
   <div id="ot-screen-travel" class="ot-screen">
     <div class="ot-screen-grid ot-screen-travel">
-      <div>
+      <div class="ot-travel-main">
+        <div class="ot-panel">
+          <div class="ot-panel-header">
+            Explorer viewport
+            <div class="ot-panel-actions">
+              <div class="ot-travel-view-toggle">
+                <button
+                  id="ot-btn-view-journal"
+                  class="ot-view-toggle-btn ot-view-toggle-btn-active"
+                  type="button"
+                >
+                  Journal view
+                </button>
+                <button id="ot-btn-view-explorer" class="ot-view-toggle-btn" type="button">
+                  Explorer view
+                </button>
+              </div>
+              <button id="ot-btn-open-map" class="ot-btn-outline ot-map-launch" type="button">
+                Trail map
+              </button>
+            </div>
+          </div>
+
+          <div class="ot-travel-scene-wrapper ot-viewport-window">
+            <div id="ot-explorer-chip" class="ot-explorer-chip"></div>
+            <canvas
+              id="ot-trail-canvas"
+              class="ot-trail-canvas"
+              aria-hidden="true"
+            ></canvas>
+            <div id="ot-scene" class="ot-travel-scene"></div>
+            <div class="ot-travel-scene-overlay" id="ot-scene-caption"></div>
+            <div id="ot-affliction-alerts" class="ot-affliction-alerts"></div>
+          </div>
+        </div>
+
+        <div class="ot-panel">
+          <div class="ot-panel-header">Trail info</div>
+          <div
+            class="ot-panel-body ot-panel-body-sm"
+            id="ot-trail-header"
+          ></div>
+        </div>
+
+        <div class="ot-panel">
+          <div class="ot-panel-header">Trail log</div>
+          <div class="ot-panel-body" id="ot-trail-log-panel">
+            <div id="old-trail-log-widget">
+              <div class="ot-log-shell">
+                <div class="ot-log-header">
+                  <div class="ot-log-title">Trail Log</div>
+                  <div class="ot-log-sub">Journal of the Journey</div>
+                </div>
+                <div class="ot-log-body">
+                  <div class="ot-log-list"></div>
+                </div>
+                <div class="ot-log-footer">
+                  <div>Recent entries</div>
+                  <div class="ot-footer-pill">Handwritten mode</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ot-panel" id="ot-cascade-panel" style="display: none;">
+          <div class="ot-panel-header">Trail story highlights</div>
+          <div class="ot-panel-body ot-cascade-wrapper">
+            <div id="ot-cascade-summary"></div>
+            <div id="ot-cascade-highlights"></div>
+            <div id="ot-cascade-timeline" aria-label="Cascade timeline"></div>
+            <div id="ot-cascade-people" aria-label="Companion timelines"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ot-travel-side">
         <div class="ot-panel">
           <div class="ot-panel-header">On the trail</div>
           <div class="ot-panel-body ot-panel-body-sm">
@@ -1582,94 +1736,10 @@
           </div>
           <div class="ot-panel-body" id="ot-hour-tasks"></div>
         </div>
-      </div>
-
-      <div>
-        <div class="ot-travel-view-toggle">
-          <button
-            id="ot-btn-view-journal"
-            class="ot-view-toggle-btn ot-view-toggle-btn-active"
-          >
-            Journal view
-          </button>
-          <button id="ot-btn-view-explorer" class="ot-view-toggle-btn">
-            Explorer view
-          </button>
-        </div>
-
-        <div class="ot-travel-scene-wrapper ot-viewport-window">
-          <canvas
-            id="ot-trail-canvas"
-            class="ot-trail-canvas"
-            aria-hidden="true"
-          ></canvas>
-          <div id="ot-scene" class="ot-travel-scene"></div>
-          <div class="ot-travel-scene-overlay" id="ot-scene-caption"></div>
-          <div id="ot-affliction-alerts" class="ot-affliction-alerts"></div>
-        </div>
-
-        <div class="ot-panel">
-          <div class="ot-panel-header">Trail info</div>
-          <div
-            class="ot-panel-body ot-panel-body-sm"
-            id="ot-trail-header"
-          ></div>
-        </div>
-
-        <div class="ot-panel">
-          <div class="ot-panel-header">
-            Trail map
-            <button
-              id="ot-btn-toggle-maplist"
-              class="ot-link-button"
-              type="button"
-            >
-              Show waypoints
-            </button>
-          </div>
-          <div class="ot-panel-body">
-            <div
-              class="ot-map-viewport ot-viewport-window"
-              id="ot-map-viewport"
-            ></div>
-            <div class="ot-trail-map" id="ot-trail-map"></div>
-          </div>
-        </div>
 
         <div class="ot-panel">
           <div class="ot-panel-header">Companion detail</div>
           <div class="ot-panel-body" id="ot-companion-detail"></div>
-        </div>
-
-        <div class="ot-panel">
-          <div class="ot-panel-header">Trail log</div>
-          <div class="ot-panel-body" id="ot-trail-log-panel">
-            <div id="old-trail-log-widget">
-              <div class="ot-log-shell">
-                <div class="ot-log-header">
-                  <div class="ot-log-title">Trail Log</div>
-                  <div class="ot-log-sub">Journal of the Journey</div>
-                </div>
-                <div class="ot-log-body">
-                  <div class="ot-log-list"></div>
-                </div>
-                <div class="ot-log-footer">
-                  <div>Recent entries</div>
-                  <div class="ot-footer-pill">Handwritten mode</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="ot-panel" id="ot-cascade-panel" style="display: none;">
-          <div class="ot-panel-header">Trail story highlights</div>
-          <div class="ot-panel-body ot-cascade-wrapper">
-            <div id="ot-cascade-summary"></div>
-            <div id="ot-cascade-highlights"></div>
-            <div id="ot-cascade-timeline" aria-label="Cascade timeline"></div>
-            <div id="ot-cascade-people" aria-label="Companion timelines"></div>
-          </div>
         </div>
 
         <div class="ot-panel">
@@ -1752,6 +1822,31 @@
         <div id="oldtrail-crafting-widget"></div>
       </div>
       <button id="ot-btn-close-camp" class="ot-btn-outline ot-overlay-close">Close</button>
+    </div>
+  </div>
+
+  <!-- Trail map modal -->
+  <div id="ot-map-modal" class="ot-modal">
+    <div class="ot-modal-backdrop"></div>
+    <div class="ot-modal-content ot-map-modal-content">
+      <div class="ot-modal-title">Trail map</div>
+      <div class="ot-modal-sub" id="ot-map-sub">
+        View your progress and nearby waypoints along the route.
+      </div>
+      <div class="ot-map-modal-grid">
+        <div class="ot-map-viewport ot-viewport-window" id="ot-map-viewport"></div>
+        <div class="ot-trail-map" id="ot-trail-map"></div>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; gap: 8px;">
+        <button
+          id="ot-btn-toggle-maplist"
+          class="ot-link-button"
+          type="button"
+        >
+          Show waypoints
+        </button>
+        <button id="ot-btn-close-map" class="ot-btn-outline" type="button">Close</button>
+      </div>
     </div>
   </div>
 
@@ -3342,6 +3437,7 @@
     highRiverRisk: false,
     partyId: null,
     mapListVisible: false,
+    mapOpen: false,
     dayRhythm: null,
     lastDayRhythmBonus: 0,
     nutritionHistory: [],
@@ -5130,6 +5226,12 @@
     dom.trailHeader = document.getElementById("ot-trail-header");
     dom.trailMap = document.getElementById("ot-trail-map");
     dom.mapViewport = document.getElementById("ot-map-viewport");
+    dom.btnOpenMap = document.getElementById("ot-btn-open-map");
+    dom.btnCloseMap = document.getElementById("ot-btn-close-map");
+    dom.mapModal = document.getElementById("ot-map-modal");
+    dom.mapBackdrop = dom.mapModal
+      ? dom.mapModal.querySelector(".ot-modal-backdrop")
+      : null;
     dom.btnToggleMapList = document.getElementById("ot-btn-toggle-maplist");
     dom.companionDetail = document.getElementById("ot-companion-detail");
     dom.trailLog = document.getElementById("old-trail-log-widget");
@@ -5147,6 +5249,7 @@
     dom.btnChangeRations = document.getElementById("ot-btn-change-rations");
     dom.btnOpenInventory = document.getElementById("ot-btn-open-inventory");
     dom.btnOpenCamp = document.getElementById("ot-btn-open-camp-tasks");
+    dom.explorerChip = document.getElementById("ot-explorer-chip");
 
     dom.inventoryModal = document.getElementById("ot-inventory-modal");
     dom.modalBackdrop = dom.inventoryModal
@@ -5663,6 +5766,7 @@
     gameState.log = [];
     gameState.recentRainHours = 0;
     gameState.mapListVisible = false;
+    gameState.mapOpen = false;
     gameState.travelView = "journal";
     gameState.traillines = defaultTraillinesState();
     gameState.explorer = { x: 6, y: 20, hourBuffer: 0, initializedFromProgress: true };
@@ -10725,6 +10829,24 @@
 
   /* ========= RENDERING ===================================================== */
 
+  function barColorForValue(value) {
+    const v = clamp(typeof value === "number" ? value : 0, 0, 100);
+    const hue = (v / 100) * 120; // 120 = green, 0 = red
+    return `hsl(${hue}, 70%, ${v > 60 ? 48 : 50}%)`;
+  }
+
+  function applyBarFill(fillEl, value, type) {
+    if (!fillEl) return;
+    const v = clamp(typeof value === "number" ? value : 0, 0, 100);
+    fillEl.style.width = v + "%";
+    fillEl.style.background = barColorForValue(v);
+    if (type === "warmth" && v < 35) {
+      fillEl.style.boxShadow = "0 0 0 1px rgba(120, 180, 255, 0.35)";
+    } else {
+      fillEl.style.boxShadow = "";
+    }
+  }
+
   function renderBars(container, person) {
     function row(label, value, type) {
       const wrap = document.createElement("div");
@@ -10735,15 +10857,23 @@
       lab.textContent = label;
       wrap.appendChild(lab);
 
+      const shell = document.createElement("div");
+      shell.className = "ot-bar-shell";
+
       const bar = document.createElement("div");
       bar.className = "ot-bar";
       const fill = document.createElement("div");
       fill.className = "ot-bar-fill";
-      if (type === "warmth" && value < 40) fill.classList.add("cold");
-      if (type === "condition" && value < 40) fill.classList.add("bad");
-      fill.style.width = clamp(value, 0, 100) + "%";
+      applyBarFill(fill, value, type);
       bar.appendChild(fill);
-      wrap.appendChild(bar);
+      shell.appendChild(bar);
+
+      const val = document.createElement("div");
+      val.className = "ot-bar-value";
+      val.textContent = Math.round(clamp(value, 0, 100)) + "%";
+      shell.appendChild(val);
+
+      wrap.appendChild(shell);
       container.appendChild(wrap);
     }
 
@@ -10876,14 +11006,20 @@
 
       row.appendChild(left);
 
+      const meter = document.createElement("div");
+      meter.className = "ot-manifest-meter";
       const bar = document.createElement("div");
       bar.className = "ot-bar";
       const fill = document.createElement("div");
       fill.className = "ot-bar-fill";
-      if (p.condition < 40) fill.classList.add("bad");
-      fill.style.width = clamp(p.condition, 0, 100) + "%";
+      applyBarFill(fill, p.condition, "condition");
       bar.appendChild(fill);
-      row.appendChild(bar);
+      meter.appendChild(bar);
+      const val = document.createElement("div");
+      val.className = "ot-bar-value";
+      val.textContent = Math.round(clamp(p.condition, 0, 100)) + "%";
+      meter.appendChild(val);
+      row.appendChild(meter);
 
       dom.partyManifest.appendChild(row);
     });
@@ -11010,6 +11146,19 @@
         : "");
   }
 
+  function renderExplorerChip() {
+    if (!dom.explorerChip) return;
+    const lines = [formatDateTime(gameState.date), gameState.locationName];
+    const weatherLine = formatWeatherSummary(gameState.weatherState || {});
+    if (weatherLine) lines.push(weatherLine);
+    dom.explorerChip.innerHTML = lines
+      .filter(Boolean)
+      .map(function (line) {
+        return "<div>" + line + "</div>";
+      })
+      .join("");
+  }
+
   function updateMapListVisibility() {
     if (!dom.trailMap) return;
     dom.trailMap.style.display = gameState.mapListVisible ? "block" : "none";
@@ -11028,6 +11177,14 @@
     dom.trailMap.innerHTML = "";
     const miles = gameState.milesTraveled;
     const seenMile = (gameState.traillines && gameState.traillines.fogMaxMile) || 0;
+    const mapSub = document.getElementById("ot-map-sub");
+    if (mapSub) {
+      mapSub.textContent =
+        "Miles traveled: " +
+        Math.round(miles) +
+        " / " +
+        Math.round(gameState.targetMiles || 0);
+    }
 
     ROUTE_MILESTONES.forEach(function (m) {
       const row = document.createElement("div");
@@ -11048,6 +11205,36 @@
     });
 
     updateMapListVisibility();
+  }
+
+  function syncMapModalState() {
+    if (!dom.mapModal) return;
+    if (gameState.mapOpen) {
+      dom.mapModal.classList.add("active");
+    } else {
+      dom.mapModal.classList.remove("active");
+    }
+  }
+
+  function openMapModal() {
+    if (gameState.mapOpen) {
+      syncMapModalState();
+      return;
+    }
+    gameState.mapOpen = true;
+    renderTrailMap();
+    syncMapModalState();
+    saveGame();
+  }
+
+  function closeMapModal() {
+    if (!gameState.mapOpen) {
+      syncMapModalState();
+      return;
+    }
+    gameState.mapOpen = false;
+    syncMapModalState();
+    saveGame();
   }
 
   /* ========= EXPLORER WORLD CAMERA ========================================= */
@@ -11967,7 +12154,9 @@
       renderScene();
       renderAfflictionAlerts();
       renderTrailHeader();
+      renderExplorerChip();
       renderTrailMap();
+      syncMapModalState();
       renderCompanionDetail();
       renderTrailLog();
       renderCascadeSummary();
@@ -12107,6 +12296,9 @@
       if (typeof gameState.mapListVisible !== "boolean") {
         gameState.mapListVisible = false;
       }
+      if (typeof gameState.mapOpen !== "boolean") {
+        gameState.mapOpen = false;
+      }
 
       // New: safety for daily rhythm fields on old saves
       if (typeof gameState.lastDayRhythmBonus !== "number") {
@@ -12146,6 +12338,12 @@
     } catch (e) {
       console.warn("Unable to load save:", e);
       return false;
+    }
+  }
+
+  function hideModal(el) {
+    if (el && el.classList) {
+      el.classList.remove("active");
     }
   }
 
@@ -12374,6 +12572,23 @@
     dom.btnCloseInventory.addEventListener("click", function () {
       dom.inventoryModal.classList.remove("active");
     });
+    if (dom.btnOpenMap) {
+      dom.btnOpenMap.addEventListener("click", function () {
+        openMapModal();
+      });
+    }
+    if (dom.btnCloseMap) {
+      dom.btnCloseMap.addEventListener("click", function () {
+        closeMapModal();
+      });
+    }
+    if (dom.mapModal) {
+      dom.mapModal.addEventListener("click", function (e) {
+        if (e.target === dom.mapModal || e.target === dom.mapBackdrop) {
+          closeMapModal();
+        }
+      });
+    }
     if (dom.inventoryModal) {
       dom.inventoryModal.addEventListener("click", function (e) {
         if (e.target === dom.inventoryModal || e.target === dom.modalBackdrop) {
@@ -12453,6 +12668,7 @@
         hideModal(dom.inventoryModal);
         hideModal(dom.prioritiesModal);
         hideModal(dom.campOverlay);
+        closeMapModal();
       }
 
       const typingInForm =
@@ -12462,7 +12678,11 @@
 
       const isExplorer =
         gameState.phase === "travel" && gameState.travelView === "explorer";
-      const canMove = isExplorer && gameState.mode === "travel" && !typingInForm;
+      const canMove =
+        isExplorer &&
+        gameState.mode === "travel" &&
+        !typingInForm &&
+        !gameState.mapOpen;
 
       if (canMove && !evt.metaKey && !evt.ctrlKey) {
         if (evt.key === "ArrowLeft" || evt.key === "a" || evt.key === "A") {
