@@ -198,6 +198,11 @@ UI / Explorer View
 - Swap placeholder explorer tiles for painterly terrain sprites and lighting overlays.
 - Add touch/mobile-friendly movement controls (D-pad or swipe) for the explorer camera.
 - Animate weather and fog layers over the explorer viewport to mirror current conditions.
+
+Map v2 follow-ups
+- Fill in full POI coordinates and trail edges for the Lander Road, California Trail junction, and Applegate cutoff so the new branch scaffolding can render correct paths once tile data is available (current stubs stop at junction + rejoin nodes).
+- Add mountain pass landmarks and decision prompts tied to those branches once underlying hex tiles are painted for the passes.
+- Refine river/desert corridor sampling with higher-resolution polyline points and branch-aware recalculation triggers to keep overlays in sync with future route choices.
 - Add a lightweight minimap overlay/inset for quick orientation while traveling.
 
 Traillines Explorer – Phase 2+

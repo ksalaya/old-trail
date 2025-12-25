@@ -797,6 +797,19 @@
   margin-bottom: 8px;
 }
 
+.ot-map-conditions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 8px;
+  font-size: 10px;
+  color: #c7c4bc;
+  margin-bottom: 8px;
+}
+
+.ot-map-conditions .label {
+  color: #9fb8c6;
+}
+
 .ot-map-target-actions {
   display: flex;
   gap: 8px;
@@ -1931,6 +1944,7 @@
             <button id="ot-btn-clear-target" class="ot-btn-outline" type="button">Clear Target</button>
           </div>
           <div class="ot-map-target-meta" id="ot-target-meta">No destination selected</div>
+          <div class="ot-map-conditions" id="ot-local-conditions"></div>
           <div class="ot-map-target-actions">
             <button id="ot-btn-travel-1h" class="ot-btn-gold" type="button">Travel 1h</button>
             <button id="ot-btn-travel-4h" class="ot-btn-outline" type="button">Travel 4h</button>
@@ -5343,6 +5357,7 @@
     dom.btnAutoTravel = document.getElementById("ot-btn-auto-travel");
     dom.btnClearTarget = document.getElementById("ot-btn-clear-target");
     dom.targetMeta = document.getElementById("ot-target-meta");
+    dom.localConditions = document.getElementById("ot-local-conditions");
     dom.toggleFog = document.getElementById("ot-toggle-fog");
     dom.toggleSilhouettes = document.getElementById("ot-toggle-silhouettes");
     dom.companionDetail = document.getElementById("ot-companion-detail");
@@ -6444,7 +6459,7 @@
     const finalMiles = baseMiles * (1 + rhythmBonus) * mobilityPenalty;
     const mods = getHexWorldModifiers(getPlayerHexFromMiles());
     let terrainFactor = 1;
-    if (mods.inSubletteDesert) terrainFactor *= 0.88;
+    if (mods.inSubletteDesert) terrainFactor *= 0.86;
     if (mods.atBigSandy) terrainFactor *= 0.92;
     const adjusted = finalMiles * terrainFactor;
     return adjusted;
@@ -7680,6 +7695,7 @@
     const local = getLocalResourceProfile();
     const envNote = local.tags && local.tags.length ? " (" + local.tags[0] + ")" : "";
 
+    const abundance = clamp(0.5 + (local.game || 0.3), 0.35, 1.6);
     const regionBase =
       (gameState.region === "plains"
         ? 0.22
@@ -7687,7 +7703,7 @@
         ? 0.28
         : gameState.region === "snake_plain"
         ? 0.18
-        : 0.16) * (0.5 + (local.game || 0.3));
+        : 0.16) * abundance;
 
     let meat = 0;
     for (let i = 0; i < shots; i++) {
@@ -7737,9 +7753,10 @@
         ? 6
         : gameState.region === "blue_mountains"
         ? 10
-        : 5) * (0.6 + (local.wood || 0.3));
+        : 5);
+    const richness = clamp(0.45 + (local.wood || 0.25) * 0.9, 0.3, 1.5);
     const skill = person.skills.woodcutting || 1;
-    const bundles = yieldBase * (0.3 + skill * 0.2);
+    const bundles = yieldBase * richness * (0.3 + skill * 0.2);
     const envNote = local.tags && local.tags.length ? " (" + local.tags[0] + ")" : "";
     if (!gameState.supplies.firewood) gameState.supplies.firewood = 0;
     gameState.supplies.firewood += bundles * 0.2;
@@ -7750,7 +7767,8 @@
     ) {
       if (!gameState.supplies.buffalo_chips)
         gameState.supplies.buffalo_chips = 0;
-      gameState.supplies.buffalo_chips += bundles * 0.3 * (0.8 + (local.forage || 0.2));
+      const chipRichness = clamp(0.7 + (local.forage || 0.2), 0.4, 1.4);
+      gameState.supplies.buffalo_chips += bundles * 0.3 * chipRichness;
     }
 
     addLog(
@@ -7772,10 +7790,10 @@
   function performFetchWater(person) {
     const ss = ensureStoryState();
     const local = getLocalResourceProfile();
-    let factor = 0.25 + (local.water || 0.3);
+    let factor = Math.max(0.25, 0.5 * (0.6 + (local.water || 0.2)));
     const name = gameState.locationName.toLowerCase();
     let quality = local.waterQualityHint || "stagnant";
-    let qualityTag = quality === "river" ? "good" : "risky";
+    let qualityTag = quality === "river" ? "good" : quality === "alkali" ? "alkali" : "risky";
     const envNote = local.tags && local.tags.length ? " (" + local.tags[0] + ")" : "";
     if (
       name.indexOf("river") >= 0 ||
@@ -7803,6 +7821,10 @@
       factor *= 0.6;
       quality = "alkali";
       qualityTag = "alkali";
+    }
+
+    if (local.tags && local.tags.indexOf("Big Sandy basin") >= 0) {
+      factor *= 0.8;
     }
 
     const dayKey = getDayKey(gameState.date || new Date());
@@ -8008,12 +8030,21 @@
       energyDrain += 1.2;
     }
 
+    const hexMods = getHexWorldModifiers(getPlayerHexFromMiles());
+
     // Weather effects on drains
     if (w.tempC >= 28) {
       thirstDrain += 1.2;
       hungerDrain += 0.4;
     } else if (w.tempC <= 0) {
       hungerDrain += 0.3;
+    }
+
+    if (hexMods.inSubletteDesert) {
+      thirstDrain += 0.9;
+      energyDrain += 0.3;
+    } else if (hexMods.atBigSandy) {
+      thirstDrain += 0.35;
     }
 
     // Apply drains
@@ -8250,6 +8281,10 @@
   function advanceHoursTowardDestination(count) {
     count = count || 1;
     count = Math.max(1, Math.min(12, Math.floor(count)));
+    if (gameState.mode !== "travel") {
+      gameState.mode = "travel";
+      resetTasksForCurrentMode();
+    }
     for (let i = 0; i < count; i++) {
       const remaining = remainingMilesToDestination();
       if (remaining !== null && remaining <= 0) break;
@@ -8260,6 +8295,20 @@
     }
     saveGame();
     renderAll();
+  }
+
+  function beginAutoTravelToDestination() {
+    ensureHexMapState();
+    if (!gameState.hexMap.destination || !gameState.hexMap.destination.destKey) {
+      addLog("Set a destination on the trail before auto-traveling.");
+      return;
+    }
+    if (gameState.mode !== "travel") {
+      gameState.mode = "travel";
+      resetTasksForCurrentMode();
+      addLog("You set the team toward the marked waypoint.");
+    }
+    advanceHoursTowardDestination(12);
   }
 
 
@@ -11401,6 +11450,7 @@
       return;
     }
     gameState.mapOpen = false;
+    HEX_HOVER_KEY = null;
     syncMapModalState();
     saveGame();
   }
@@ -11852,34 +11902,53 @@
 
   const HEX_FEATURE_POLYLINES = {
     snakeRiver: [
-      { lat: 42.62, lon: -111.7 },
+      { lat: 42.4, lon: -111.3 },
+      { lat: 42.8, lon: -111.8 },
       { lat: 42.99, lon: -112.2 },
       { lat: 43.2, lon: -112.6 },
+      { lat: 43.35, lon: -112.95 },
       { lat: 43.55, lon: -113.2 },
+      { lat: 43.7, lon: -113.55 },
       { lat: 43.9, lon: -113.9 },
+      { lat: 44.05, lon: -114.35 },
+      { lat: 43.96, lon: -114.9 },
       { lat: 43.9, lon: -115.1 },
+      { lat: 43.8, lon: -115.8 },
       { lat: 43.7, lon: -116.2 },
+      { lat: 43.65, lon: -116.6 },
       { lat: 43.6, lon: -117.0 },
       { lat: 43.55, lon: -117.2 },
+      { lat: 43.45, lon: -117.4 },
     ],
     columbiaRiver: [
+      { lat: 46.25, lon: -117.9 },
       { lat: 46.05, lon: -118.35 },
+      { lat: 45.95, lon: -118.9 },
       { lat: 45.85, lon: -119.6 },
+      { lat: 45.9, lon: -120.15 },
       { lat: 45.85, lon: -120.7 },
+      { lat: 45.82, lon: -121.0 },
       { lat: 45.75, lon: -121.5 },
+      { lat: 45.68, lon: -121.85 },
       { lat: 45.62, lon: -122.2 },
       { lat: 45.62, lon: -122.66 },
     ],
     bigSandy: [
-      { lat: 42.52, lon: -109.35 },
+      { lat: 42.6, lon: -109.55 },
+      { lat: 42.55, lon: -109.35 },
+      { lat: 42.52, lon: -109.2 },
       { lat: 42.52, lon: -109.0 },
+      { lat: 42.55, lon: -108.85 },
       { lat: 42.55, lon: -108.65 },
     ],
     subletteDesert: [
+      { lat: 42.55, lon: -110.5 },
       { lat: 42.5, lon: -110.2 },
       { lat: 42.45, lon: -109.9 },
       { lat: 42.45, lon: -109.6 },
+      { lat: 42.48, lon: -109.35 },
       { lat: 42.5, lon: -109.2 },
+      { lat: 42.55, lon: -109.05 },
     ],
   };
 
@@ -11934,6 +12003,15 @@
   }
 
   function ensureFeatureCorridors() {
+    const branchToken = branchChoiceValue("sublette_or_bridger") || "bridger";
+    const cacheKey = branchToken;
+    if (
+      LAST_FEATURE_BRANCH === cacheKey &&
+      HEX_WORLD.featureHex.snakeRiver.size &&
+      HEX_WORLD.featureHex.columbiaRiver.size
+    ) {
+      return;
+    }
     const spacing = HEX_MILES_PER_STEP / 2;
     const snake = samplePolylineToHexes(HEX_FEATURE_POLYLINES.snakeRiver, spacing);
     const columbia = samplePolylineToHexes(
@@ -11950,6 +12028,7 @@
     HEX_WORLD.featureHex.columbiaRiver = expandHexSet(columbia, 2);
     HEX_WORLD.featureHex.bigSandy = expandHexSet(bigSandy, 1);
     HEX_WORLD.featureHex.subletteDesert = expandHexSet(sublette, 2);
+    LAST_FEATURE_BRANCH = cacheKey;
   }
 
   function drawHex(ctx, xPx, yPx, radiusPx) {
@@ -11981,6 +12060,9 @@
     { id: "devils_gate_wy", name: "Devil's Gate", type: "landmark", lat: 42.44889, lon: -107.21028, region: "high_plains", tags: [] },
     { id: "split_rock_wy", name: "Split Rock", type: "landmark", lat: 42.45358, lon: -107.5458, region: "high_plains", tags: [] },
     { id: "south_pass_wy", name: "South Pass", type: "mountain_pass", lat: 42.37, lon: -108.91361, region: "high_plains", tags: [] },
+    { id: "lander_meadows_wy", name: "Lander Meadows", type: "cutoff_stop", lat: 42.82, lon: -109.65, region: "high_plains", tags: ["lander_road"] },
+    { id: "california_trail_junction_nv", name: "California Trail Junction", type: "junction", lat: 42.07, lon: -113.3, region: "snake_plain", tags: ["california_trail"] },
+    { id: "applegate_split_or", name: "Applegate Cutoff Junction", type: "junction", lat: 43.21, lon: -117.0, region: "snake_plain", tags: ["applegate_cutoff"] },
     { id: "parting_of_ways_wy", name: "Parting of the Ways", type: "junction", lat: 42.2575, lon: -109.22833, region: "high_plains", tags: [] },
     { id: "green_river_lombard_ferry", name: "Green River Ferry", type: "river_crossing", lat: 42.87978, lon: -109.80752, region: "mountains", tags: ["green_river"] },
     { id: "fort_bridger_wy", name: "Fort Bridger", type: "fort", lat: 41.31872, lon: -110.38642, region: "mountains", tags: [] },
@@ -12026,6 +12108,20 @@
       { id: "split_south", from: "split_rock_wy", to: "south_pass_wy" },
       { id: "south_parting", from: "south_pass_wy", to: "parting_of_ways_wy" },
       {
+        id: "south_lander",
+        from: "south_pass_wy",
+        to: "lander_meadows_wy",
+        branchKey: "lander_route",
+        branchValue: "lander",
+      },
+      {
+        id: "lander_hall",
+        from: "lander_meadows_wy",
+        to: "soda_springs_id",
+        branchKey: "lander_route",
+        branchValue: "lander",
+      },
+      {
         id: "parting_bridger",
         from: "parting_of_ways_wy",
         to: "fort_bridger_wy",
@@ -12054,10 +12150,38 @@
         branchValue: "sublette",
       },
       { id: "soda_forthall", from: "soda_springs_id", to: "fort_hall_id" },
+      {
+        id: "hall_california",
+        from: "fort_hall_id",
+        to: "california_trail_junction_nv",
+        branchKey: "california_branch",
+        branchValue: "california",
+      },
       { id: "hall_register", from: "fort_hall_id", to: "register_rock_id" },
+      {
+        id: "california_boise",
+        from: "california_trail_junction_nv",
+        to: "fort_boise_id",
+        branchKey: "california_branch",
+        branchValue: "california",
+      },
       { id: "register_threeisland", from: "register_rock_id", to: "three_island_crossing_id" },
       { id: "threeisland_boise", from: "three_island_crossing_id", to: "fort_boise_id" },
+      {
+        id: "boise_applegate",
+        from: "fort_boise_id",
+        to: "applegate_split_or",
+        branchKey: "applegate_cutoff",
+        branchValue: "applegate",
+      },
       { id: "boise_burnt", from: "fort_boise_id", to: "burnt_river_or" },
+      {
+        id: "applegate_burnt",
+        from: "applegate_split_or",
+        to: "burnt_river_or",
+        branchKey: "applegate_cutoff",
+        branchValue: "applegate",
+      },
       { id: "burnt_lagrande", from: "burnt_river_or", to: "la_grande_or" },
       { id: "lagrande_meacham", from: "la_grande_or", to: "meacham_or" },
       { id: "meacham_walla", from: "meacham_or", to: "fort_walla_walla_wa" },
@@ -12109,6 +12233,10 @@
       bigSandy: new Set(),
     },
   };
+
+  let HEX_HOVER_KEY = null;
+  const LAST_HEX_CLICK = { key: null, ts: 0 };
+  let LAST_FEATURE_BRANCH = null;
 
   function preparePoiCaches() {
     HEX_WORLD.poiById = {};
@@ -12376,6 +12504,7 @@
       nearColumbiaRiver: HEX_WORLD.featureHex.columbiaRiver.has(key),
       inSubletteDesert: HEX_WORLD.featureHex.subletteDesert.has(key),
       atBigSandy: HEX_WORLD.featureHex.bigSandy.has(key),
+      key: key,
     };
   }
 
@@ -12408,8 +12537,8 @@
     }
   }
 
-  function getLocalResourceProfile() {
-    const playerHex = getPlayerHexFromMiles();
+  function getLocalResourceProfile(hexOverride) {
+    const playerHex = hexOverride || getPlayerHexFromMiles();
     const miles = axialToMilesXY(playerHex.q, playerHex.r);
     const latlon = milesXYToLatLon(miles.xMi, miles.yMi);
     const regionBiome = hexBiomeForLatLon(latlon.lat, latlon.lon);
@@ -12426,9 +12555,9 @@
     });
 
     if (mods.nearSnakeRiver || mods.nearColumbiaRiver || nearPoiWater) {
-      profile.water = Math.min(1, profile.water + 0.25);
-      profile.game = Math.min(1, profile.game + 0.08);
-      profile.forage = Math.min(1, profile.forage + 0.06);
+      profile.water = Math.min(1, profile.water + 0.3);
+      profile.game = Math.min(1, profile.game + 0.12);
+      profile.forage = Math.min(1, profile.forage + 0.1);
       waterQualityHint = "river";
       if (mods.nearSnakeRiver) tags.push("Snake corridor");
       if (mods.nearColumbiaRiver) tags.push("Columbia corridor");
@@ -12445,8 +12574,14 @@
     if (mods.atBigSandy) {
       profile.water = Math.max(0.12, profile.water * 0.6);
       profile.forage = Math.max(0.08, profile.forage * 0.6);
+      profile.game = Math.max(0.08, profile.game * 0.7);
       tags.push("Big Sandy basin");
     }
+
+    profile.water = clamp(profile.water, 0, 1);
+    profile.wood = clamp(profile.wood, 0, 1);
+    profile.forage = clamp(profile.forage, 0, 1);
+    profile.game = clamp(profile.game, 0, 1);
 
     profile.waterQualityHint = waterQualityHint;
     profile.region = regionBiome.region;
@@ -12682,7 +12817,10 @@
     if (!HEX_WORLD.activePath.length) rebuildActiveRoutePath();
     ensureHexMapState();
     const playerHex = getPlayerHexFromMiles();
-    if (gameState.hexMap.follow || gameState.hexMap.camQ == null) {
+    if (
+      !(options && options.lockCamera) &&
+      (gameState.hexMap.follow || gameState.hexMap.camQ == null)
+    ) {
       recenterCameraOnPlayer();
     }
     const metrics = getHexMapMetrics(rect);
@@ -12714,6 +12852,30 @@
         ctx.fillStyle = color;
         drawHex(ctx, px, py, metrics.radiusPx - 0.6);
         ctx.fill();
+        const mods = getHexWorldModifiers({ q: hq, r: hr });
+        const allowOverlay = !fog || seen || silhouettes;
+        if (allowOverlay) {
+          if (mods.nearSnakeRiver) {
+            ctx.fillStyle = fog && !seen ? "rgba(80,120,160,0.18)" : "rgba(90,150,210,0.28)";
+            drawHex(ctx, px, py, metrics.radiusPx - 1.2);
+            ctx.fill();
+          }
+          if (mods.nearColumbiaRiver) {
+            ctx.fillStyle = fog && !seen ? "rgba(70,120,180,0.18)" : "rgba(70,140,210,0.26)";
+            drawHex(ctx, px, py, metrics.radiusPx - 1.2);
+            ctx.fill();
+          }
+          if (mods.inSubletteDesert) {
+            ctx.fillStyle = fog && !seen ? "rgba(180,150,90,0.16)" : "rgba(210,170,100,0.24)";
+            drawHex(ctx, px, py, metrics.radiusPx - 1.2);
+            ctx.fill();
+          }
+          if (mods.atBigSandy) {
+            ctx.fillStyle = fog && !seen ? "rgba(190,150,110,0.16)" : "rgba(220,180,120,0.25)";
+            drawHex(ctx, px, py, metrics.radiusPx - 1.2);
+            ctx.fill();
+          }
+        }
         posByKey[key] = { px: px, py: py, seen: seen };
 
         const poiHere = HEX_WORLD.poiByHex[key];
@@ -12735,6 +12897,13 @@
             ctx.font = "10px 'Inter', system-ui";
             ctx.fillText(name, px + 8, py - 6);
           }
+        }
+
+        if (allowOverlay && HEX_HOVER_KEY === key) {
+          ctx.strokeStyle = "rgba(255,255,255,0.8)";
+          ctx.lineWidth = 2;
+          drawHex(ctx, px, py, metrics.radiusPx - 0.8);
+          ctx.stroke();
         }
       }
     }
@@ -12782,7 +12951,7 @@
       ctx.fillStyle = "#e7e0d2";
       ctx.font = "11px 'Inter', system-ui";
       ctx.fillText(
-        "Click to set a target · Arrow keys pan · F follow · C recenter",
+        "Click to set target, click again to travel (12h) · Arrows pan · F follow",
         14,
         rect.height - 12
       );
@@ -12793,31 +12962,66 @@
     renderHexScene(dom.trailCanvas, { showHint: true });
   }
 
-  function buildTooltipHtmlForHex(hex) {
+  function buildTooltipHtmlForHex(hex, options) {
     const key = axialKey(hex.q, hex.r);
     const ids = HEX_WORLD.poiByHex[key] || [];
-    if (!ids.length) return null;
-    const poi = HEX_WORLD.poiById[ids[0]];
     const miles = axialToMilesXY(hex.q, hex.r);
     const latlon = milesXYToLatLon(miles.xMi, miles.yMi);
     const biome = hexBiomeForLatLon(latlon.lat, latlon.lon);
     const mods = getHexWorldModifiers(hex);
-    const tags = [];
-    if (mods.nearSnakeRiver) tags.push("Snake corridor");
-    if (mods.nearColumbiaRiver) tags.push("Columbia corridor");
-    if (mods.inSubletteDesert) tags.push("Sublette desert");
-    if (mods.atBigSandy) tags.push("Big Sandy");
+    const profile = getLocalResourceProfile(hex);
+    const tags = profile.tags ? profile.tags.slice() : [];
+    if (mods.nearSnakeRiver && tags.indexOf("Snake corridor") === -1) tags.push("Snake corridor");
+    if (mods.nearColumbiaRiver && tags.indexOf("Columbia corridor") === -1)
+      tags.push("Columbia corridor");
+    if (mods.inSubletteDesert && tags.indexOf("Sublette desert stretch") === -1)
+      tags.push("Sublette desert stretch");
+    if (mods.atBigSandy && tags.indexOf("Big Sandy basin") === -1)
+      tags.push("Big Sandy basin");
     const idx = HEX_WORLD.activePathIndex[key];
     const mileLabel = idx != null ? "Mile " + Math.round(idx * HEX_MILES_PER_STEP) : "";
+    const unseen = options && options.unseen;
+
+    let title = HEX_WORLD.trailHex.has(key) ? "Trail waypoint" : "Off-trail ground";
+    let subtitle = biome.biome.replace(/_/g, " ");
+    if (ids.length) {
+      const poi = HEX_WORLD.poiById[ids[0]];
+      title = unseen ? "Unseen landmark" : poi.name;
+      subtitle = unseen ? "hidden details" : poi.type || "waypoint";
+    }
+
+    const resources = [
+      { id: "water", label: "Water", val: profile.water },
+      { id: "wood", label: "Wood", val: profile.wood },
+      { id: "forage", label: "Forage", val: profile.forage },
+      { id: "game", label: "Game", val: profile.game },
+    ]
+      .map(function (r) {
+        const pct = Math.round((r.val || 0) * 100);
+        return `<div style="font-size:10px; color:#d4c9b0;">${r.label}: ${pct}%</div>`;
+      })
+      .join("");
+
     const parts = [
-      `<div style="font-weight:600;">${poi.name}</div>`,
-      `<div style="font-size:11px; color:#c7c4bc;">${poi.type || "waypoint"}</div>`,
+      `<div style="font-weight:600;">${title}</div>`,
+      `<div style="font-size:11px; color:#c7c4bc;">${subtitle}</div>`,
       `<div style="font-size:11px; margin-top:4px;">Biome: ${biome.biome.replace(/_/g, " ")}</div>`,
     ];
     if (tags.length) {
       parts.push(`<div style="font-size:11px; color:#d4c9b0;">${tags.join(" · ")}</div>`);
     }
-    if (mileLabel) parts.push(`<div style="font-size:10px; color:#b7b3ab;">${mileLabel}</div>`);
+    if (mileLabel && HEX_WORLD.trailHex.has(key))
+      parts.push(`<div style="font-size:10px; color:#b7b3ab;">${mileLabel}</div>`);
+    parts.push(`<div style="font-size:11px; margin-top:4px;">Local resources</div>`);
+    parts.push(resources);
+    if (profile.waterQualityHint) {
+      parts.push(
+        `<div style="font-size:10px; color:#9ec5ff;">Water: ${profile.waterQualityHint.replace(/_/g, " ")}</div>`
+      );
+    }
+    if (unseen) {
+      parts.push(`<div style="font-size:10px; color:#9c8f7a;">Unseen (fog)</div>`);
+    }
     return parts.join("");
   }
 
@@ -12829,8 +13033,21 @@
       if (!HEX_WORLD.trailHex.size) rebuildActiveRoutePath();
       const hex = pixelToAxialOnCanvas(canvas, evt.clientX, evt.clientY);
       const key = axialKey(hex.q, hex.r);
-      if (!HEX_WORLD.trailHex.has(key)) return;
-      setTravelDestination(hex);
+      ensureHexMapState();
+      if (!HEX_WORLD.trailHex.has(key)) {
+        addLog("That point is off the mapped trail. Stick to the highlighted corridor.");
+        return;
+      }
+      const hm = gameState.hexMap;
+      const now = Date.now();
+      const sameDest = hm.destination && hm.destination.destKey === key;
+      const quickRepeat = LAST_HEX_CLICK.key === key && now - LAST_HEX_CLICK.ts < 700;
+      const setOk = setTravelDestination(hex);
+      LAST_HEX_CLICK.key = key;
+      LAST_HEX_CLICK.ts = now;
+      if (setOk && (sameDest || quickRepeat)) {
+        beginAutoTravelToDestination();
+      }
     });
     if (tooltip) {
       canvas.addEventListener("mousemove", function (evt) {
@@ -12838,11 +13055,15 @@
         const hex = pixelToAxialOnCanvas(canvas, evt.clientX, evt.clientY);
         const key = axialKey(hex.q, hex.r);
         const hm = gameState.hexMap;
+        HEX_HOVER_KEY = key;
         if (hm.fogEnabled && !hm.silhouettesEnabled && !hm.seen[key]) {
           tooltip.style.display = "none";
+          HEX_HOVER_KEY = null;
           return;
         }
-        const html = buildTooltipHtmlForHex(hex);
+        const html = buildTooltipHtmlForHex(hex, {
+          unseen: hm.fogEnabled && !hm.seen[key] && hm.silhouettesEnabled,
+        });
         if (!html) {
           tooltip.style.display = "none";
           return;
@@ -12852,9 +13073,12 @@
         tooltip.style.left = evt.clientX - rect.left + "px";
         tooltip.style.top = evt.clientY - rect.top - 8 + "px";
         tooltip.style.display = "block";
+        renderHexScene(canvas, { showHint: options && options.showHint, lockCamera: true });
       });
       canvas.addEventListener("mouseleave", function () {
         tooltip.style.display = "none";
+        HEX_HOVER_KEY = null;
+        renderHexScene(canvas, { showHint: options && options.showHint, lockCamera: true });
       });
     }
   }
@@ -12926,6 +13150,30 @@
         dom.targetMeta.textContent = "No destination selected";
       }
     }
+    renderLocalConditionsReadout();
+  }
+
+  function renderLocalConditionsReadout(hexOverride) {
+    if (!dom.localConditions) return;
+    const profile = getLocalResourceProfile(hexOverride);
+    const labels = [
+      { key: "water", label: "Water" },
+      { key: "wood", label: "Wood" },
+      { key: "forage", label: "Forage" },
+      { key: "game", label: "Game" },
+    ];
+    const html = labels
+      .map(function (l) {
+        const pct = Math.round((profile[l.key] || 0) * 100);
+        return `<div class="label">${l.label}</div><div>${pct}%</div>`;
+      })
+      .join("");
+    const tags = profile.tags && profile.tags.length ? profile.tags.join(" · ") : "";
+    dom.localConditions.innerHTML =
+      html +
+      (tags
+        ? `<div class="label">Hazards</div><div>${tags}</div>`
+        : `<div class="label">Water</div><div>${profile.waterQualityHint || "mixed"}</div>`);
   }
 
   function getExplorerTile(x, y) {
