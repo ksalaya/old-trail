@@ -743,6 +743,66 @@
   overflow: hidden;
 }
 
+.ot-map-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(14, 19, 26, 0.92);
+  color: #f6f3ea;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(245, 210, 139, 0.3);
+  font-size: 11px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+  z-index: 5;
+  transform: translate(-50%, -100%);
+}
+
+.ot-map-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(6, 8, 12, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ot-map-toggle-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 11px;
+}
+
+.ot-map-target-block {
+  background: radial-gradient(circle at top, #1e2632, #0f141c);
+  border: 1px solid rgba(245, 210, 139, 0.16);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.ot-map-target-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.ot-map-target-meta {
+  font-size: 11px;
+  color: #c7c4bc;
+  margin-bottom: 8px;
+}
+
+.ot-map-target-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .ot-map-canvas,
 .ot-overview-canvas {
   width: 100%;
@@ -1851,8 +1911,32 @@
         View your progress and nearby waypoints along the route.
       </div>
       <div class="ot-map-modal-grid">
-        <div class="ot-map-viewport ot-viewport-window" id="ot-map-viewport"></div>
+        <div class="ot-map-viewport ot-viewport-window" id="ot-map-viewport">
+          <div id="ot-map-tooltip" class="ot-map-tooltip" style="display: none"></div>
+        </div>
         <div class="ot-trail-map" id="ot-trail-map"></div>
+      </div>
+      <div class="ot-map-controls">
+        <div class="ot-map-toggle-row">
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input id="ot-toggle-fog" type="checkbox" /> Fog of war
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input id="ot-toggle-silhouettes" type="checkbox" /> Silhouettes on unseen
+          </label>
+        </div>
+        <div class="ot-map-target-block">
+          <div class="ot-map-target-header">
+            <div style="font-weight: 600;">Travel target</div>
+            <button id="ot-btn-clear-target" class="ot-btn-outline" type="button">Clear Target</button>
+          </div>
+          <div class="ot-map-target-meta" id="ot-target-meta">No destination selected</div>
+          <div class="ot-map-target-actions">
+            <button id="ot-btn-travel-1h" class="ot-btn-gold" type="button">Travel 1h</button>
+            <button id="ot-btn-travel-4h" class="ot-btn-outline" type="button">Travel 4h</button>
+            <button id="ot-btn-auto-travel" class="ot-btn-outline" type="button">Auto Travel (max 12h)</button>
+          </div>
+        </div>
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; gap: 8px;">
         <button
@@ -5245,6 +5329,8 @@
     dom.trailHeader = document.getElementById("ot-trail-header");
     dom.trailMap = document.getElementById("ot-trail-map");
     dom.mapViewport = document.getElementById("ot-map-viewport");
+    dom.mapCanvas = null;
+    dom.mapTooltip = document.getElementById("ot-map-tooltip");
     dom.btnOpenMap = document.getElementById("ot-btn-open-map");
     dom.btnCloseMap = document.getElementById("ot-btn-close-map");
     dom.mapModal = document.getElementById("ot-map-modal");
@@ -5252,6 +5338,13 @@
       ? dom.mapModal.querySelector(".ot-modal-backdrop")
       : null;
     dom.btnToggleMapList = document.getElementById("ot-btn-toggle-maplist");
+    dom.btnTravel1h = document.getElementById("ot-btn-travel-1h");
+    dom.btnTravel4h = document.getElementById("ot-btn-travel-4h");
+    dom.btnAutoTravel = document.getElementById("ot-btn-auto-travel");
+    dom.btnClearTarget = document.getElementById("ot-btn-clear-target");
+    dom.targetMeta = document.getElementById("ot-target-meta");
+    dom.toggleFog = document.getElementById("ot-toggle-fog");
+    dom.toggleSilhouettes = document.getElementById("ot-toggle-silhouettes");
     dom.companionDetail = document.getElementById("ot-companion-detail");
     dom.trailLog = document.getElementById("old-trail-log-widget");
     dom.suppliesOverview = document.getElementById("ot-supplies-overview");
@@ -6349,7 +6442,12 @@
     });
 
     const finalMiles = baseMiles * (1 + rhythmBonus) * mobilityPenalty;
-    return finalMiles;
+    const mods = getHexWorldModifiers(getPlayerHexFromMiles());
+    let terrainFactor = 1;
+    if (mods.inSubletteDesert) terrainFactor *= 0.88;
+    if (mods.atBigSandy) terrainFactor *= 0.92;
+    const adjusted = finalMiles * terrainFactor;
+    return adjusted;
   }
 
 
@@ -7580,6 +7678,7 @@
     const shots = Math.min(10, bullets);
     const skill = person.skills.hunting || 1;
     const local = getLocalResourceProfile();
+    const envNote = local.tags && local.tags.length ? " (" + local.tags[0] + ")" : "";
 
     const regionBase =
       (gameState.region === "plains"
@@ -7611,10 +7710,12 @@
         person.name +
           " brings back about " +
           Math.round(meat) +
-          " lb of fresh game."
+          " lb of fresh game" +
+          envNote +
+          "."
       );
     } else {
-      addLog(person.name + " returns from the hunt empty-handed.");
+      addLog(person.name + " returns from the hunt empty-handed" + envNote + ".");
     }
 
     const injuryChance = clamp(0.08 - skill * 0.012, 0.02, 0.08);
@@ -7639,6 +7740,7 @@
         : 5) * (0.6 + (local.wood || 0.3));
     const skill = person.skills.woodcutting || 1;
     const bundles = yieldBase * (0.3 + skill * 0.2);
+    const envNote = local.tags && local.tags.length ? " (" + local.tags[0] + ")" : "";
     if (!gameState.supplies.firewood) gameState.supplies.firewood = 0;
     gameState.supplies.firewood += bundles * 0.2;
 
@@ -7653,7 +7755,8 @@
 
     addLog(
       person.name +
-        " gathers fuel around camp — enough for a couple of fires if kept dry."
+        " gathers fuel around camp — enough for a couple of fires if kept dry." +
+        envNote
     );
 
     const mishapChance = clamp(0.05 - skill * 0.01, 0.01, 0.05);
@@ -7669,10 +7772,11 @@
   function performFetchWater(person) {
     const ss = ensureStoryState();
     const local = getLocalResourceProfile();
-    let factor = 0.35 + (local.water || 0.3);
+    let factor = 0.25 + (local.water || 0.3);
     const name = gameState.locationName.toLowerCase();
     let quality = local.waterQualityHint || "stagnant";
     let qualityTag = quality === "river" ? "good" : "risky";
+    const envNote = local.tags && local.tags.length ? " (" + local.tags[0] + ")" : "";
     if (
       name.indexOf("river") >= 0 ||
       name.indexOf("ford") >= 0 ||
@@ -7687,13 +7791,18 @@
       gameState.region === "snake_plain" ||
       gameState.region === "mountains"
     ) {
-      factor = Math.max(factor, 0.7 * (0.6 + (local.water || 0.3)));
-      quality = "alkali";
-      qualityTag = "alkali";
+      factor = Math.max(factor, 0.6 * (0.6 + (local.water || 0.3)));
+      quality = quality === "river" ? quality : "alkali";
+      qualityTag = quality === "river" ? "good" : "alkali";
     } else if (gameState.region === "blue_mountains") {
       factor = Math.max(factor, 0.8 * (0.7 + (local.water || 0.3)));
       quality = "cold_stream";
       qualityTag = "good";
+    }
+    if (local.tags && local.tags.indexOf("Sublette desert stretch") >= 0) {
+      factor *= 0.6;
+      quality = "alkali";
+      qualityTag = "alkali";
     }
 
     const dayKey = getDayKey(gameState.date || new Date());
@@ -7755,7 +7864,8 @@
       person.name +
         " hauls water for camp — about " +
         gallons.toFixed(1) +
-        " gallons."
+        " gallons." +
+        envNote
     );
   }
 
@@ -8032,6 +8142,7 @@
 
   function advanceOneHour(context) {
     const ss = ensureStoryState();
+    const milesBefore = gameState.milesTraveled || 0;
     gameState.date = new Date(gameState.date.getTime() + 60 * 60 * 1000);
 
     ss.lastHourCampTasks = {
@@ -8090,6 +8201,7 @@
       0,
       gameState.targetMiles
     );
+    clampMilesToDestination(milesBefore);
 
     updateDayRhythmForCurrentHour(miles);
 
@@ -8098,6 +8210,7 @@
     }
 
     updateRegionAndLocation();
+    handleDestinationArrival();
     if (gameState.traillines) {
       gameState.traillines.fogMaxMile = Math.max(
         gameState.traillines.fogMaxMile || 0,
@@ -8130,6 +8243,21 @@
     }
 
     // After the block of time, persist and redraw
+    saveGame();
+    renderAll();
+  }
+
+  function advanceHoursTowardDestination(count) {
+    count = count || 1;
+    count = Math.max(1, Math.min(12, Math.floor(count)));
+    for (let i = 0; i < count; i++) {
+      const remaining = remainingMilesToDestination();
+      if (remaining !== null && remaining <= 0) break;
+      advanceOneHour({ reason: "map_target_travel" });
+      if (isDestinationReached()) break;
+      if (gameState.mode !== "travel") break;
+      if (gameState.runEnded) break;
+    }
     saveGame();
     renderAll();
   }
@@ -11220,6 +11348,8 @@
         Math.round(gameState.targetMiles || 0);
     }
 
+    renderTravelTargetUI();
+
     ROUTE_MILESTONES.forEach(function (m) {
       const row = document.createElement("div");
       row.className = "ot-trail-dot-row";
@@ -11248,6 +11378,10 @@
     } else {
       dom.mapModal.classList.remove("active");
     }
+  }
+
+  function isMapModalOpen() {
+    return !!(gameState.mapOpen && dom.mapModal && dom.mapModal.classList.contains("active"));
   }
 
   function openMapModal() {
@@ -11346,6 +11480,7 @@
     if (!explorerRuntime.canvas) {
       explorerRuntime.canvas = dom.trailCanvas;
       explorerRuntime.ctx = dom.trailCanvas.getContext("2d");
+      wireHexCanvasInteractions(dom.trailCanvas, {});
       window.addEventListener("resize", function () {
         resizeTrailCanvas();
         renderExplorerWorld();
@@ -11715,6 +11850,108 @@
     ];
   }
 
+  const HEX_FEATURE_POLYLINES = {
+    snakeRiver: [
+      { lat: 42.62, lon: -111.7 },
+      { lat: 42.99, lon: -112.2 },
+      { lat: 43.2, lon: -112.6 },
+      { lat: 43.55, lon: -113.2 },
+      { lat: 43.9, lon: -113.9 },
+      { lat: 43.9, lon: -115.1 },
+      { lat: 43.7, lon: -116.2 },
+      { lat: 43.6, lon: -117.0 },
+      { lat: 43.55, lon: -117.2 },
+    ],
+    columbiaRiver: [
+      { lat: 46.05, lon: -118.35 },
+      { lat: 45.85, lon: -119.6 },
+      { lat: 45.85, lon: -120.7 },
+      { lat: 45.75, lon: -121.5 },
+      { lat: 45.62, lon: -122.2 },
+      { lat: 45.62, lon: -122.66 },
+    ],
+    bigSandy: [
+      { lat: 42.52, lon: -109.35 },
+      { lat: 42.52, lon: -109.0 },
+      { lat: 42.55, lon: -108.65 },
+    ],
+    subletteDesert: [
+      { lat: 42.5, lon: -110.2 },
+      { lat: 42.45, lon: -109.9 },
+      { lat: 42.45, lon: -109.6 },
+      { lat: 42.5, lon: -109.2 },
+    ],
+  };
+
+  function addHexToSet(set, hex) {
+    set.add(axialKey(hex.q, hex.r));
+  }
+
+  function expandHexSet(baseSet, radius) {
+    if (!radius || radius <= 0) return baseSet;
+    const expanded = new Set(baseSet);
+    baseSet.forEach(function (key) {
+      const parts = key.split(",");
+      const q = parseInt(parts[0], 10);
+      const r = parseInt(parts[1], 10);
+      const frontier = [{ q: q, r: r, d: 0 }];
+      while (frontier.length) {
+        const node = frontier.pop();
+        if (node.d >= radius) continue;
+        hexNeighbors(node.q, node.r).forEach(function (n) {
+          const nKey = axialKey(n.q, n.r);
+          if (!expanded.has(nKey)) {
+            expanded.add(nKey);
+            frontier.push({ q: n.q, r: n.r, d: node.d + 1 });
+          }
+        });
+      }
+    });
+    return expanded;
+  }
+
+  function samplePolylineToHexes(polyline, spacingMi) {
+    const set = new Set();
+    if (!Array.isArray(polyline) || polyline.length < 2) return set;
+    for (let i = 0; i < polyline.length - 1; i++) {
+      const a = polyline[i];
+      const b = polyline[i + 1];
+      const aMiles = latLonToMilesXY(a.lat, a.lon);
+      const bMiles = latLonToMilesXY(b.lat, b.lon);
+      const dx = bMiles.xMi - aMiles.xMi;
+      const dy = bMiles.yMi - aMiles.yMi;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const steps = Math.max(1, Math.ceil(dist / Math.max(0.01, spacingMi)));
+      for (let s = 0; s <= steps; s++) {
+        const t = s / steps;
+        const mx = aMiles.xMi + dx * t;
+        const my = aMiles.yMi + dy * t;
+        const hex = milesXYToAxial(mx, my);
+        addHexToSet(set, hex);
+      }
+    }
+    return set;
+  }
+
+  function ensureFeatureCorridors() {
+    const spacing = HEX_MILES_PER_STEP / 2;
+    const snake = samplePolylineToHexes(HEX_FEATURE_POLYLINES.snakeRiver, spacing);
+    const columbia = samplePolylineToHexes(
+      HEX_FEATURE_POLYLINES.columbiaRiver,
+      spacing
+    );
+    const bigSandy = samplePolylineToHexes(HEX_FEATURE_POLYLINES.bigSandy, spacing);
+    const sublette =
+      branchChoiceValue("sublette_or_bridger") === "sublette"
+        ? samplePolylineToHexes(HEX_FEATURE_POLYLINES.subletteDesert, spacing)
+        : new Set();
+
+    HEX_WORLD.featureHex.snakeRiver = expandHexSet(snake, 2);
+    HEX_WORLD.featureHex.columbiaRiver = expandHexSet(columbia, 2);
+    HEX_WORLD.featureHex.bigSandy = expandHexSet(bigSandy, 1);
+    HEX_WORLD.featureHex.subletteDesert = expandHexSet(sublette, 2);
+  }
+
   function drawHex(ctx, xPx, yPx, radiusPx) {
     ctx.beginPath();
     for (let i = 0; i < 6; i++) {
@@ -11864,6 +12101,13 @@
     trailHex: new Set(),
     activePath: [],
     activePathMiles: [],
+    activePathIndex: {},
+    featureHex: {
+      snakeRiver: new Set(),
+      columbiaRiver: new Set(),
+      subletteDesert: new Set(),
+      bigSandy: new Set(),
+    },
   };
 
   function preparePoiCaches() {
@@ -11931,6 +12175,7 @@
   function rebuildActiveRoutePath() {
     preparePoiCaches();
     HEX_WORLD.trailHex = new Set();
+    HEX_WORLD.activePathIndex = {};
     const startId =
       OT_ROUTE_GRAPH.starts[gameState.startingPoint || "independence"] ||
       OT_ROUTE_GRAPH.starts.independence;
@@ -11972,12 +12217,17 @@
         miles += HEX_MILES_PER_STEP;
         path.push({ q: hex.q, r: hex.r });
         pathMiles.push(miles);
+        HEX_WORLD.activePathIndex[key] = path.length - 1;
       }
       cursor = edge.to;
       safety++;
     }
     HEX_WORLD.activePath = path;
     HEX_WORLD.activePathMiles = pathMiles;
+    path.forEach(function (h) {
+      HEX_WORLD.trailHex.add(axialKey(h.q, h.r));
+    });
+    ensureFeatureCorridors();
   }
 
   function ensureExplorerState(gs) {
@@ -11994,11 +12244,36 @@
 
   function ensureHexMapState() {
     if (!gameState.hexMap) {
-      gameState.hexMap = { follow: true, camQ: 0, camR: 0, zoom: 1, seen: {} };
+      gameState.hexMap = {
+        follow: true,
+        camQ: 0,
+        camR: 0,
+        zoom: 1,
+        seen: {},
+        plannedPath: [],
+        plannedPathKeys: [],
+        plannedDistanceMiles: 0,
+        plannedEtaHours: 0,
+        fogEnabled: false,
+        silhouettesEnabled: true,
+      };
     }
     if (!gameState.hexMap.seen) gameState.hexMap.seen = {};
     if (!gameState.hexMap.zoom) gameState.hexMap.zoom = 1;
     if (gameState.hexMap.follow == null) gameState.hexMap.follow = true;
+    if (!gameState.hexMap.plannedPath) gameState.hexMap.plannedPath = [];
+    if (!gameState.hexMap.plannedPathKeys) gameState.hexMap.plannedPathKeys = [];
+    if (gameState.hexMap.plannedDistanceMiles == null)
+      gameState.hexMap.plannedDistanceMiles = 0;
+    if (gameState.hexMap.plannedEtaHours == null)
+      gameState.hexMap.plannedEtaHours = 0;
+    if (gameState.hexMap.fogEnabled == null) gameState.hexMap.fogEnabled = false;
+    if (gameState.hexMap.silhouettesEnabled == null)
+      gameState.hexMap.silhouettesEnabled = true;
+    if (!gameState.hexMap.destination)
+      gameState.hexMap.destination = { destKey: null, destQ: null, destR: null };
+    if (!gameState.hexMap.lastHexModifiers)
+      gameState.hexMap.lastHexModifiers = {};
     return gameState.hexMap;
   }
 
@@ -12007,6 +12282,36 @@
     const miles = Math.max(0, gameState.milesTraveled || 0);
     const idx = clamp(Math.floor(miles / HEX_MILES_PER_STEP), 0, HEX_WORLD.activePath.length - 1);
     return HEX_WORLD.activePath[idx] || { q: 0, r: 0 };
+  }
+
+  function getCurrentActivePathIndex() {
+    if (!HEX_WORLD.activePath.length) rebuildActiveRoutePath();
+    const miles = Math.max(0, gameState.milesTraveled || 0);
+    return clamp(
+      Math.floor(miles / HEX_MILES_PER_STEP),
+      0,
+      HEX_WORLD.activePath.length - 1
+    );
+  }
+
+  function markSeenAroundPlayer(radius) {
+    ensureHexMapState();
+    const hm = gameState.hexMap;
+    const r = Math.max(1, radius || 2);
+    const center = getPlayerHexFromMiles();
+    const frontier = [{ q: center.q, r: center.r, d: 0 }];
+    const visited = new Set();
+    while (frontier.length) {
+      const node = frontier.pop();
+      const key = axialKey(node.q, node.r);
+      if (visited.has(key)) continue;
+      visited.add(key);
+      hm.seen[key] = true;
+      if (node.d >= r) continue;
+      hexNeighbors(node.q, node.r).forEach(function (n) {
+        frontier.push({ q: n.q, r: n.r, d: node.d + 1 });
+      });
+    }
   }
 
   function moveHexCamera(dq, dr) {
@@ -12029,6 +12334,29 @@
     hm.camR = playerHex.r;
   }
 
+  function getHexMapMetrics(rect) {
+    ensureHexMapState();
+    const cam = gameState.hexMap;
+    const milesCenter = axialToMilesXY(cam.camQ, cam.camR);
+    const pxPerMi = (rect.width / 14) / HEX_FLAT_WIDTH_MI * (cam.zoom || 1);
+    const radiusPx = HEX_RADIUS_MI * pxPerMi;
+    return { cam: cam, milesCenter: milesCenter, pxPerMi: pxPerMi, radiusPx: radiusPx };
+  }
+
+  function pixelToAxialOnCanvas(canvas, clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const metrics = getHexMapMetrics(rect);
+    const px = clientX - rect.left;
+    const py = clientY - rect.top;
+    const dxMi = (px - rect.width / 2) / metrics.pxPerMi;
+    const dyMi = (py - rect.height / 2) / metrics.pxPerMi;
+    const miles = {
+      xMi: metrics.milesCenter.xMi + dxMi,
+      yMi: metrics.milesCenter.yMi + dyMi,
+    };
+    return milesXYToAxial(miles.xMi, miles.yMi);
+  }
+
   function hexBiomeForLatLon(lat, lon) {
     if (lon > -97) return { region: "plains", biome: "prairie" };
     if (lon > -102) return { region: "central_plains", biome: "river_bottom" };
@@ -12038,6 +12366,17 @@
     if (lon > -120) return { region: "blue_mountains", biome: "conifer_forest" };
     if (lon > -122.4) return { region: "columbia", biome: "river_gorge" };
     return { region: "willamette", biome: "valley" };
+  }
+
+  function getHexWorldModifiers(hex) {
+    ensureFeatureCorridors();
+    const key = axialKey(hex.q, hex.r);
+    return {
+      nearSnakeRiver: HEX_WORLD.featureHex.snakeRiver.has(key),
+      nearColumbiaRiver: HEX_WORLD.featureHex.columbiaRiver.has(key),
+      inSubletteDesert: HEX_WORLD.featureHex.subletteDesert.has(key),
+      atBigSandy: HEX_WORLD.featureHex.bigSandy.has(key),
+    };
   }
 
   function resourceProfileForBiome(biome) {
@@ -12077,15 +12416,42 @@
     const profile = resourceProfileForBiome(regionBiome.biome);
     const key = axialKey(playerHex.q, playerHex.r);
     const poiHere = HEX_WORLD.poiByHex[key] || [];
-    const nearWater = poiHere.some(function (id) {
+    const mods = getHexWorldModifiers(playerHex);
+    const tags = [];
+    let waterQualityHint = "mixed";
+
+    const nearPoiWater = poiHere.some(function (id) {
       const p = HEX_WORLD.poiById[id];
       return p && p.type && p.type.indexOf("river") !== -1;
     });
-    if (nearWater) {
-      profile.water = Math.min(1, profile.water + 0.2);
-      profile.game = Math.min(1, profile.game + 0.05);
+
+    if (mods.nearSnakeRiver || mods.nearColumbiaRiver || nearPoiWater) {
+      profile.water = Math.min(1, profile.water + 0.25);
+      profile.game = Math.min(1, profile.game + 0.08);
+      profile.forage = Math.min(1, profile.forage + 0.06);
+      waterQualityHint = "river";
+      if (mods.nearSnakeRiver) tags.push("Snake corridor");
+      if (mods.nearColumbiaRiver) tags.push("Columbia corridor");
     }
-    profile.waterQualityHint = nearWater ? "river" : "mixed";
+
+    if (mods.inSubletteDesert) {
+      profile.water = Math.max(0.05, profile.water * 0.35);
+      profile.forage = Math.max(0.05, profile.forage * 0.45);
+      profile.game = Math.max(0.05, profile.game * 0.55);
+      waterQualityHint = "alkali";
+      tags.push("Sublette desert stretch");
+    }
+
+    if (mods.atBigSandy) {
+      profile.water = Math.max(0.12, profile.water * 0.6);
+      profile.forage = Math.max(0.08, profile.forage * 0.6);
+      tags.push("Big Sandy basin");
+    }
+
+    profile.waterQualityHint = waterQualityHint;
+    profile.region = regionBiome.region;
+    profile.biome = regionBiome.biome;
+    profile.tags = tags;
     return profile;
   }
 
@@ -12103,6 +12469,142 @@
     return best ? best.poi : null;
   }
 
+  function estimateMilesPerHour() {
+    const mph = computeMilesForHour();
+    if (mph > 0.05) return mph;
+    const paceCfg = PACE_CONFIG[gameState.pace] || PACE_CONFIG.steady;
+    return paceCfg.milesPerHour * 0.9;
+  }
+
+  function computePlannedPath(startHex, destHex) {
+    if (!HEX_WORLD.activePath.length) rebuildActiveRoutePath();
+    const startKey = axialKey(startHex.q, startHex.r);
+    const destKey = axialKey(destHex.q, destHex.r);
+    if (!HEX_WORLD.trailHex.has(destKey)) return [];
+    const startIdx = HEX_WORLD.activePathIndex[startKey];
+    const destIdx = HEX_WORLD.activePathIndex[destKey];
+    if (startIdx != null && destIdx != null && destIdx >= startIdx) {
+      return HEX_WORLD.activePath.slice(startIdx, destIdx + 1);
+    }
+
+    const visited = new Set();
+    const queue = [{ hex: startHex, path: [startHex] }];
+    visited.add(startKey);
+    while (queue.length) {
+      const node = queue.shift();
+      const key = axialKey(node.hex.q, node.hex.r);
+      if (key === destKey) return node.path;
+      hexNeighbors(node.hex.q, node.hex.r).forEach(function (n) {
+        const nKey = axialKey(n.q, n.r);
+        if (!HEX_WORLD.trailHex.has(nKey) || visited.has(nKey)) return;
+        visited.add(nKey);
+        queue.push({ hex: n, path: node.path.concat([n]) });
+      });
+    }
+    return [];
+  }
+
+  function setTravelDestination(destHex, opts) {
+    ensureHexMapState();
+    const hm = gameState.hexMap;
+    const destKey = axialKey(destHex.q, destHex.r);
+    if (!HEX_WORLD.trailHex.has(destKey)) {
+      addLog("That point is off the main trail. Pick a highlighted hex.");
+      return false;
+    }
+    const startHex = getPlayerHexFromMiles();
+    const path = computePlannedPath(startHex, destHex);
+    if (!path.length) {
+      addLog("No clear path to that waypoint from here.");
+      return false;
+    }
+    hm.destination = { destKey: destKey, destQ: destHex.q, destR: destHex.r };
+    hm.plannedPath = path;
+    hm.plannedPathKeys = path.map(function (p) {
+      return axialKey(p.q, p.r);
+    });
+    const steps = Math.max(0, path.length - 1);
+    hm.plannedDistanceMiles = steps * HEX_MILES_PER_STEP;
+    hm.plannedEtaHours = hm.plannedDistanceMiles / Math.max(0.25, estimateMilesPerHour());
+    if (!opts || !opts.silent) {
+      addLog("Travel target set.");
+    }
+    saveGame();
+    renderAll();
+    return true;
+  }
+
+  function clearTravelDestination() {
+    ensureHexMapState();
+    const hm = gameState.hexMap;
+    hm.destination = { destKey: null, destQ: null, destR: null };
+    hm.plannedPath = [];
+    hm.plannedPathKeys = [];
+    hm.plannedDistanceMiles = 0;
+    hm.plannedEtaHours = 0;
+    saveGame();
+    renderAll();
+  }
+
+  function remainingMilesToDestination() {
+    ensureHexMapState();
+    const hm = gameState.hexMap;
+    if (!hm.destination || !hm.destination.destKey) return null;
+    const destKey = hm.destination.destKey;
+    const destIdx = HEX_WORLD.activePathIndex[destKey];
+    const currentIdx = getCurrentActivePathIndex();
+    if (destIdx != null && destIdx >= currentIdx) {
+      const currentBase = currentIdx * HEX_MILES_PER_STEP;
+      const remainder = (gameState.milesTraveled || 0) - currentBase;
+      const milesLeft = destIdx * HEX_MILES_PER_STEP - currentBase - remainder;
+      return Math.max(0, milesLeft);
+    }
+    const currentKey = axialKey(getPlayerHexFromMiles().q, getPlayerHexFromMiles().r);
+    const curPathIdx = hm.plannedPathKeys.indexOf(currentKey);
+    const destPathIdx = hm.plannedPathKeys.indexOf(destKey);
+    if (curPathIdx >= 0 && destPathIdx >= curPathIdx) {
+      return (destPathIdx - curPathIdx) * HEX_MILES_PER_STEP;
+    }
+    return null;
+  }
+
+  function isDestinationReached() {
+    ensureHexMapState();
+    const hm = gameState.hexMap;
+    if (!hm.destination || !hm.destination.destKey) return false;
+    const playerKey = axialKey(getPlayerHexFromMiles().q, getPlayerHexFromMiles().r);
+    return playerKey === hm.destination.destKey;
+  }
+
+  function clampMilesToDestination(beforeMiles) {
+    const remaining = remainingMilesToDestination();
+    if (remaining == null) return;
+    const delta = gameState.milesTraveled - beforeMiles;
+    if (delta > remaining) {
+      gameState.milesTraveled = beforeMiles + remaining;
+    }
+  }
+
+  function describeDestinationLabel() {
+    ensureHexMapState();
+    const hm = gameState.hexMap;
+    if (!hm.destination || !hm.destination.destKey) return "No destination";
+    const ids = HEX_WORLD.poiByHex[hm.destination.destKey] || [];
+    if (ids.length) {
+      const poi = HEX_WORLD.poiById[ids[0]];
+      if (poi) return poi.name;
+    }
+    return "Trail waypoint";
+  }
+
+  function handleDestinationArrival() {
+    if (!isDestinationReached()) return false;
+    const label = describeDestinationLabel();
+    addLog("You arrive at " + label + ".");
+    clearTravelDestination();
+    return true;
+  }
+
   function updateRegionAndLocation() {
     if (!HEX_WORLD.activePath.length) rebuildActiveRoutePath();
     const playerHex = getPlayerHexFromMiles();
@@ -12116,6 +12618,32 @@
     } else {
       gameState.locationName = "On the trail — " + regionBiome.biome.replace(/_/g, " ");
     }
+    const mods = getHexWorldModifiers(playerHex);
+    handleHexModifierTransitions(mods);
+    markSeenAroundPlayer(2);
+  }
+
+  function handleHexModifierTransitions(mods) {
+    ensureHexMapState();
+    const hm = gameState.hexMap;
+    const prev = hm.lastHexModifiers || {};
+    if (mods.inSubletteDesert && !prev.inSubletteDesert) {
+      addLog("You enter the dry Sublette cut-off. Water and forage grow scarce.");
+    } else if (!mods.inSubletteDesert && prev.inSubletteDesert) {
+      addLog("You leave the worst of the desert behind and find slightly better ground.");
+    }
+
+    if (mods.nearSnakeRiver && !prev.nearSnakeRiver) {
+      addLog("The Snake River winds nearby—water and bottomland brush are within reach.");
+    }
+    if (mods.nearColumbiaRiver && !prev.nearColumbiaRiver) {
+      addLog("You travel close to the Columbia; the air smells of damp river wind.");
+    }
+
+    if (mods.atBigSandy && !prev.atBigSandy) {
+      addLog("Dry ground near Big Sandy tests the team; keep an eye on water stores.");
+    }
+    hm.lastHexModifiers = Object.assign({}, mods);
   }
 
   function getHexColorForBiome(biome) {
@@ -12141,15 +12669,14 @@
     }
   }
 
-  function renderExplorer() {
-    if (!dom.trailCanvas) return;
-    const canvas = dom.trailCanvas;
+  function renderHexScene(canvas, options) {
+    if (!canvas) return;
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, rect.width, rect.height);
     if (!HEX_WORLD.activePath.length) rebuildActiveRoutePath();
@@ -12158,129 +12685,191 @@
     if (gameState.hexMap.follow || gameState.hexMap.camQ == null) {
       recenterCameraOnPlayer();
     }
-    const cam = gameState.hexMap;
-    const milesCenter = axialToMilesXY(cam.camQ, cam.camR);
-    const pxPerMi = (rect.width / 14) / HEX_FLAT_WIDTH_MI * (cam.zoom || 1);
-    const radiusPx = HEX_RADIUS_MI * pxPerMi;
+    const metrics = getHexMapMetrics(rect);
     const viewRange = 16;
+    const hm = gameState.hexMap;
+    const fog = !!hm.fogEnabled;
+    const silhouettes = !!hm.silhouettesEnabled;
+    if (fog && Object.keys(hm.seen || {}).length === 0) markSeenAroundPlayer(2);
+    const posByKey = {};
+
     for (let dq = -viewRange; dq <= viewRange; dq++) {
       for (let dr = -viewRange; dr <= viewRange; dr++) {
-        const hq = cam.camQ + dq;
-        const hr = cam.camR + dr;
+        const hq = metrics.cam.camQ + dq;
+        const hr = metrics.cam.camR + dr;
         const miles = axialToMilesXY(hq, hr);
-        const px = rect.width / 2 + (miles.xMi - milesCenter.xMi) * pxPerMi;
-        const py = rect.height / 2 + (miles.yMi - milesCenter.yMi) * pxPerMi;
-        if (px < -radiusPx * 2 || py < -radiusPx * 2 || px > rect.width + radiusPx * 2 || py > rect.height + radiusPx * 2) {
+        const px = rect.width / 2 + (miles.xMi - metrics.milesCenter.xMi) * metrics.pxPerMi;
+        const py = rect.height / 2 + (miles.yMi - metrics.milesCenter.yMi) * metrics.pxPerMi;
+        if (px < -metrics.radiusPx * 2 || py < -metrics.radiusPx * 2 || px > rect.width + metrics.radiusPx * 2 || py > rect.height + metrics.radiusPx * 2) {
           continue;
         }
         const latlon = milesXYToLatLon(miles.xMi, miles.yMi);
         const regionBiome = hexBiomeForLatLon(latlon.lat, latlon.lon);
-        const color = getHexColorForBiome(regionBiome.biome);
-        ctx.fillStyle = color;
-        drawHex(ctx, px, py, radiusPx - 0.6);
-        ctx.fill();
+        let color = getHexColorForBiome(regionBiome.biome);
         const key = axialKey(hq, hr);
-        if (HEX_WORLD.trailHex.has(key)) {
-          ctx.strokeStyle = "rgba(245,210,139,0.9)";
+        const seen = hm.seen[key];
+        if (fog && !seen) {
+          color = shadeColor(color, -0.32);
+        }
+        ctx.fillStyle = color;
+        drawHex(ctx, px, py, metrics.radiusPx - 0.6);
+        ctx.fill();
+        posByKey[key] = { px: px, py: py, seen: seen };
+
+        const poiHere = HEX_WORLD.poiByHex[key];
+        const drawTrail = !fog || seen || silhouettes;
+        if (HEX_WORLD.trailHex.has(key) && drawTrail) {
+          ctx.strokeStyle = fog && !seen ? "rgba(245,210,139,0.25)" : "rgba(245,210,139,0.9)";
           ctx.lineWidth = 1.4;
-          drawHex(ctx, px, py, radiusPx * 0.7);
+          drawHex(ctx, px, py, metrics.radiusPx * 0.7);
           ctx.stroke();
         }
-        const poiHere = HEX_WORLD.poiByHex[key];
-        if (poiHere && poiHere.length) {
-          ctx.fillStyle = "#f3d19c";
+        if (poiHere && poiHere.length && drawTrail) {
+          ctx.fillStyle = fog && !seen ? "rgba(243,209,156,0.45)" : "#f3d19c";
           ctx.beginPath();
-          ctx.arc(px, py, Math.max(3, radiusPx * 0.18), 0, Math.PI * 2);
+          ctx.arc(px, py, Math.max(3, metrics.radiusPx * 0.18), 0, Math.PI * 2);
           ctx.fill();
-          const name = HEX_WORLD.poiById[poiHere[0]].name;
-          ctx.fillStyle = "#e7e0d2";
-          ctx.font = "10px 'Inter', system-ui";
-          ctx.fillText(name, px + 8, py - 6);
+          if (!fog || seen) {
+            const name = HEX_WORLD.poiById[poiHere[0]].name;
+            ctx.fillStyle = "#e7e0d2";
+            ctx.font = "10px 'Inter', system-ui";
+            ctx.fillText(name, px + 8, py - 6);
+          }
         }
       }
     }
+
+    if (hm.plannedPathKeys && hm.plannedPathKeys.length) {
+      ctx.strokeStyle = "rgba(149, 204, 255, 0.7)";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      hm.plannedPathKeys.forEach(function (key, idx) {
+        const pos = posByKey[key];
+        if (!pos) return;
+        if (idx === 0) ctx.beginPath();
+        if (idx === 0) ctx.moveTo(pos.px, pos.py);
+        else ctx.lineTo(pos.px, pos.py);
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    if (hm.destination && hm.destination.destKey) {
+      const destPos = posByKey[hm.destination.destKey];
+      if (destPos) {
+        ctx.strokeStyle = "rgba(255, 215, 120, 0.9)";
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.arc(destPos.px, destPos.py, Math.max(6, metrics.radiusPx * 0.55), 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
     const wagon = axialToMilesXY(playerHex.q, playerHex.r);
-    const wagonPx = rect.width / 2 + (wagon.xMi - milesCenter.xMi) * pxPerMi;
-    const wagonPy = rect.height / 2 + (wagon.yMi - milesCenter.yMi) * pxPerMi;
+    const wagonPx = rect.width / 2 + (wagon.xMi - metrics.milesCenter.xMi) * metrics.pxPerMi;
+    const wagonPy = rect.height / 2 + (wagon.yMi - metrics.milesCenter.yMi) * metrics.pxPerMi;
     ctx.fillStyle = "#f4e3c2";
     ctx.strokeStyle = "#3a2b1d";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(wagonPx, wagonPy, Math.max(4, radiusPx * 0.25), 0, Math.PI * 2);
+    ctx.arc(wagonPx, wagonPy, Math.max(4, metrics.radiusPx * 0.25), 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = "rgba(0,0,0,0.35)";
-    ctx.fillRect(8, rect.height - 26, 200, 20);
-    ctx.fillStyle = "#e7e0d2";
-    ctx.font = "11px 'Inter', system-ui";
-    ctx.fillText("Arrow keys pan · F follow · C recenter", 14, rect.height - 12);
+
+    if (options && options.showHint) {
+      ctx.fillStyle = "rgba(0,0,0,0.35)";
+      ctx.fillRect(8, rect.height - 26, 240, 20);
+      ctx.fillStyle = "#e7e0d2";
+      ctx.font = "11px 'Inter', system-ui";
+      ctx.fillText(
+        "Click to set a target · Arrow keys pan · F follow · C recenter",
+        14,
+        rect.height - 12
+      );
+    }
+  }
+
+  function renderExplorer() {
+    renderHexScene(dom.trailCanvas, { showHint: true });
+  }
+
+  function buildTooltipHtmlForHex(hex) {
+    const key = axialKey(hex.q, hex.r);
+    const ids = HEX_WORLD.poiByHex[key] || [];
+    if (!ids.length) return null;
+    const poi = HEX_WORLD.poiById[ids[0]];
+    const miles = axialToMilesXY(hex.q, hex.r);
+    const latlon = milesXYToLatLon(miles.xMi, miles.yMi);
+    const biome = hexBiomeForLatLon(latlon.lat, latlon.lon);
+    const mods = getHexWorldModifiers(hex);
+    const tags = [];
+    if (mods.nearSnakeRiver) tags.push("Snake corridor");
+    if (mods.nearColumbiaRiver) tags.push("Columbia corridor");
+    if (mods.inSubletteDesert) tags.push("Sublette desert");
+    if (mods.atBigSandy) tags.push("Big Sandy");
+    const idx = HEX_WORLD.activePathIndex[key];
+    const mileLabel = idx != null ? "Mile " + Math.round(idx * HEX_MILES_PER_STEP) : "";
+    const parts = [
+      `<div style="font-weight:600;">${poi.name}</div>`,
+      `<div style="font-size:11px; color:#c7c4bc;">${poi.type || "waypoint"}</div>`,
+      `<div style="font-size:11px; margin-top:4px;">Biome: ${biome.biome.replace(/_/g, " ")}</div>`,
+    ];
+    if (tags.length) {
+      parts.push(`<div style="font-size:11px; color:#d4c9b0;">${tags.join(" · ")}</div>`);
+    }
+    if (mileLabel) parts.push(`<div style="font-size:10px; color:#b7b3ab;">${mileLabel}</div>`);
+    return parts.join("");
+  }
+
+  function wireHexCanvasInteractions(canvas, options) {
+    if (!canvas || canvas.dataset.wired) return;
+    canvas.dataset.wired = "1";
+    const tooltip = options && options.tooltip;
+    canvas.addEventListener("click", function (evt) {
+      if (!HEX_WORLD.trailHex.size) rebuildActiveRoutePath();
+      const hex = pixelToAxialOnCanvas(canvas, evt.clientX, evt.clientY);
+      const key = axialKey(hex.q, hex.r);
+      if (!HEX_WORLD.trailHex.has(key)) return;
+      setTravelDestination(hex);
+    });
+    if (tooltip) {
+      canvas.addEventListener("mousemove", function (evt) {
+        ensureHexMapState();
+        const hex = pixelToAxialOnCanvas(canvas, evt.clientX, evt.clientY);
+        const key = axialKey(hex.q, hex.r);
+        const hm = gameState.hexMap;
+        if (hm.fogEnabled && !hm.silhouettesEnabled && !hm.seen[key]) {
+          tooltip.style.display = "none";
+          return;
+        }
+        const html = buildTooltipHtmlForHex(hex);
+        if (!html) {
+          tooltip.style.display = "none";
+          return;
+        }
+        tooltip.innerHTML = html;
+        const rect = dom.mapViewport ? dom.mapViewport.getBoundingClientRect() : canvas.getBoundingClientRect();
+        tooltip.style.left = evt.clientX - rect.left + "px";
+        tooltip.style.top = evt.clientY - rect.top - 8 + "px";
+        tooltip.style.display = "block";
+      });
+      canvas.addEventListener("mouseleave", function () {
+        tooltip.style.display = "none";
+      });
+    }
   }
 
   function renderTrailMap() {
     if (dom.mapViewport) {
-      dom.mapViewport.innerHTML = "";
-      const canvas = document.createElement("canvas");
-      canvas.className = "ot-overview-canvas";
-      dom.mapViewport.appendChild(canvas);
-      const ctx = canvas.getContext("2d");
-      const dpr = window.devicePixelRatio || 1;
-      const rect = dom.mapViewport.getBoundingClientRect();
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.fillStyle = "#0e141b";
-      ctx.fillRect(0, 0, rect.width, rect.height);
-      const hint = document.createElement("div");
-      hint.className = "ot-map-hint";
-      hint.textContent = "Trail overview — gold line = route, pale dots = POI";
-      dom.mapViewport.appendChild(hint);
-      if (!HEX_WORLD.activePath.length) rebuildActiveRoutePath();
-      const xs = HEX_WORLD.activePath.map(function (h) {
-        return axialToMilesXY(h.q, h.r).xMi;
-      });
-      const ys = HEX_WORLD.activePath.map(function (h) {
-        return axialToMilesXY(h.q, h.r).yMi;
-      });
-      const minX = Math.min.apply(null, xs);
-      const maxX = Math.max.apply(null, xs);
-      const minY = Math.min.apply(null, ys);
-      const maxY = Math.max.apply(null, ys);
-      const pad = 12;
-      const scale = Math.min(
-        (rect.width - pad * 2) / Math.max(1, maxX - minX),
-        (rect.height - pad * 2) / Math.max(1, maxY - minY)
-      );
-      ctx.strokeStyle = "#c39b6a";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      HEX_WORLD.activePath.forEach(function (h, idx) {
-        const miles = axialToMilesXY(h.q, h.r);
-        const x = pad + (miles.xMi - minX) * scale;
-        const y = rect.height - pad - (miles.yMi - minY) * scale;
-        if (idx === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.stroke();
-      Object.keys(HEX_WORLD.poiByHex).forEach(function (key) {
-        const ids = HEX_WORLD.poiByHex[key];
-        const hParts = key.split(",");
-        const h = { q: parseInt(hParts[0], 10), r: parseInt(hParts[1], 10) };
-        const miles = axialToMilesXY(h.q, h.r);
-        const x = pad + (miles.xMi - minX) * scale;
-        const y = rect.height - pad - (miles.yMi - minY) * scale;
-        ctx.fillStyle = "#f0e4d0";
-        ctx.beginPath();
-        ctx.arc(x, y, 3, 0, Math.PI * 2);
-        ctx.fill();
-      });
-      const playerHex = getPlayerHexFromMiles();
-      const wagon = axialToMilesXY(playerHex.q, playerHex.r);
-      const wx = pad + (wagon.xMi - minX) * scale;
-      const wy = rect.height - pad - (wagon.yMi - minY) * scale;
-      ctx.fillStyle = "#ffdb9c";
-      ctx.beginPath();
-      ctx.arc(wx, wy, 5, 0, Math.PI * 2);
-      ctx.fill();
+      if (!dom.mapCanvas) {
+        const canvas = document.createElement("canvas");
+        canvas.className = "ot-map-canvas";
+        dom.mapCanvas = canvas;
+        dom.mapViewport.appendChild(canvas);
+        if (dom.mapTooltip) dom.mapViewport.appendChild(dom.mapTooltip);
+        wireHexCanvasInteractions(canvas, { tooltip: dom.mapTooltip });
+      }
+      renderHexScene(dom.mapCanvas, { showHint: false });
     }
 
     dom.trailMap.innerHTML = "";
@@ -12291,6 +12880,8 @@
       mapSub.textContent =
         "Miles traveled: " + Math.round(miles) + " / " + Math.round(gameState.targetMiles || 0);
     }
+
+    renderTravelTargetUI();
 
     ROUTE_MILESTONES.forEach(function (m) {
       const row = document.createElement("div");
@@ -12311,6 +12902,30 @@
     });
 
     updateMapListVisibility();
+  }
+
+  function renderTravelTargetUI() {
+    ensureHexMapState();
+    if (dom.toggleFog) dom.toggleFog.checked = !!gameState.hexMap.fogEnabled;
+    if (dom.toggleSilhouettes)
+      dom.toggleSilhouettes.checked = !!gameState.hexMap.silhouettesEnabled;
+    if (dom.targetMeta) {
+      if (gameState.hexMap.destination && gameState.hexMap.destination.destKey) {
+        const label = describeDestinationLabel();
+        const remaining = remainingMilesToDestination();
+        const milesLeft = remaining != null ? remaining : gameState.hexMap.plannedDistanceMiles || 0;
+        const etaHours = milesLeft / Math.max(0.25, estimateMilesPerHour());
+        dom.targetMeta.textContent =
+          label +
+          " — " +
+          milesLeft.toFixed(1) +
+          " mi · ETA ~" +
+          etaHours.toFixed(1) +
+          " h";
+      } else {
+        dom.targetMeta.textContent = "No destination selected";
+      }
+    }
   }
 
   function getExplorerTile(x, y) {
@@ -12870,6 +13485,7 @@
       renderAfflictionAlerts();
       renderTrailHeader();
       renderExplorerChip();
+      renderExplorer();
       renderTrailMap();
       syncMapModalState();
       renderCompanionDetail();
@@ -13307,6 +13923,26 @@
         }
       });
     }
+    if (dom.btnTravel1h) {
+      dom.btnTravel1h.addEventListener("click", function () {
+        advanceHoursTowardDestination(1);
+      });
+    }
+    if (dom.btnTravel4h) {
+      dom.btnTravel4h.addEventListener("click", function () {
+        advanceHoursTowardDestination(4);
+      });
+    }
+    if (dom.btnAutoTravel) {
+      dom.btnAutoTravel.addEventListener("click", function () {
+        advanceHoursTowardDestination(12);
+      });
+    }
+    if (dom.btnClearTarget) {
+      dom.btnClearTarget.addEventListener("click", function () {
+        clearTravelDestination();
+      });
+    }
     if (dom.inventoryModal) {
       dom.inventoryModal.addEventListener("click", function (e) {
         if (e.target === dom.inventoryModal || e.target === dom.modalBackdrop) {
@@ -13348,6 +13984,23 @@
         gameState.mapListVisible = !gameState.mapListVisible;
         updateMapListVisibility();
         saveGame();
+      });
+    }
+
+    if (dom.toggleFog) {
+      dom.toggleFog.addEventListener("change", function () {
+        ensureHexMapState();
+        gameState.hexMap.fogEnabled = !!dom.toggleFog.checked;
+        saveGame();
+        renderExplorer();
+      });
+    }
+    if (dom.toggleSilhouettes) {
+      dom.toggleSilhouettes.addEventListener("change", function () {
+        ensureHexMapState();
+        gameState.hexMap.silhouettesEnabled = !!dom.toggleSilhouettes.checked;
+        saveGame();
+        renderExplorer();
       });
     }
 
