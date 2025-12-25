@@ -261,3 +261,12 @@ Map v2 follow-ups (still deferred — next steps)
   - What: Broaden and refine Great Basin painting (sage vs. alkali flats), extend desert corridor overlays, and tune waterless stretch difficulty and local weather for route variants.
   - Why: Current pass is minimal; deeper tuning will make southern approaches feel distinct and keep scarcity coherent across weather and resource systems.
   - Implementation sketch: Add more granular lat/lon + noise bands, expand corridor sampling (Black Rock/High Rock extensions), and adjust region/weather parameters for basin tiles once new art/tiles are available.
+
+RDR-inspired Enhancements (Deferred)
+- Dynamic music and ambient audio layering tied to weather, time of day, and encounter tension (optional Web Audio loops with graceful fallbacks).
+- Seasonal color grading and night overlays synced to time/biome, including subtle wagon lantern glow and weather-linked vignette effects.
+- Barter/ledger-style trading UI at forts with reputation-informed prices and visible ledgers instead of flat buttons.
+- Deeper hunting and tactical ambush resolution (cover/volley choices, risk to oxen) that leverage the new encounter modal instead of auto outcomes.
+- Longer “stranger mission” callbacks and caravan travel segments where prior choices trigger chained follow-ups across regions.
+- NPC caravan travel buffs/risks with richer guard coverage integration and mood impact when you part ways.
+- HUD minimalism/cinematic travel toggle that auto-fades noncritical panels while moving but surfaces alerts instantly on hover/tap.

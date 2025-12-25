@@ -935,6 +935,38 @@
   flex-wrap: wrap;
 }
 
+.ot-rep-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(243, 222, 186, 0.08);
+  color: #f3ddc4;
+  font-size: 11px;
+  border: 1px solid rgba(243, 222, 186, 0.18);
+  line-height: 1.2;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.ot-rep-chip-virtuous {
+  background: linear-gradient(135deg, rgba(114, 200, 164, 0.12), rgba(114, 200, 164, 0.04));
+  border-color: rgba(114, 200, 164, 0.35);
+  color: #c6efd9;
+}
+
+.ot-rep-chip-neutral {
+  background: rgba(220, 207, 189, 0.08);
+  border-color: rgba(220, 207, 189, 0.25);
+  color: #f3ddc4;
+}
+
+.ot-rep-chip-notorious {
+  background: linear-gradient(135deg, rgba(204, 119, 96, 0.14), rgba(204, 119, 96, 0.05));
+  border-color: rgba(204, 119, 96, 0.4);
+  color: #f4c7b9;
+}
+
 /* Inventory modal */
 
 .ot-modal {
@@ -966,6 +998,111 @@
   width: min(520px, 100% - 32px);
   max-height: 80vh;
   overflow: auto;
+}
+
+.ot-encounter-content {
+  width: min(720px, 100% - 32px);
+  display: grid;
+  gap: 10px;
+}
+
+.ot-encounter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.ot-encounter-subtitle {
+  font-size: 11px;
+  color: #b6b1a7;
+  text-align: right;
+}
+
+.ot-encounter-body {
+  font-size: 12px;
+  color: #e4ded0;
+  display: grid;
+  gap: 6px;
+  line-height: 1.5;
+}
+
+.ot-encounter-body p {
+  margin: 0;
+}
+
+.ot-encounter-image {
+  width: 100%;
+  aspect-ratio: 16 / 7;
+  border-radius: 12px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(252, 238, 197, 0.18);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.ot-encounter-companions {
+  border-left: 2px solid rgba(255, 255, 255, 0.08);
+  padding-left: 10px;
+  color: #c5beb1;
+  font-style: italic;
+  display: grid;
+  gap: 4px;
+}
+
+.ot-encounter-options {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.ot-encounter-btn {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(244, 219, 160, 0.4);
+  background: rgba(60, 58, 72, 0.75);
+  color: #f3ddc4;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  line-height: 1.3;
+  transition: background 0.16s ease, transform 0.12s ease, border-color 0.16s ease;
+}
+
+.ot-encounter-btn:hover,
+.ot-encounter-btn:focus {
+  background: rgba(90, 83, 70, 0.9);
+  border-color: rgba(244, 219, 160, 0.7);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.ot-encounter-btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.ot-encounter-tone-warm {
+  border-color: rgba(114, 200, 164, 0.5);
+  background: linear-gradient(135deg, rgba(114, 200, 164, 0.14), rgba(114, 200, 164, 0.06));
+}
+
+.ot-encounter-tone-danger {
+  border-color: rgba(204, 119, 96, 0.6);
+  background: linear-gradient(135deg, rgba(204, 119, 96, 0.14), rgba(204, 119, 96, 0.08));
+}
+
+.ot-encounter-tone-neutral {
+  border-color: rgba(244, 219, 160, 0.35);
+  background: rgba(60, 58, 72, 0.72);
+}
+
+.ot-encounter-hint {
+  display: block;
+  margin-top: 4px;
+  color: #b6b1a7;
+  font-size: 11px;
 }
 
 .ot-modal-title {
@@ -1776,6 +1913,17 @@
             <div>Daily block: <span id="ot-ontrail-block">Morning</span></div>
             <div>Weather: <span id="ot-weather-summary">—</span></div>
             <div class="ot-text-muted" id="ot-weather-note"></div>
+            <div>
+              Reputation:
+              <span
+                id="ot-reputation-chip"
+                class="ot-rep-chip ot-rep-chip-neutral"
+                title="Standing among travelers"
+                role="status"
+              >
+                Neutral
+              </span>
+            </div>
           </div>
         </div>
 
@@ -1872,6 +2020,9 @@
         <button id="ot-btn-evening-rushed-camp" class="ot-btn-outline">
           Rushed camp (1h)
         </button>
+        <button id="ot-btn-campfire-moment" class="ot-btn-outline">
+          Campfire moment (1h)
+        </button>
         <button id="ot-btn-open-camp-tasks" class="ot-btn-outline">
           Camp tasks
         </button>
@@ -1962,6 +2113,35 @@
         </button>
         <button id="ot-btn-close-map" class="ot-btn-outline" type="button">Close</button>
       </div>
+    </div>
+  </div>
+
+  <div id="ot-encounter-modal" class="ot-modal" aria-hidden="true">
+    <div class="ot-modal-backdrop"></div>
+    <div
+      class="ot-modal-content ot-encounter-content"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ot-encounter-title"
+      tabindex="-1"
+    >
+      <div class="ot-encounter-header">
+        <div id="ot-encounter-title" class="ot-modal-title">Encounter</div>
+        <div id="ot-encounter-subtitle" class="ot-encounter-subtitle"></div>
+      </div>
+      <div
+        id="ot-encounter-image"
+        class="ot-encounter-image"
+        style="display: none;"
+        aria-hidden="true"
+      ></div>
+      <div id="ot-encounter-body" class="ot-encounter-body"></div>
+      <div
+        id="ot-encounter-companions"
+        class="ot-encounter-companions"
+        style="display: none;"
+      ></div>
+      <div id="ot-encounter-options" class="ot-encounter-options"></div>
     </div>
   </div>
 
@@ -3517,6 +3697,15 @@
   const dom = {};
 
   let PERSON_ID_COUNTER = 1;
+  let isAdvancingTime = false;
+  let encounterActive = false;
+  let encounterResolver = null;
+  let encounterDefaultOption = null;
+  let encounterAllowEscape = false;
+  let lastFocusedBeforeEncounter = null;
+  let encounterOptionsEls = [];
+  let pendingEncounterId = null;
+  let encounterKeyHandler = null;
 
   const gameState = {
     phase: "start",
@@ -3582,6 +3771,9 @@
     thoughtHistory: null,
     socialHistory: null,
     routeChoices: null,
+    reputation: 0,
+    reputationFlags: {},
+    lastCampfireMomentKey: null,
   };
 
   function defaultTraillinesState() {
@@ -5333,6 +5525,7 @@
     dom.ontrailBlock = document.getElementById("ot-ontrail-block");
     dom.weatherSummary = document.getElementById("ot-weather-summary");
     dom.weatherNote = document.getElementById("ot-weather-note");
+    dom.reputationChip = document.getElementById("ot-reputation-chip");
     dom.leaderStatus = document.getElementById("ot-leader-status");
     dom.partyManifest = document.getElementById("ot-party-manifest");
     dom.hourTasks = document.getElementById("ot-hour-tasks");
@@ -5379,6 +5572,18 @@
     dom.btnOpenInventory = document.getElementById("ot-btn-open-inventory");
     dom.btnOpenCamp = document.getElementById("ot-btn-open-camp-tasks");
     dom.explorerChip = document.getElementById("ot-explorer-chip");
+    dom.btnCampfireMoment = document.getElementById("ot-btn-campfire-moment");
+
+    dom.encounterModal = document.getElementById("ot-encounter-modal");
+    dom.encounterContent = dom.encounterModal
+      ? dom.encounterModal.querySelector(".ot-encounter-content")
+      : null;
+    dom.encounterTitle = document.getElementById("ot-encounter-title");
+    dom.encounterSubtitle = document.getElementById("ot-encounter-subtitle");
+    dom.encounterBody = document.getElementById("ot-encounter-body");
+    dom.encounterOptions = document.getElementById("ot-encounter-options");
+    dom.encounterImage = document.getElementById("ot-encounter-image");
+    dom.encounterCompanions = document.getElementById("ot-encounter-companions");
 
     dom.inventoryModal = document.getElementById("ot-inventory-modal");
     dom.modalBackdrop = dom.inventoryModal
@@ -5566,6 +5771,26 @@
     return a.id < b.id ? a.id + ":" + b.id : b.id + ":" + a.id;
   }
 
+  function pickRivalPair() {
+    const people = getAllPeople().filter(function (p) {
+      return p && p.alive;
+    });
+    let worst = null;
+    let lowest = 5;
+    people.forEach(function (a, idx) {
+      for (let j = idx + 1; j < people.length; j++) {
+        const b = people[j];
+        const rel = a.relationships && a.relationships[b.id];
+        const opinion = rel && typeof rel.opinion === "number" ? rel.opinion : 0;
+        if (opinion < lowest) {
+          lowest = opinion;
+          worst = { a: a, b: b };
+        }
+      }
+    });
+    return worst;
+  }
+
   function seedTraitsAndRelationships() {
     const people = getAllPeople();
     if (!people.length) return;
@@ -5587,6 +5812,19 @@
     if (people[2] && people[2].traits.indexOf("Argumentative") < 0) {
       people[2].traits.push("Argumentative");
     }
+
+    const traitPool = ["Merciful", "Hard", "Cowardly", "Pious", "Wry", "Reckless"];
+    people.forEach(function (p) {
+      if (!p.traits) p.traits = [];
+      if (p.traits.length < 2) {
+        const available = traitPool.filter(function (t) {
+          return p.traits.indexOf(t) < 0;
+        });
+        if (available.length) {
+          p.traits.push(choice(available));
+        }
+      }
+    });
   }
 
   function renderDepartureSeasonDesc() {
@@ -6192,6 +6430,72 @@
         day: dayTag,
         characters: opts.characters,
       });
+    }
+  }
+
+  function ensureReputationState() {
+    if (typeof gameState.reputation !== "number") gameState.reputation = 0;
+    if (!gameState.reputationFlags || typeof gameState.reputationFlags !== "object") {
+      gameState.reputationFlags = {};
+    }
+  }
+
+  function getReputationTier() {
+    ensureReputationState();
+    const val = clamp(gameState.reputation, -100, 100);
+    if (val >= 50)
+      return {
+        id: "honorable",
+        label: "Honorable",
+        desc: "Known for generosity and fair dealing along the trail.",
+        colorClass: "ot-rep-chip-virtuous",
+      };
+    if (val >= 15)
+      return {
+        id: "trusted",
+        label: "Trusted",
+        desc: "Most travelers expect honesty when you bargain or ask for aid.",
+        colorClass: "ot-rep-chip-virtuous",
+      };
+    if (val > -15)
+      return {
+        id: "neutral",
+        label: "Unknown",
+        desc: "Your name carries little weight yet—good or ill.",
+        colorClass: "ot-rep-chip-neutral",
+      };
+    if (val > -45)
+      return {
+        id: "questioned",
+        label: "Questioned",
+        desc: "Rumors say you press hard bargains or turn folks away.",
+        colorClass: "ot-rep-chip-notorious",
+      };
+    return {
+      id: "notorious",
+      label: "Notorious",
+      desc: "Feared for sharp dealing or rough justice on the trail.",
+      colorClass: "ot-rep-chip-notorious",
+    };
+  }
+
+  function adjustReputation(delta, reason, opts) {
+    ensureReputationState();
+    const change = typeof delta === "number" ? delta : 0;
+    const before = gameState.reputation || 0;
+    const after = clamp(before + change, -100, 100);
+    gameState.reputation = after;
+    if (opts && opts.flag) {
+      gameState.reputationFlags[opts.flag] = true;
+    }
+    if (change !== 0) {
+      const tier = getReputationTier();
+      const direction = change > 0 ? "improves" : "sours";
+      addLog(
+        (reason || "Word travels") + `: your standing ${direction} (${after}).`,
+        { tone: "info" }
+      );
+      renderReputation();
     }
   }
 
@@ -7847,15 +8151,9 @@
 
     const dayKey = getDayKey(gameState.date || new Date());
     if (!gameState.waterPlan || gameState.waterPlan.dayKey !== dayKey) {
-      const wantsBoil =
-        typeof window !== "undefined"
-          ? window.confirm(
-              "Fetch water: OK to boil (safer, uses fuel/time) / Cancel for risky quick draw?"
-            )
-          : true;
       gameState.waterPlan = {
         dayKey: dayKey,
-        mode: wantsBoil ? "boil" : "raw",
+        mode: (gameState.waterPlan && gameState.waterPlan.mode) || "boil",
       };
     }
 
@@ -7906,6 +8204,42 @@
         gallons.toFixed(1) +
         " gallons." +
         envNote
+    );
+  }
+
+  async function ensureWaterPlanForDay() {
+    const dayKey = getDayKey(gameState.date || new Date());
+    if (gameState.waterPlan && gameState.waterPlan.dayKey === dayKey) return;
+    const choice = await presentEncounter({
+      id: "water_plan_" + dayKey,
+      title: "Water for the day",
+      subtitle: formatDateTime(gameState.date) + " · " + gameState.locationName,
+      body: [
+        "You can boil the day's water, burning a little fuel but lowering illness risk, or draw it quickly and hope for the best.",
+      ],
+      tags: ["water", "camp"],
+      options: [
+        {
+          id: "boil",
+          label: "Boil today's water",
+          tone: "warm",
+          hint: "Safer stomachs; costs a bit of fuel and time.",
+        },
+        {
+          id: "raw",
+          label: "Draw it quick",
+          tone: "danger",
+          hint: "Saves fuel and effort but risks sickness.",
+        },
+      ],
+      defaultId: (gameState.waterPlan && gameState.waterPlan.mode) || "boil",
+    });
+    gameState.waterPlan = { dayKey: dayKey, mode: choice === "raw" ? "raw" : "boil" };
+    addLog(
+      choice === "raw"
+        ? "You skip boiling to save fuel; everyone keeps an eye on the kettles."
+        : "You commit to boiling the day's water, trading wood for safer bellies.",
+      { tone: "info" }
     );
   }
 
@@ -8189,7 +8523,267 @@
 
 
 
-  function advanceOneHour(context) {
+  function updateAdvanceControlsDisabled() {
+    const disabled = isAdvancingTime || encounterActive;
+    const buttons = [
+      dom.btnAdvance1,
+      dom.btnAdvance4,
+      dom.btnTravel1h,
+      dom.btnTravel4h,
+      dom.btnAutoTravel,
+      dom.btnEveningProperCamp,
+      dom.btnEveningRushedCamp,
+      dom.btnCampConfirm,
+      dom.btnCampAuto,
+      dom.btnCampfireMoment,
+    ];
+    buttons.forEach(function (btn) {
+      if (btn) btn.disabled = disabled;
+    });
+    refreshCampfireButton();
+  }
+
+  function withAdvanceLock(fn) {
+    if (isAdvancingTime) return Promise.resolve();
+    isAdvancingTime = true;
+    updateAdvanceControlsDisabled();
+    return Promise.resolve()
+      .then(fn)
+      .catch(function (err) {
+        console.error(err);
+      })
+      .finally(function () {
+        isAdvancingTime = false;
+        updateAdvanceControlsDisabled();
+      });
+  }
+
+  function buildEncounterInterjections(tags) {
+    const tagSet = Array.isArray(tags) ? tags : [];
+    const people = getAllPeople()
+      .filter(function (p) {
+        return p && p.alive;
+      })
+      .sort(function (a, b) {
+        return (b.morale || 0) - (a.morale || 0);
+      });
+    const lines = [];
+
+    function lineFor(person) {
+      const traits = person.traits || [];
+      const skills = person.skills || {};
+      const hasTag = function (t) {
+        return tagSet.indexOf(t) >= 0;
+      };
+      if (traits.indexOf("Merciful") >= 0 && (hasTag("mercy") || hasTag("injury"))) {
+        return (
+          person.name +
+          " whispers that leaving them would weigh on the party's conscience."
+        );
+      }
+      if (traits.indexOf("Hard") >= 0 && (hasTag("bandit") || hasTag("trade"))) {
+        return person.name + " reminds you the trail rewards those who hold their own line.";
+      }
+      if (traits.indexOf("Cowardly") >= 0 && hasTag("danger")) {
+        return person.name + " urges caution, eyes on the shadows beyond the wagons.";
+      }
+      if (traits.indexOf("Pious") >= 0 && (hasTag("mercy") || hasTag("camp"))) {
+        return (
+          person.name +
+          " fingers a keepsake and says the right choice keeps the party's soul intact."
+        );
+      }
+      if (traits.indexOf("Reckless") >= 0 && (hasTag("shortcut") || hasTag("danger"))) {
+        return person.name + " grins, eager to take the bold path while nerves are hot.";
+      }
+      if (traits.indexOf("Wry") >= 0) {
+        return person.name + " quips that this will make a story—one way or another.";
+      }
+      if ((skills.doctoring || 0) >= 3 && (hasTag("injury") || hasTag("mercy"))) {
+        return (
+          person.name +
+          " notes they can spare a poultice, but warns every bandage counts this far out."
+        );
+      }
+      if ((skills.guard || 0) >= 3 && hasTag("bandit")) {
+        return person.name + " scans the horizon, promising to keep rifles close if talk goes bad.";
+      }
+      if ((skills.travel || 0) >= 3 && hasTag("shortcut")) {
+        return (
+          person.name +
+          " weighs the terrain and says the detour could shave time—if the team holds together."
+        );
+      }
+      if ((skills.cooking || 0) >= 3 && hasTag("camp")) {
+        return person.name + " suggests a calm fire and a song might lift spirits before the push.";
+      }
+      return person.name + " waits for your nod, eyes searching yours for the call.";
+    }
+
+    people.slice(0, 4).forEach(function (p) {
+      if (lines.length >= 2) return;
+      lines.push(lineFor(p));
+    });
+    return lines.slice(0, 2);
+  }
+
+  function renderEncounterModal(cfg) {
+    if (!dom.encounterModal) return;
+    dom.encounterTitle.textContent = cfg.title || "Encounter";
+    dom.encounterSubtitle.textContent = cfg.subtitle || formatDateTime(gameState.date);
+
+    dom.encounterBody.innerHTML = "";
+    const bodyParts = Array.isArray(cfg.body)
+      ? cfg.body
+      : String(cfg.body || "")
+          .split(/\n\s*\n/)
+          .map(function (t) {
+            return t.trim();
+          })
+          .filter(Boolean);
+    if (!bodyParts.length && cfg.body) bodyParts.push(String(cfg.body));
+    if (!bodyParts.length) bodyParts.push("No details.");
+    bodyParts.forEach(function (line) {
+      const p = document.createElement("p");
+      p.textContent = line;
+      dom.encounterBody.appendChild(p);
+    });
+
+    if (dom.encounterImage) {
+      if (cfg.imageUrl) {
+        dom.encounterImage.style.display = "block";
+        dom.encounterImage.style.backgroundImage =
+          "linear-gradient(to bottom, rgba(0,0,0,.35), rgba(0,0,0,.6)), url('" + cfg.imageUrl + "')";
+      } else {
+        dom.encounterImage.style.display = "none";
+      }
+    }
+
+    const companionLines = buildEncounterInterjections(cfg.tags || cfg.contextTags || []);
+    if (dom.encounterCompanions) {
+      dom.encounterCompanions.innerHTML = "";
+      if (companionLines.length) {
+        dom.encounterCompanions.style.display = "grid";
+        companionLines.forEach(function (line) {
+          const div = document.createElement("div");
+          div.textContent = line;
+          dom.encounterCompanions.appendChild(div);
+        });
+      } else {
+        dom.encounterCompanions.style.display = "none";
+      }
+    }
+
+    dom.encounterOptions.innerHTML = "";
+    const opts = (cfg.options && cfg.options.length ? cfg.options : null) || [
+      { id: cfg.defaultId || "close", label: "Close" },
+    ];
+    encounterOptionsEls = [];
+    opts.forEach(function (opt, idx) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "ot-encounter-btn";
+      if (opt.tone === "warm") btn.classList.add("ot-encounter-tone-warm");
+      else if (opt.tone === "danger") btn.classList.add("ot-encounter-tone-danger");
+      else if (opt.tone === "neutral") btn.classList.add("ot-encounter-tone-neutral");
+      btn.dataset.id = opt.id || idx;
+      btn.textContent = opt.label || opt.id || "Choose";
+      if (opt.hint) {
+        const hint = document.createElement("span");
+        hint.className = "ot-encounter-hint";
+        hint.textContent = opt.hint;
+        btn.appendChild(hint);
+      }
+      btn.addEventListener("click", function () {
+        resolveEncounterChoice(btn.dataset.id || encounterDefaultOption);
+      });
+      dom.encounterOptions.appendChild(btn);
+      encounterOptionsEls.push(btn);
+    });
+  }
+
+  function resolveEncounterChoice(choiceId) {
+    if (!encounterResolver) return;
+    encounterOptionsEls.forEach(function (b) {
+      b.disabled = true;
+    });
+    if (dom.encounterModal) {
+      dom.encounterModal.classList.remove("active");
+      dom.encounterModal.setAttribute("aria-hidden", "true");
+    }
+    if (dom.encounterModal && encounterKeyHandler) {
+      dom.encounterModal.removeEventListener("keydown", encounterKeyHandler);
+    }
+    encounterKeyHandler = null;
+    setEncounterActive(false);
+    if (lastFocusedBeforeEncounter && lastFocusedBeforeEncounter.focus) {
+      setTimeout(function () {
+        lastFocusedBeforeEncounter.focus();
+      }, 80);
+    }
+    const resolver = encounterResolver;
+    encounterResolver = null;
+    pendingEncounterId = null;
+    resolver(choiceId || encounterDefaultOption || null);
+  }
+
+  function setEncounterActive(active) {
+    encounterActive = !!active;
+    updateAdvanceControlsDisabled();
+  }
+
+  function presentEncounter(cfg) {
+    if (!dom.encounterModal) {
+      return Promise.resolve((cfg && cfg.defaultId) || null);
+    }
+    ensureReputationState();
+    return new Promise(function (resolve) {
+      encounterResolver = resolve;
+      encounterDefaultOption =
+        (cfg && cfg.defaultId) ||
+        (cfg && cfg.options && cfg.options[0] ? cfg.options[0].id : null);
+      encounterAllowEscape = !!(cfg && cfg.allowEscape);
+      pendingEncounterId = cfg && cfg.id;
+      renderEncounterModal(cfg || {});
+      setEncounterActive(true);
+      dom.encounterModal.classList.add("active");
+      dom.encounterModal.setAttribute("aria-hidden", "false");
+      lastFocusedBeforeEncounter = document.activeElement;
+      if (encounterKeyHandler && dom.encounterModal) {
+        dom.encounterModal.removeEventListener("keydown", encounterKeyHandler);
+      }
+      encounterKeyHandler = function (evt) {
+        if (evt.key === "Escape" && encounterAllowEscape) {
+          evt.preventDefault();
+          resolveEncounterChoice(encounterDefaultOption);
+        }
+        if (evt.key === "Tab" && encounterOptionsEls.length) {
+          const focusable = encounterOptionsEls.filter(function (b) {
+            return !b.disabled;
+          });
+          if (!focusable.length) return;
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+          if (evt.shiftKey && document.activeElement === first) {
+            evt.preventDefault();
+            last.focus();
+          } else if (!evt.shiftKey && document.activeElement === last) {
+            evt.preventDefault();
+            first.focus();
+          }
+        }
+      };
+      if (dom.encounterModal) {
+        dom.encounterModal.addEventListener("keydown", encounterKeyHandler);
+      }
+      setTimeout(function () {
+        if (encounterOptionsEls[0]) encounterOptionsEls[0].focus();
+        else if (dom.encounterContent && dom.encounterContent.focus) dom.encounterContent.focus();
+      }, 30);
+    });
+  }
+
+  async function advanceOneHour(context) {
     const ss = ensureStoryState();
     const milesBefore = gameState.milesTraveled || 0;
     gameState.date = new Date(gameState.date.getTime() + 60 * 60 * 1000);
@@ -8207,6 +8801,7 @@
     // Track daily rhythm and diet per calendar day
     ensureDayRhythmForDate(gameState.date);
     ensureNutritionForDate(gameState.date);
+    await ensureWaterPlanForDay();
 
     refreshWeather();
     gameState.guardLevel = 0;
@@ -8271,7 +8866,7 @@
     updateNeedsAndMoodForHour();
     updateSpoilageForHour();
     showCompanionThoughtForHour();
-    eventDirectorTick();
+    await eventDirectorTick();
 
     if (gameState.milesTraveled >= gameState.targetMiles) {
       addLog(
@@ -8282,13 +8877,13 @@
     }
   }
 
-  function advanceHours(count, context) {
+  async function advanceHours(count, context) {
     // Ensure at least 1 hour, and make sure it's an integer
     count = count || 1;
     count = count < 1 ? 1 : Math.floor(count);
 
     for (let i = 0; i < count; i++) {
-      advanceOneHour(context);
+      await advanceOneHour(context);
     }
 
     // After the block of time, persist and redraw
@@ -8296,7 +8891,7 @@
     renderAll();
   }
 
-  function advanceHoursTowardDestination(count) {
+  async function advanceHoursTowardDestination(count) {
     count = count || 1;
     count = Math.max(1, Math.min(12, Math.floor(count)));
     if (gameState.mode !== "travel") {
@@ -8306,7 +8901,7 @@
     for (let i = 0; i < count; i++) {
       const remaining = remainingMilesToDestination();
       if (remaining !== null && remaining <= 0) break;
-      advanceOneHour({ reason: "map_target_travel" });
+      await advanceOneHour({ reason: "map_target_travel" });
       if (isDestinationReached()) break;
       if (gameState.mode !== "travel") break;
       if (gameState.runEnded) break;
@@ -8315,7 +8910,7 @@
     renderAll();
   }
 
-  function beginAutoTravelToDestination() {
+  async function beginAutoTravelToDestination() {
     ensureHexMapState();
     if (!gameState.hexMap.destination || !gameState.hexMap.destination.destKey) {
       addLog("Set a destination on the trail before auto-traveling.");
@@ -8326,7 +8921,7 @@
       resetTasksForCurrentMode();
       addLog("You set the team toward the marked waypoint.");
     }
-    advanceHoursTowardDestination(12);
+    await advanceHoursTowardDestination(12);
   }
 
 
@@ -9134,6 +9729,355 @@
       },
     },
     {
+      id: "snakebit_traveler",
+      kind: "minor",
+      minTension: 12,
+      condition: function (ctx) {
+        return (
+          ctx.mode === "travel" &&
+          (ctx.regionKey === "high_plains" || ctx.regionKey === "mountains") &&
+          !ctx.storyState.eventFlags.snake_traveler_helped
+        );
+      },
+      weight: function (ctx) {
+        return 5 + (ctx.weather && ctx.weather.tempC > 25 ? 1 : 0);
+      },
+      run: async function (ctx) {
+        const choice = await presentEncounter({
+          id: "snakebit_traveler",
+          title: "Snake-bitten traveler",
+          subtitle: ctx.location,
+          body: [
+            "You find a young man sweating by the trail, leg swollen from a rattler bite. His partner begs for aid.",
+          ],
+          imageUrl: IMAGE_URLS.snake_bench_heat || IMAGE_URLS.snake_bench_storm,
+          tags: ["mercy", "injury", "danger"],
+          options: [
+            { id: "aid", label: "Use medicine and tend him", tone: "warm", hint: "Costs medicine; raises your standing." },
+            { id: "ignore", label: "Wish them luck and move on", tone: "neutral" },
+            { id: "rob", label: "Take their gear while they're down", tone: "danger", hint: "Quick profit but word will spread." },
+          ],
+          defaultId: "aid",
+        });
+        if (choice === "aid") {
+          const onHand = gameState.supplies.medicine || 0;
+          const spend = Math.min(onHand, 1);
+          gameState.supplies.medicine = Math.max(0, onHand - spend);
+          const careLine =
+            spend > 0
+              ? "You clean and wrap the bite, leaving a precious dose of medicine behind."
+              : "With no medicine left, you improvise a poultice and keep him calm as best you can.";
+          addLog(careLine, { tone: "morale" });
+          adjustReputation(4, "You treated a stranger", { flag: "knownGenerous" });
+          ctx.storyState.eventFlags.snake_traveler_helped = true;
+          gameState.reputationFlags.helpedSnakeTraveler = true;
+        } else if (choice === "rob") {
+          gameState.money = (gameState.money || 0) + 6;
+          gameState.supplies.ammo = Math.max(0, (gameState.supplies.ammo || 0) + 2);
+          addLog("You strip a pouch of coins and cartridges while the pair watches, helpless.", { tone: "warning" });
+          adjustReputation(-8, "You robbed a helpless traveler", { flag: "knownThief" });
+          ctx.storyState.tension = clamp(ctx.storyState.tension + 4, 0, 100);
+        } else {
+          addLog("You offer water and move on, the wounded traveler fading into the dust behind you.", { tone: "info" });
+          adjustReputation(-1, "You left the snakebite to fate");
+        }
+      },
+    },
+    {
+      id: "snake_traveler_followup",
+      kind: "breather",
+      condition: function (ctx) {
+        return (
+          ctx.location.toLowerCase().indexOf("fort") >= 0 &&
+          ctx.storyState.eventFlags.snake_traveler_helped
+        );
+      },
+      weight: function () {
+        return 6;
+      },
+      run: function (ctx) {
+        ctx.storyState.eventFlags.snake_traveler_helped = false;
+        const gift = 8;
+        gameState.money = (gameState.money || 0) + gift;
+        addLog("The healed traveler finds you at the fort with a pouch of coins and a grateful grin.", { tone: "event" });
+        adjustReputation(2, "Word of your aid spread", { flag: "fort_gratitude" });
+      },
+    },
+    {
+      id: "broken_axle_wagon",
+      kind: "minor",
+      condition: function (ctx) {
+        return (
+          ctx.mode === "travel" &&
+          (ctx.regionKey === "plains" || ctx.regionKey === "central_plains") &&
+          !ctx.storyState.eventFlags.broken_axle_recent
+        );
+      },
+      weight: function () {
+        return 7;
+      },
+      run: async function (ctx) {
+        const rep = gameState.reputation || 0;
+        const choice = await presentEncounter({
+          id: "broken_axle_wagon",
+          title: "Wagon with a broken axle",
+          subtitle: ctx.location,
+          body: [
+            "A family waves you down beside a wagon tipped in the ruts. They ask if you can spare a part or lend a hand.",
+          ],
+          tags: ["mercy", "trade"],
+          options: [
+            { id: "share", label: "Share a spare part", tone: "warm", hint: "Costs an axle or wheel; earns gratitude." },
+            { id: "trade", label: "Trade repair for supplies", tone: "neutral", hint: "Better terms if you're trusted." },
+            { id: "move", label: "Wish them luck and move on", tone: "danger" },
+          ],
+          defaultId: "share",
+        });
+        if (choice === "share") {
+          if ((gameState.supplies.axles || 0) > 0) {
+            gameState.supplies.axles = Math.max(0, (gameState.supplies.axles || 0) - 1);
+          } else if ((gameState.supplies.wheels || 0) > 0) {
+            gameState.supplies.wheels = Math.max(0, (gameState.supplies.wheels || 0) - 1);
+          } else {
+            gameState.lastHourMiles = Math.max(0, (gameState.lastHourMiles || 0) - 0.2);
+          }
+          gameState.supplies.meal_hearty = (gameState.supplies.meal_hearty || 0) + 1;
+          addLog("You help brace the wagon and hand over a spare part. They share a hearty meal in thanks.", { tone: "morale" });
+          adjustReputation(3, "You lent parts on the trail");
+        } else if (choice === "trade") {
+          const generosity = rep >= 15 ? 2 : 0;
+          gameState.money = (gameState.money || 0) + 4 + generosity;
+          gameState.supplies.meal_simple = Math.max(0, (gameState.supplies.meal_simple || 0) - 1);
+          addLog("You bargain repairs for coin and a sack of biscuits.", { tone: "event" });
+          adjustReputation(1, "Fair trade on the trail");
+        } else {
+          addLog("You nod and move on, leaving them to flag another wagon.", { tone: "info" });
+          adjustReputation(-2, "Ignored a stranded wagon");
+        }
+        ctx.storyState.eventFlags.broken_axle_recent = true;
+      },
+    },
+    {
+      id: "shortcut_guide_offer",
+      kind: "minor",
+      minTension: 18,
+      condition: function (ctx) {
+        return ctx.mode === "travel" && ctx.regionKey === "mountains" && !ctx.storyState.eventFlags.shortcut_guide_seen;
+      },
+      weight: function (ctx) {
+        return 5 + (ctx.risk.behind_schedule ? 2 : 0);
+      },
+      run: async function (ctx) {
+        const travelSkill = (gameState.leader && gameState.leader.skills && gameState.leader.skills.travel) || 1;
+        const choice = await presentEncounter({
+          id: "shortcut_guide_offer",
+          title: "Dubious shortcut guide",
+          subtitle: ctx.location,
+          body: [
+            "A wiry guide offers to shave days off the mountain climb for a fee, swearing he knows a dry canyon route.",
+          ],
+          tags: ["shortcut", "danger"],
+          options: [
+            { id: "pay", label: "Pay for the shortcut", tone: "danger", hint: "$5. Could save time or cost dearly." },
+            { id: "decline", label: "Stick to the mapped road", tone: "neutral" },
+            { id: "press", label: "Press for proof", tone: "warm", hint: "Lean on your reputation and wits." },
+          ],
+          defaultId: "decline",
+        });
+        if (choice === "pay") {
+          gameState.money = Math.max(0, (gameState.money || 0) - 5);
+          const lucky = Math.random() < 0.35 + travelSkill * 0.05;
+          if (lucky) {
+            gameState.lastHourMiles = (gameState.lastHourMiles || 0) + 1.2;
+            addLog("The guide threads a hidden draw; you make rare quick miles through the ridges.", { tone: "event" });
+          } else {
+            gameState.wagonCondition = clamp(gameState.wagonCondition - 6, 0, 100);
+            ctx.storyState.tension = clamp(ctx.storyState.tension + 6, 0, 100);
+            addLog("The shortcut bogs in shale. A wheel groans and time is lost.", { tone: "warning" });
+          }
+        } else if (choice === "press") {
+          const trusted = (gameState.reputation || 0) >= 10;
+          if (trusted) {
+            gameState.lastHourMiles = (gameState.lastHourMiles || 0) + 0.6;
+            addLog("Your firm questions make the guide draw a real map, yielding a small savings.", { tone: "event" });
+            adjustReputation(1, "Handled a shortcut guide wisely");
+          } else {
+            addLog("The guide bristles at your doubt and slips away into the trees.", { tone: "info" });
+            ctx.storyState.tension = clamp(ctx.storyState.tension + 2, 0, 100);
+          }
+        } else {
+          addLog("You keep to the marked road despite the sales pitch.", { tone: "info" });
+        }
+        ctx.storyState.eventFlags.shortcut_guide_seen = true;
+      },
+    },
+    {
+      id: "passing_caravan",
+      kind: "breather",
+      condition: function (ctx) {
+        return ctx.mode === "travel" && ctx.block === "morning" && !ctx.storyState.eventFlags.caravan_travel_tag;
+      },
+      weight: function () {
+        return 6;
+      },
+      run: async function (ctx) {
+        const choice = await presentEncounter({
+          id: "passing_caravan",
+          title: "Passing caravan",
+          subtitle: ctx.location,
+          body: [
+            "A well-armed caravan rolls alongside for a while. Faces are wary but curious.",
+          ],
+          tags: ["trade", "social"],
+          options: [
+            { id: "greet", label: "Exchange pleasantries", tone: "warm", hint: "Small morale lift." },
+            { id: "trade", label: "Trade staples", tone: "neutral", hint: "Swap coffee or flour." },
+            { id: "travel", label: "Travel together for a day", tone: "warm", hint: "Safer for a bit; slower pace." },
+            { id: "threaten", label: "Rattle them for goods", tone: "danger", hint: "Risky, reputation hit." },
+          ],
+          defaultId: "greet",
+        });
+        if (choice === "greet") {
+          getAllPeople().forEach(function (p) {
+            adjustPersonStat(p, "morale", 1);
+          });
+          addLog("Shared jokes and trail gossip lighten the morning march.", { tone: "morale" });
+        } else if (choice === "trade") {
+          gameState.supplies.coffee = (gameState.supplies.coffee || 0) + 1;
+          gameState.supplies.flour = Math.max(0, (gameState.supplies.flour || 0) - 4);
+          addLog("You trade flour for coffee and a coil of rope.", { tone: "event" });
+          adjustReputation(1, "Fair caravan trade");
+        } else if (choice === "travel") {
+          ctx.storyState.eventFlags.caravan_travel_tag = ctx.dayTag;
+          ctx.storyState.eventFlags.caravan_guard_bonus = 3;
+          gameState.lastHourMiles = Math.max(0, (gameState.lastHourMiles || 0) - 0.3);
+          addLog("You fall in with the caravan for the day, sharing watch and stories.", { tone: "morale" });
+        } else {
+          gameState.money = (gameState.money || 0) + 3;
+          adjustReputation(-6, "You shook down a caravan", { flag: "knownThief" });
+          addLog("You rattle the caravan for a few coins. Eyes stay cold as they pull away.", { tone: "warning" });
+          ctx.storyState.tension = clamp(ctx.storyState.tension + 5, 0, 100);
+        }
+      },
+    },
+    {
+      id: "caravan_travel_followup",
+      kind: "breather",
+      condition: function (ctx) {
+        return ctx.storyState.eventFlags.caravan_travel_tag && ctx.dayTag > ctx.storyState.eventFlags.caravan_travel_tag;
+      },
+      weight: function () {
+        return 5;
+      },
+      run: function (ctx) {
+        ctx.storyState.eventFlags.caravan_travel_tag = null;
+        ctx.storyState.eventFlags.caravan_guard_bonus = null;
+        getAllPeople().forEach(function (p) {
+          adjustPersonStat(p, "morale", 1);
+        });
+        addLog("The caravan peels off toward another valley, leaving you with fresh rumors and steadier spirits.", { tone: "event" });
+      },
+    },
+    {
+      id: "bandit_tax",
+      kind: "major",
+      minTension: 32,
+      condition: function (ctx) {
+        return (
+          ctx.mode === "travel" &&
+          (ctx.regionKey === "blue_mountains" || ctx.regionKey === "snake_plain" || ctx.regionKey === "mountains")
+        );
+      },
+      weight: function () {
+        return 6;
+      },
+      run: async function (ctx) {
+        const rep = gameState.reputation || 0;
+        const guard = ctx.guardCoverage || 0;
+        const selection = await presentEncounter({
+          id: "bandit_tax",
+          title: "Bandits demand a toll",
+          subtitle: ctx.location,
+          body: [
+            "Riders block a narrow stretch, asking for a \"tax\" to pass. Their eyes weigh your weapons and weary faces.",
+          ],
+          tags: ["bandit", "danger"],
+          options: [
+            { id: "parley", label: "Parley and pay a little", tone: "neutral", hint: "Reputation may soften them." },
+            { id: "fight", label: "Fight through", tone: "danger", hint: "Spend ammo; risk injury." },
+            { id: "flee", label: "Flee and drop goods", tone: "warm", hint: "Lose supplies to avoid blood." },
+          ],
+          defaultId: "parley",
+        });
+        if (selection === "parley") {
+          const discount = rep >= 15 ? 2 : 0;
+          const cost = Math.max(2, 5 - discount);
+          gameState.money = Math.max(0, (gameState.money || 0) - cost);
+          addLog("You hand over a few dollars and pass with tense nods.", { tone: "event" });
+          adjustReputation(discount ? 1 : 0, "Talked past bandits");
+        } else if (selection === "fight") {
+          const ammoUse = Math.max(1, 3 - guard);
+          gameState.supplies.ammo = Math.max(0, (gameState.supplies.ammo || 0) - ammoUse);
+          const hurt = Math.random() < 0.4;
+          if (hurt) {
+            const target = choice(ctx.people || getAllPeople());
+            if (target) target.condition = clamp((target.condition || 50) - 8, 0, 100);
+            addLog("Shots ring out. You break through but someone is bloodied.", { tone: "warning" });
+          } else {
+            addLog("A few well-placed shots send the bandits riding. You push on.", { tone: "event" });
+          }
+          adjustReputation(-1, "You chose to fight off a toll");
+        } else {
+          gameState.supplies.flour = Math.max(0, (gameState.supplies.flour || 0) - 6);
+          gameState.supplies.ammo = Math.max(0, (gameState.supplies.ammo || 0) - 1);
+          addLog("You toss a sack of flour to distract them and bolt down the trail.", { tone: "warning" });
+          adjustReputation(-2, "Fled from a bandit toll");
+          ctx.storyState.tension = clamp(ctx.storyState.tension + 2, 0, 100);
+        }
+      },
+    },
+    {
+      id: "campfire_visitor",
+      kind: "breather",
+      condition: function (ctx) {
+        return ctx.mode === "camp" && ctx.block === "evening" && !ctx.weather.storm;
+      },
+      weight: function () {
+        return 6;
+      },
+      run: async function (ctx) {
+        const choice = await presentEncounter({
+          id: "campfire_visitor",
+          title: "Visitor at the campfire",
+          subtitle: formatDateTime(gameState.date) + " · " + ctx.location,
+          body: [
+            "A wandering preacher with a fiddle pauses at the edge of camp, hat in hand, asking to share the fire.",
+          ],
+          tags: ["camp", "social"],
+          options: [
+            { id: "invite", label: "Invite him in", tone: "warm", hint: "Morale boost; a rumor in return." },
+            { id: "trade", label: "Trade for a tune", tone: "neutral", hint: "Spend $2; gain a small boon." },
+            { id: "turn", label: "Turn him away", tone: "danger", hint: "Guard the stores." },
+          ],
+          defaultId: "invite",
+        });
+        if (choice === "invite") {
+          getAllPeople().forEach(function (p) {
+            adjustPersonStat(p, "morale", 3);
+          });
+          adjustReputation(2, "Welcomed a campfire guest");
+          addLog("The fiddle tune carries over the wagons, easing hearts for a night.", { tone: "morale" });
+        } else if (choice === "trade") {
+          gameState.money = Math.max(0, (gameState.money || 0) - 2);
+          gameState.supplies.medicine = (gameState.supplies.medicine || 0) + 1;
+          addLog("You pay for a tune and a pouch of herbs the preacher swears by.", { tone: "event" });
+        } else {
+          addLog("You keep the fire close and the stranger moves on into the dark.", { tone: "info" });
+          adjustReputation(-1, "Turned away a traveler");
+        }
+      },
+    },
+    {
       id: "minor_break",
       kind: "minor",
       condition: function (ctx) {
@@ -9638,27 +10582,43 @@
       weight: function () {
         return 3;
       },
-      run: function (ctx) {
+      run: async function (ctx) {
         const state = ctx.storyState.leadershipDisputeState || {};
         const challenger = ctx.people.find(function (p) { return state.challengerId === p.id; }) || ctx.leadershipDisputePair && ctx.leadershipDisputePair.challenger;
         const leader = getActiveLeader();
         if (!challenger || !leader) return;
         ctx.storyState.eventFlags.leader_council = true;
-        let choiceIdx = 1;
-        if (typeof window !== "undefined" && window.prompt) {
-          const resp = window.prompt(
-            "Leadership council: 1) Back " +
-              leader.name +
-              "  2) Elevate " +
+        const choiceId = await presentEncounter({
+          id: "leadership_council_choice",
+          title: "Leadership council",
+          subtitle: formatDateTime(gameState.date) + " · " + (ctx.location || "Camp"),
+          body: [
+            "Raised voices around the fire draw the group into a council. " +
               challenger.name +
-              " as acting leader  3) Demand compromise",
-            "1"
-          );
-          const num = parseInt(resp, 10);
-          if (!isNaN(num)) choiceIdx = num;
-        }
+              " argues for a steadier hand, while " +
+              leader.name +
+              " claims the trail needs consistency.",
+          ],
+          tags: ["social", "camp"],
+          options: [
+            { id: "stay", label: "Back " + leader.name, tone: "neutral", hint: "Keep the current reins despite tension." },
+            {
+              id: "elevate",
+              label: "Let " + challenger.name + " lead for a stretch",
+              tone: "warm",
+              hint: "A change might steady nerves if things are rough.",
+            },
+            {
+              id: "compromise",
+              label: "Split duties",
+              tone: "danger",
+              hint: "Scout-leading and final say shared to cool tempers.",
+            },
+          ],
+          defaultId: "stay",
+        });
         const struggling = ctx.risk.low_morale || ctx.risk.behind_schedule || (ctx.storyState.tension || 0) > 45;
-        if (choiceIdx === 2 && struggling && !ctx.storyState.eventFlags.leader_swap_done) {
+        if (choiceId === "elevate" && struggling && !ctx.storyState.eventFlags.leader_swap_done) {
           gameState.actingLeaderId = challenger.id;
           adjustOpinion(challenger, leader, 2, "acting_leader");
           adjustOpinion(leader, challenger, -6, "acting_leader");
@@ -9672,7 +10632,7 @@
           );
           recordStoryBeat("leadership", "leadership", challenger.name + " became acting leader", { personId: challenger.id });
           ctx.storyState.eventFlags.leader_swap_done = true;
-        } else if (choiceIdx === 3) {
+        } else if (choiceId === "compromise") {
           addLog("You broker a compromise: the challenger scouts and the leader keeps final say.", { tone: "event" });
           adjustOpinion(challenger, leader, -1, "compromise");
           ctx.storyState.leadershipDisputeState.heat = Math.max(0, (ctx.storyState.leadershipDisputeState.heat || 0) - 2);
@@ -9681,7 +10641,7 @@
           adjustOpinion(challenger, leader, -4, "shut_down");
           ctx.storyState.leadershipDisputeState.heat = Math.max(0, (ctx.storyState.leadershipDisputeState.heat || 0) - 1);
         }
-        recordCascadePersonEvent(challenger.id, "leadership", { target: leader.id, choice: choiceIdx });
+        recordCascadePersonEvent(challenger.id, "leadership", { target: leader.id, choice: choiceId });
       },
     },
     // Relationship arcs
@@ -9990,25 +10950,36 @@
       weight: function () {
         return 3;
       },
-      run: function (ctx) {
+      run: async function (ctx) {
         const tri = ctx.loveTriangle;
         if (!tri) return;
         const triangleKey = "triangle:" + getPairKey(tri.a, tri.b) + ":" + tri.c.id;
-        let pick = 1;
-        if (typeof window !== "undefined" && window.prompt) {
-          const resp = window.prompt(
-            "Handle the tension: 1) Bless the couple 2) Ask them to cool it 3) Ask all to focus on survival",
-            "1"
-          );
-          const num = parseInt(resp, 10);
-          if (!isNaN(num)) pick = num;
-        }
-        if (pick === 1) {
+        const choice = await presentEncounter({
+          id: "romance_triangle_choice",
+          title: "Whispers by the fire",
+          subtitle: formatDateTime(gameState.date) + " · " + (ctx.location || "Camp"),
+          body: [
+            tri.a.name +
+              " and " +
+              tri.b.name +
+              " trade glances while " +
+              tri.c.name +
+              " watches. The tension hangs over camp chores.",
+          ],
+          tags: ["social", "camp"],
+          options: [
+            { id: "bless", label: "Let the romance breathe", tone: "warm", hint: "Might leave someone hurt." },
+            { id: "cool", label: "Ask them to cool it", tone: "neutral", hint: "Keep the peace until a fort." },
+            { id: "focus", label: "Shut it down for survival", tone: "danger", hint: "Feelings bruised but work continues." },
+          ],
+          defaultId: "cool",
+        });
+        if (choice === "bless") {
           adjustOpinion(tri.a, tri.b, 4, "triangle_choice");
           adjustOpinion(tri.b, tri.a, 3, "triangle_choice");
           addThought(tri.c, { id: "triangle_left_out", label: "Left out", value: -6, hoursLeft: 16, source: "social" });
           addLog(tri.a.name + " and " + tri.b.name + " pair off openly. " + tri.c.name + " keeps their distance.", { tone: "social" });
-        } else if (pick === 2) {
+        } else if (choice === "cool") {
           addThought(tri.a, { id: "triangle_pause", label: "Agreed to pause", value: -2, hoursLeft: 10, source: "social" });
           addThought(tri.b, { id: "triangle_pause2", label: "Agreed to pause", value: -2, hoursLeft: 10, source: "social" });
           adjustOpinion(tri.c, tri.a, 2, "triangle_pause");
@@ -10477,14 +11448,24 @@
       weight: function () {
         return 5;
       },
-      run: function (ctx) {
+      run: async function (ctx) {
         ctx.storyState.eventFlags.lander_cutoff_choice = true;
         gameState.routeChoices = gameState.routeChoices || {};
-        let take = false;
-        if (typeof window !== "undefined" && window.confirm) {
-          take = window.confirm("Take the Lander Cutoff toward the Salt River highlands?");
-        }
-        if (take) {
+        const choice = await presentEncounter({
+          id: "lander_cutoff_choice",
+          title: "Split at South Pass",
+          subtitle: ctx.location,
+          body: [
+            "Wagons debate at South Pass. The Lander Road climbs high country toward the Salt River, promising shorter miles but rougher pulls.",
+          ],
+          tags: ["route", "shortcut"],
+          options: [
+            { id: "lander", label: "Take the Lander Cutoff", tone: "danger", hint: "Higher, rougher, but faster if all goes well." },
+            { id: "main", label: "Stay on the main trail", tone: "neutral", hint: "Safer forts ahead; longer miles." },
+          ],
+          defaultId: gameState.routeChoices.lander_route || "main",
+        });
+        if (choice === "lander") {
           gameState.routeChoices.lander_route = "lander";
           addLog("You turn onto the Lander Road, hoping to make time over the higher ground.", { tone: "event" });
           recordStoryBeat("route", "route", "Chose the Lander Cutoff", {});
@@ -10508,19 +11489,24 @@
       weight: function () {
         return 5;
       },
-      run: function (ctx) {
+      run: async function (ctx) {
         ctx.storyState.eventFlags.fort_hall_california_choice = true;
         gameState.routeChoices = gameState.routeChoices || {};
-        let pick = 1;
-        if (typeof window !== "undefined" && window.prompt) {
-          const resp = window.prompt(
-            "1) Continue on Oregon Trail  2) Branch toward the California Trail corridor",
-            "1"
-          );
-          const num = parseInt(resp, 10);
-          if (!isNaN(num)) pick = num;
-        }
-        if (pick === 2) {
+        const choice = await presentEncounter({
+          id: "fort_hall_california_choice",
+          title: "Fork at Fort Hall",
+          subtitle: ctx.location,
+          body: [
+            "Supplies shift hands at Fort Hall. Some wagons eye the California corridor toward the Humboldt, others stay aimed for Oregon's valleys.",
+          ],
+          tags: ["route"],
+          options: [
+            { id: "oregon", label: "Stay on the Oregon Trail", tone: "neutral", hint: "Toward the Blue Mountains and Columbia." },
+            { id: "california", label: "Angle toward California", tone: "danger", hint: "Southwest toward the Humboldt basin." },
+          ],
+          defaultId: gameState.routeChoices.california_branch || "oregon",
+        });
+        if (choice === "california") {
           gameState.routeChoices.california_branch = "california";
           gameState.routeChoices.applegate_cutoff = "applegate";
           addLog("You angle toward the Raft River and the California Trail corridor.", { tone: "event" });
@@ -10545,29 +11531,33 @@
       weight: function () {
         return 4;
       },
-      run: function (ctx) {
+      run: async function (ctx) {
         ctx.storyState.eventFlags.lassen_applegate_choice = true;
         gameState.routeChoices = gameState.routeChoices || {};
-        let pick = 1;
-        if (typeof window !== "undefined" && window.prompt) {
-          const resp = window.prompt(
-            "Applegate Cutoff toward Oregon? 1) Take Applegate  2) Continue west toward California (not implemented)",
-            "1"
-          );
-          const num = parseInt(resp, 10);
-          if (!isNaN(num)) pick = num;
-        }
-        if (pick === 1) {
-          gameState.routeChoices.applegate_cutoff = "applegate";
-          addLog("You follow the Applegate Cutoff north toward Goose Lake and the Rogue Valley.", { tone: "event" });
-          recordStoryBeat("route", "route", "Chose the Applegate Cutoff", {});
-        } else {
+        const choice = await presentEncounter({
+          id: "lassen_applegate_choice",
+          title: "Lassen Meadows fork",
+          subtitle: ctx.location,
+          body: [
+            "Ahead lies the Applegate Cutoff curving toward Oregon; west, rougher miles toward California beckon fortune-seekers.",
+          ],
+          tags: ["route", "shortcut"],
+          options: [
+            { id: "applegate", label: "Take the Applegate Cutoff", tone: "warm", hint: "North toward Oregon's Rogue Valley." },
+            { id: "california", label: "Press west toward California", tone: "danger", hint: "Riskier, still taking you into Oregon here." },
+          ],
+          defaultId: gameState.routeChoices.applegate_cutoff || "applegate",
+        });
+        gameState.routeChoices.applegate_cutoff = "applegate";
+        if (choice === "california") {
           addLog(
-            "California destination not implemented yet; staying on the Applegate route toward Oregon for now.",
+            "California destination not modeled here yet; you still slide onto the Applegate road with the crowd.",
             { tone: "warning" }
           );
-          gameState.routeChoices.applegate_cutoff = "applegate";
           recordStoryBeat("route", "route", "Deferred California destination, following Applegate", {});
+        } else {
+          addLog("You follow the Applegate Cutoff north toward Goose Lake and the Rogue Valley.", { tone: "event" });
+          recordStoryBeat("route", "route", "Chose the Applegate Cutoff", {});
         }
         rebuildActiveRoutePath();
         recenterCameraOnPlayer();
@@ -10584,17 +11574,27 @@
       weight: function () {
         return 4;
       },
-      run: function () {
+      run: async function () {
         const ss = ensureStoryState();
         ss.eventFlags.salt_river_pass_choice = true;
         const people = getAllPeople().filter(function (p) {
           return p && p.alive;
         });
-        let push = true;
-        if (typeof window !== "undefined" && window.confirm) {
-          push = window.confirm("Push over Salt River Pass today (hard) instead of resting a night?");
-        }
-        if (push) {
+        const choice = await presentEncounter({
+          id: "salt_river_pass_choice",
+          title: "Salt River Pass",
+          subtitle: formatDateTime(gameState.date) + " · " + gameState.locationName,
+          body: [
+            "The grade climbs ahead. Pushing over today will wear the team but bank daylight; camping below keeps the stock fresher.",
+          ],
+          tags: ["route", "danger"],
+          options: [
+            { id: "push", label: "Push over now", tone: "danger", hint: "Faster miles, tougher on the teams." },
+            { id: "rest", label: "Camp and wait", tone: "neutral", hint: "Costs water and food but saves strength." },
+          ],
+          defaultId: "push",
+        });
+        if (choice === "push") {
           gameState.lastHourMiles = (gameState.lastHourMiles || 0) + 1;
           people.forEach(function (p) {
             p.energy = clamp(p.energy - 4, 0, 100);
@@ -10626,17 +11626,27 @@
       weight: function () {
         return 4;
       },
-      run: function () {
+      run: async function () {
         const ss = ensureStoryState();
         ss.eventFlags.granite_pass_choice = true;
         const people = getAllPeople().filter(function (p) {
           return p && p.alive;
         });
-        let push = true;
-        if (typeof window !== "undefined" && window.confirm) {
-          push = window.confirm("Push wagons over Granite Pass now for a small speed boost?");
-        }
-        if (push) {
+        const choice = await presentEncounter({
+          id: "granite_pass_choice",
+          title: "Granite Pass",
+          subtitle: formatDateTime(gameState.date) + " · " + gameState.locationName,
+          body: [
+            "Granite Pass rises ahead. You can chain wheels and shove now or rest and make a steadier climb tomorrow.",
+          ],
+          tags: ["route", "danger"],
+          options: [
+            { id: "push", label: "Haul over now", tone: "danger", hint: "Spend energy for quicker miles." },
+            { id: "wait", label: "Scout and rest", tone: "neutral", hint: "Costs time; safer on the stock." },
+          ],
+          defaultId: "push",
+        });
+        if (choice === "push") {
           gameState.lastHourMiles = (gameState.lastHourMiles || 0) + 0.8;
           people.forEach(function (p) {
             p.energy = clamp(p.energy - 3, 0, 100);
@@ -10667,17 +11677,27 @@
       weight: function () {
         return 4;
       },
-      run: function () {
+      run: async function () {
         const ss = ensureStoryState();
         ss.eventFlags.siskiyou_pass_choice = true;
         const people = getAllPeople().filter(function (p) {
           return p && p.alive;
         });
-        let push = true;
-        if (typeof window !== "undefined" && window.confirm) {
-          push = window.confirm("Push over Siskiyou Pass today or rest and try tomorrow?");
-        }
-        if (push) {
+        const choice = await presentEncounter({
+          id: "siskiyou_pass_choice",
+          title: "Siskiyou Pass",
+          subtitle: formatDateTime(gameState.date) + " · " + gameState.locationName,
+          body: [
+            "Fog and firs guard the crest. You can force the wagons over today or camp below for a rested push tomorrow.",
+          ],
+          tags: ["route", "danger"],
+          options: [
+            { id: "push", label: "Push over now", tone: "danger", hint: "Spend energy, reach the Rogue sooner." },
+            { id: "rest", label: "Hold and rest", tone: "neutral", hint: "Lose time, spare morale and energy." },
+          ],
+          defaultId: "push",
+        });
+        if (choice === "push") {
           gameState.lastHourMiles = (gameState.lastHourMiles || 0) + 0.9;
           people.forEach(function (p) {
             p.energy = clamp(p.energy - 3, 0, 100);
@@ -10709,19 +11729,28 @@
       weight: function () {
         return 4;
       },
-      run: function (ctx) {
+      run: async function (ctx) {
         ctx.storyState.eventFlags.snake_three_islands = true;
-        let pick = 1;
-        if (typeof window !== "undefined" && window.prompt) {
-          const resp = window.prompt("Three Islands Crossing: 1) Pay for the ferry 2) Caulk and float 3) Scout upstream", "1");
-          const num = parseInt(resp, 10);
-          if (!isNaN(num)) pick = num;
-        }
-        if (pick === 1 && (gameState.money || 0) >= 8) {
+        const choice = await presentEncounter({
+          id: "snake_three_islands_choice",
+          title: "Three Islands Crossing",
+          subtitle: ctx.location,
+          body: [
+            "Swirling channels braid the Snake. A shaky ferry waits, or you can seal the wagon and float, or scout upstream for a quieter braid.",
+          ],
+          tags: ["river", "danger"],
+          options: [
+            { id: "ferry", label: "Pay for the ferry ($8)", tone: "neutral", hint: "Safer but slow; costs cash." },
+            { id: "float", label: "Caulk and float", tone: "danger", hint: "Risk swamping; saves money." },
+            { id: "scout", label: "Scout upstream", tone: "warm", hint: "Burns daylight, may find calmer water." },
+          ],
+          defaultId: "ferry",
+        });
+        if (choice === "ferry" && (gameState.money || 0) >= 8) {
           gameState.money -= 8;
           addLog("You pay for the shaky ferry and make the crossing damp but intact.", { tone: "event" });
           recordStoryBeat("route", "water", "Ferry crossing at Three Islands", {});
-        } else if (pick === 2) {
+        } else if (choice === "float") {
           gameState.wagonCondition = clamp(gameState.wagonCondition - 8, 0, 100);
           ctx.storyState.risk.soaked = true;
           addLog("You seal the wagon and shove off. The current spins you but you scrape through, soaked and rattled.", { tone: "warning" });
@@ -10743,23 +11772,55 @@
       weight: function (ctx) {
         return ctx.risk.long_illness ? 6 : 3;
       },
-      run: function (ctx) {
+      run: async function (ctx) {
         ctx.storyState.eventFlags.fort_clinic_help = true;
-        let pick = 1;
-        if (typeof window !== "undefined" && window.confirm) {
-          pick = window.confirm("Volunteer extra supplies and labor for the fort clinic?") ? 1 : 2;
-        }
-        if (pick === 1) {
-          const spent = Math.min(gameState.supplies.medicine || 0, 2);
+        ensureReputationState();
+        const rep = gameState.reputation || 0;
+        const generous = rep >= 20;
+        const distrusted = rep <= -20;
+        const selection = await presentEncounter({
+          id: "fort_clinic_volunteer",
+          title: "Fort clinic appeal",
+          subtitle: ctx.location,
+          body: [
+            "A weary surgeon asks if you can spare medicine or hands. Word of your conduct on the trail colors the request.",
+          ],
+          tags: ["fort", "mercy"],
+          options: [
+            { id: "volunteer", label: "Leave medicine and help", tone: "warm", hint: "Earn clinic favor; costs supplies." },
+            { id: "modest", label: "Offer a modest bundle", tone: "neutral", hint: "Small gesture to keep relations steady." },
+            { id: "decline", label: "Move on", tone: "danger", hint: "Save supplies; may sour your name." },
+          ],
+          defaultId: "volunteer",
+        });
+        if (selection === "volunteer") {
+          const cost = distrusted ? 3 : generous ? 1 : 2;
+          const spent = Math.min(gameState.supplies.medicine || 0, cost);
           gameState.supplies.medicine = Math.max(0, (gameState.supplies.medicine || 0) - spent);
           const friendA = ctx.people && ctx.people.length ? choice(ctx.people) : null;
           const friendB = ctx.people && ctx.people.length ? choice(ctx.people) : null;
           if (friendA && friendB) adjustOpinion(friendA, friendB, 1, "clinic_help");
-          addLog("You leave medicine and hands to the clinic. The surgeon promises priority if you return ill.", { tone: "morale" });
+          addLog(
+            "You leave medicine and a pair of helpers at the clinic. The surgeon notes your kindness and promises priority if illness strikes.",
+            { tone: "morale" }
+          );
+          if (generous) {
+            adjustReputation(4, "Fort clinic aid", { flag: "clinic_generous" });
+          } else {
+            adjustReputation(2, "Fort clinic aid");
+          }
           recordStoryBeat("historic", "illness", "Assisted a mission clinic", {});
           ctx.storyState.eventFlags.fort_clinic_favor = true;
+          if (generous || rep >= 10) gameState.reputationFlags.clinic_priority = true;
+        } else if (selection === "modest") {
+          const spent = Math.min(gameState.supplies.medicine || 0, 1);
+          gameState.supplies.medicine = Math.max(0, (gameState.supplies.medicine || 0) - spent);
+          addLog("You leave a small bundle of bandages and move on.", { tone: "info" });
+          adjustReputation(1, "Offered modest clinic help");
         } else {
           addLog("You nod politely and move on, keeping your scarce supplies.", { tone: "info" });
+          adjustReputation(-2, "Declined fort clinic plea");
+          if (distrusted) ctx.storyState.eventFlags.fort_clinic_favor = false;
         }
       },
     },
@@ -10773,16 +11834,24 @@
       weight: function () {
         return 3;
       },
-      run: function (ctx) {
+      run: async function (ctx) {
         ctx.storyState.eventFlags.blue_cutoff = true;
-        let pick = 1;
-        if (typeof window !== "undefined" && window.prompt) {
-          const resp = window.prompt("Take the steep Toll Gate Road shortcut? 1) Yes 2) Stay on the longer valley road", "2");
-          const num = parseInt(resp, 10);
-          if (!isNaN(num)) pick = num;
-        }
+        const choice = await presentEncounter({
+          id: "blue_mountains_cutoff",
+          title: "Blue Mountains decision",
+          subtitle: ctx.location,
+          body: [
+            "A toll gate climbs sharply over the Blue Mountains, shaving days if the wagons hold. The longer valley road is kinder but slower.",
+          ],
+          tags: ["route", "shortcut"],
+          options: [
+            { id: "toll", label: "Pay and take the toll gate", tone: "danger", hint: "Shorter, rougher; pay $5." },
+            { id: "valley", label: "Stick to the valley road", tone: "neutral", hint: "Longer but easier on gear." },
+          ],
+          defaultId: gameState.routeChoices.blue_cutoff || "valley",
+        });
         gameState.routeChoices = gameState.routeChoices || {};
-        if (pick === 1) {
+        if (choice === "toll") {
           gameState.routeChoices.blue_cutoff = "toll";
           gameState.money = Math.max(0, (gameState.money || 0) - 5);
           ctx.storyState.risk.overloaded_wagon = true;
@@ -11186,6 +12255,8 @@
       return challenger ? { challenger: challenger, leader: leader } : null;
     })();
 
+    const guardBonus = (ss.eventFlags && ss.eventFlags.caravan_guard_bonus) || 0;
+
     return {
       gameState: gameState,
       storyState: ss,
@@ -11197,9 +12268,9 @@
       mode: gameState.mode,
       block: getScheduleBlock(gameState.date),
       guardCoverage:
-        gameState.campPlan && gameState.campPlan.guardCoverage != null
+        (gameState.campPlan && gameState.campPlan.guardCoverage != null
           ? gameState.campPlan.guardCoverage
-          : gameState.guardLevel || 0,
+          : gameState.guardLevel || 0) + guardBonus,
       campPlan: gameState.campPlan,
       avgMorale: gameState.lastAvgMorale || 60,
       rivalPair: rivalPair,
@@ -11216,7 +12287,7 @@
     };
   }
 
-  function eventDirectorTick() {
+  async function eventDirectorTick() {
     const ss = ensureStoryState();
     ss.hoursSinceMajorEvent += 1;
     ss.hoursSinceMinorEvent += 1;
@@ -11259,7 +12330,7 @@
     if (eligible.length) {
       const pick = weightedPick(eligible);
       if (pick && pick.def && pick.def.run) {
-        pick.def.run(ctx);
+        await pick.def.run(ctx);
         ss.recentEvents.push({ id: pick.def.id, kind: pick.def.kind });
         if (ss.recentEvents.length > 6) ss.recentEvents.shift();
         if (gameState.tensionDebug) {
@@ -13660,7 +14731,9 @@
       LAST_HEX_CLICK.key = key;
       LAST_HEX_CLICK.ts = now;
       if (setOk && (sameDest || quickRepeat)) {
-        beginAutoTravelToDestination();
+        withAdvanceLock(function () {
+          return beginAutoTravelToDestination();
+        });
       }
     });
     if (tooltip) {
@@ -14022,6 +15095,7 @@
       " lb · Morale: " +
       avgMorale +
       "%";
+    refreshCampfireButton();
   }
 
   function renderInventoryModal() {
@@ -14080,13 +15154,21 @@
           : id === "meal_simple" || id === "cooked_meals"
           ? "Eat a meal"
           : "Eat some";
-      btn.addEventListener("click", function () {
+      btn.addEventListener("click", async function () {
         const ok = useFood(id, person);
         if (ok) {
           addLog(person.name + " eats from " + item.name.toLowerCase() + ".");
           renderAll();
         } else {
-          alert("Not enough " + item.name.toLowerCase() + " left.");
+          await presentEncounter({
+            id: "food_shortage_notice",
+            title: "Stores are bare",
+            body: [
+              "There isn't enough " + item.name.toLowerCase() + " left to share.",
+            ],
+            options: [{ id: "close", label: "Close" }],
+            defaultId: "close",
+          });
         }
       });
       tdUse.appendChild(btn);
@@ -14106,9 +15188,15 @@
     const wBtn = document.createElement("button");
     wBtn.className = "ot-inv-btn";
     wBtn.textContent = "Drink";
-    wBtn.addEventListener("click", function () {
+    wBtn.addEventListener("click", async function () {
       if (gameState.supplies.water <= 0) {
-        alert("No drinkable water left.");
+        await presentEncounter({
+          id: "water_empty_notice",
+          title: "The keg is dry",
+          body: ["No drinkable water remains right now."],
+          options: [{ id: "close", label: "Close" }],
+          defaultId: "close",
+        });
         return;
       }
       drinkUntil(person, 90);
@@ -14149,6 +15237,15 @@
       const flavor = describeWeatherFlavor(regionKey, w);
       dom.weatherNote.textContent = seasonal || flavor;
     }
+  }
+
+  function renderReputation() {
+    ensureReputationState();
+    if (!dom.reputationChip) return;
+    const tier = getReputationTier();
+    dom.reputationChip.textContent = tier.label;
+    dom.reputationChip.className = "ot-rep-chip " + (tier.colorClass || "ot-rep-chip-neutral");
+    dom.reputationChip.title = `${tier.desc} (Score ${Math.round(gameState.reputation || 0)})`;
   }
 
   function renderAfflictionAlerts() {
@@ -14324,6 +15421,7 @@
       }
       renderStorytellerDescription(gameState.storytellerPresetId || "classic");
       renderOnTrailHeader();
+      renderReputation();
       renderLeaderStatus();
       renderPartyManifest();
       renderHourTasks();
@@ -14442,6 +15540,8 @@
       if (!gameState.socialHistory) gameState.socialHistory = { rescues: [] };
       if (!Array.isArray(gameState.socialHistory.rescues)) gameState.socialHistory.rescues = [];
       if (!gameState.routeChoices) gameState.routeChoices = {};
+      ensureReputationState();
+      if (gameState.lastCampfireMomentKey == null) gameState.lastCampfireMomentKey = null;
       if (!gameState.actingLeaderId) gameState.actingLeaderId = null;
       if (!gameState.startingPoint) gameState.startingPoint = "independence";
       if (!gameState.hexMap)
@@ -14580,7 +15680,7 @@
   }
 
   // Evening camp macros: “Proper camp (2h)” and “Rushed camp (1h)”
-  function runCampMacro(hours, campQuality) {
+  async function runCampMacro(hours, campQuality) {
     if (gameState.mode !== "camp") {
       addLog(
         "You can only run camp routines while you are in camp. Toggle travel / camp first."
@@ -14611,7 +15711,7 @@
     }
 
     // Advance time with a context flag so camp-quality effects apply
-    advanceHours(hours, { campQuality: campQuality });
+    await advanceHours(hours, { campQuality: campQuality });
   }
 
   function wireEvents() {
@@ -14692,10 +15792,14 @@
       });
     }
     dom.btnAdvance1.addEventListener("click", function () {
-      advanceHours(1);
+      withAdvanceLock(function () {
+        return advanceHours(1);
+      });
     });
     dom.btnAdvance4.addEventListener("click", function () {
-      advanceHours(4);
+      withAdvanceLock(function () {
+        return advanceHours(4);
+      });
     });
     if (dom.btnViewJournal) {
       dom.btnViewJournal.addEventListener("click", function () {
@@ -14771,17 +15875,23 @@
     }
     if (dom.btnTravel1h) {
       dom.btnTravel1h.addEventListener("click", function () {
-        advanceHoursTowardDestination(1);
+        withAdvanceLock(function () {
+          return advanceHoursTowardDestination(1);
+        });
       });
     }
     if (dom.btnTravel4h) {
       dom.btnTravel4h.addEventListener("click", function () {
-        advanceHoursTowardDestination(4);
+        withAdvanceLock(function () {
+          return advanceHoursTowardDestination(4);
+        });
       });
     }
     if (dom.btnAutoTravel) {
       dom.btnAutoTravel.addEventListener("click", function () {
-        advanceHoursTowardDestination(12);
+        withAdvanceLock(function () {
+          return advanceHoursTowardDestination(12);
+        });
       });
     }
     if (dom.btnClearTarget) {
@@ -14853,12 +15963,23 @@
     // Evening camp macros
     if (dom.btnEveningProperCamp) {
       dom.btnEveningProperCamp.addEventListener("click", function () {
-        runCampMacro(2, "proper"); // Proper camp (2 hours)
+        withAdvanceLock(function () {
+          return runCampMacro(2, "proper");
+        });
       });
     }
     if (dom.btnEveningRushedCamp) {
       dom.btnEveningRushedCamp.addEventListener("click", function () {
-        runCampMacro(1, "rough"); // Rushed camp (1 hour)
+        withAdvanceLock(function () {
+          return runCampMacro(1, "rough");
+        });
+      });
+    }
+    if (dom.btnCampfireMoment) {
+      dom.btnCampfireMoment.addEventListener("click", function () {
+        withAdvanceLock(function () {
+          return triggerCampfireMoment();
+        });
       });
     }
 
@@ -14874,7 +15995,11 @@
       });
     }
     if (dom.btnCampConfirm) {
-      dom.btnCampConfirm.addEventListener("click", confirmCampTasks);
+      dom.btnCampConfirm.addEventListener("click", function () {
+        withAdvanceLock(function () {
+          return confirmCampTasks();
+        });
+      });
     }
     if (dom.btnCampAuto) {
       dom.btnCampAuto.addEventListener("click", autoPlanCampTasks);
@@ -15455,7 +16580,7 @@
     if (dom.campOverlay) dom.campOverlay.classList.remove("ot-show");
   }
 
-  function applyCampTasks(plan) {
+  async function applyCampTasks(plan) {
     if (!plan || !plan.tasks || !plan.tasks.length) return;
     ensureCampFlags();
     const people = getAllPeople().filter(function (p) {
@@ -15489,7 +16614,9 @@
       }
     });
     const hours = Math.max(1, Math.round(plan.hoursUsed));
-    advanceHours(hours, { campQuality: plan.hoursUsed >= 2 ? "proper" : "rough" });
+    await advanceHours(hours, {
+      campQuality: plan.hoursUsed >= 2 ? "proper" : "rough",
+    });
     addLog(
       "Camp chores complete: " +
         plan.tasks
@@ -15546,6 +16673,80 @@
     });
   }
 
+  function campfireMomentAvailable() {
+    if (!dom.btnCampfireMoment) return false;
+    const block = getScheduleBlock(gameState.date);
+    if (gameState.mode !== "camp") return false;
+    if (block !== "evening" && block !== "night") return false;
+    const key = getDayKey(gameState.date) + ":" + block;
+    return gameState.lastCampfireMomentKey !== key;
+  }
+
+  function refreshCampfireButton() {
+    if (!dom.btnCampfireMoment) return;
+    const available = campfireMomentAvailable();
+    dom.btnCampfireMoment.disabled = !available || encounterActive || isAdvancingTime;
+    dom.btnCampfireMoment.textContent = available
+      ? "Campfire moment (1h)"
+      : "Campfire moment (rested)";
+  }
+
+  async function triggerCampfireMoment() {
+    if (!campfireMomentAvailable()) {
+      addLog("The camp is not settled for a quiet hour yet.");
+      return;
+    }
+    const block = getScheduleBlock(gameState.date);
+    const key = getDayKey(gameState.date) + ":" + block;
+    const choice = await presentEncounter({
+      id: "campfire_moment",
+      title: "Campfire moment",
+      subtitle: formatDateTime(gameState.date) + " · " + gameState.locationName,
+      body: [
+        "The fire burns low. A hymn hums from one wagon, while another shuffles cards. Tempers and hopes could be nudged by how you spend this hour.",
+      ],
+      tags: ["camp"],
+      options: [
+        { id: "join", label: "Join the song and stories", tone: "warm", hint: "Raise morale; a kind word costs little." },
+        { id: "mediate", label: "Check in on simmering tensions", tone: "neutral", hint: "Smooth frayed nerves before morning." },
+        { id: "turn_in", label: "Call for early rest", tone: "danger", hint: "Rest first, talk later." },
+      ],
+      defaultId: "turn_in",
+    });
+
+    const people = getAllPeople();
+    if (choice === "join") {
+      people.forEach(function (p) {
+        adjustPersonStat(p, "morale", 3);
+      });
+      adjustReputation(2, "Warm campfire welcome", { flag: "campfire_kind" });
+      addLog("You share stories and a hymn. Spirits lift as embers drift up into the dark.", { tone: "morale" });
+    } else if (choice === "mediate") {
+      const pair = pickRivalPair() || (people.length >= 2 ? { a: people[0], b: people[1] } : null);
+      if (pair && pair.a && pair.b) {
+        adjustOpinion(pair.a, pair.b, 4, "campfire_moment");
+        adjustOpinion(pair.b, pair.a, 4, "campfire_moment");
+      }
+      people.forEach(function (p) {
+        adjustPersonStat(p, "morale", 1);
+      });
+      adjustReputation(1, "Settled disputes by the fire", { flag: "campfire_mediator" });
+      addLog("You listen more than you speak, easing small grudges before they harden.", { tone: "social" });
+    } else {
+      people.forEach(function (p) {
+        adjustPersonStat(p, "energy", 2);
+        adjustPersonStat(p, "morale", -1);
+      });
+      adjustReputation(-1, "Sent everyone to their bedrolls early");
+      addLog("You bank the fire early. Rest comes, but a few mutter into their blankets.", { tone: "warning" });
+    }
+
+    gameState.lastCampfireMomentKey = key;
+    await advanceHours(1, { reason: "campfire_moment" });
+    refreshCampfireButton();
+    renderAll();
+  }
+
   function autoPlanCampTasks() {
     if (!window.oldTrailCampMenu) return;
     const tasks = autoSelectCampTasks(gameState);
@@ -15554,14 +16755,14 @@
     renderCampRolesSummary();
   }
 
-  function confirmCampTasks() {
+  async function confirmCampTasks() {
     if (!window.oldTrailCampMenu) return;
     const plan = oldTrailCampMenu.getPlan();
     if (!plan.tasks.length) {
       dom.campSummaryNote.textContent = "No chores selected.";
       return;
     }
-    applyCampTasks(plan);
+    await applyCampTasks(plan);
     closeCampOverlay();
     renderAll();
   }
