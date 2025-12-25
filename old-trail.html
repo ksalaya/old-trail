@@ -4729,6 +4729,8 @@
       case "mountains":
       case "Rockies":
         return 2100;
+      case "great_basin":
+        return 1400;
       case "snake_plain":
       case "SnakePlain":
         return 1500;
@@ -5936,6 +5938,8 @@
         return "HighPlains";
       case "mountains":
         return "Rockies";
+      case "great_basin":
+        return "SnakePlain";
       case "snake_plain":
         return "SnakePlain";
       case "blue_mountains":
@@ -6148,9 +6152,14 @@
 
   function updateRegionAndLocation() {
     const miles = gameState.milesTraveled;
-    let last = ROUTE_MILESTONES[0];
-    ROUTE_MILESTONES.forEach(function (m) {
-      if (miles >= m.mile) last = m;
+    const milestones = getActiveRouteMilestones();
+    let last =
+      (milestones.length && milestones[0]) ||
+      { name: "On the trail", region: gameState.region || "plains", mile: 0 };
+    milestones.forEach(function (m) {
+      if (m && typeof m.mile === "number" && miles >= m.mile) {
+        last = m;
+      }
     });
     gameState.locationName = last.name;
     gameState.region = last.region;
@@ -7819,6 +7828,15 @@
     }
     if (local.tags && local.tags.indexOf("Sublette desert stretch") >= 0) {
       factor *= 0.6;
+      quality = "alkali";
+      qualityTag = "alkali";
+    }
+
+    if (
+      local.tags &&
+      local.tags.indexOf("Black Rock / High Rock waterless stretch") >= 0
+    ) {
+      factor *= 0.55;
       quality = "alkali";
       qualityTag = "alkali";
     }
@@ -11612,6 +11630,44 @@
     }
   }
 
+  function renderMilestoneList(container, miles, seenMile) {
+    if (!container) return;
+    container.innerHTML = "";
+    const milestones = getActiveRouteMilestones();
+    if (!milestones.length) return;
+    let currentIdx = 0;
+    milestones.forEach(function (m, idx) {
+      if (m && typeof m.mile === "number" && miles >= m.mile) {
+        currentIdx = idx;
+      }
+    });
+    milestones.forEach(function (m, idx) {
+      if (!m) return;
+      const row = document.createElement("div");
+      row.className = "ot-trail-dot-row";
+      const dot = document.createElement("div");
+      dot.className = "ot-trail-dot";
+      const next = milestones[idx + 1];
+      let isCurrent = idx === currentIdx;
+      if (typeof m.mile === "number" && next && typeof next.mile === "number") {
+        isCurrent = miles >= m.mile && miles < next.mile;
+      } else if (typeof m.mile === "number" && !next) {
+        isCurrent = miles >= m.mile;
+      }
+      if (isCurrent) {
+        dot.classList.add("ot-trail-dot-current");
+      }
+      if (typeof m.mile === "number" && seenMile >= m.mile) {
+        dot.classList.add("ot-trail-dot-seen");
+      }
+      row.appendChild(dot);
+      const label = document.createElement("div");
+      label.textContent = m.name || "Waypoint";
+      row.appendChild(label);
+      container.appendChild(row);
+    });
+  }
+
   function renderTrailMap() {
     if (dom.mapViewport) {
       // background set via CSS; JS hook left in case we later want region-aware tinting
@@ -11631,23 +11687,7 @@
 
     renderTravelTargetUI();
 
-    ROUTE_MILESTONES.forEach(function (m) {
-      const row = document.createElement("div");
-      row.className = "ot-trail-dot-row";
-      const dot = document.createElement("div");
-      dot.className = "ot-trail-dot";
-      if (miles >= m.mile && miles < m.mile + 80) {
-        dot.classList.add("ot-trail-dot-current");
-      }
-      if (seenMile >= m.mile) {
-        dot.classList.add("ot-trail-dot-seen");
-      }
-      row.appendChild(dot);
-      const label = document.createElement("div");
-      label.textContent = m.name;
-      row.appendChild(label);
-      dom.trailMap.appendChild(row);
-    });
+    renderMilestoneList(dom.trailMap, miles, seenMile);
 
     updateMapListVisibility();
   }
@@ -12214,6 +12254,20 @@
       { lat: 40.63, lon: -118.15 },
       { lat: 40.6, lon: -118.35 },
     ],
+    applegateBlackRockHighRock: [
+      { lat: 40.46, lon: -118.31 },
+      { lat: 40.66, lon: -118.55 },
+      { lat: 40.82, lon: -118.78 },
+      { lat: 40.97, lon: -118.98 },
+      { lat: 41.12, lon: -119.25 },
+      { lat: 41.22, lon: -119.45 },
+      { lat: 41.32, lon: -119.62 },
+      { lat: 41.4, lon: -119.74 },
+      { lat: 41.49, lon: -119.9 },
+      { lat: 41.58, lon: -120.05 },
+      { lat: 41.66, lon: -120.18 },
+      { lat: 41.53, lon: -120.18 },
+    ],
   };
 
   function addHexToSet(set, hex) {
@@ -12284,7 +12338,8 @@
       HEX_WORLD.featureHex.snakeRiver.size &&
       HEX_WORLD.featureHex.columbiaRiver.size &&
       HEX_WORLD.featureHex.humboldtRiver.size &&
-      HEX_WORLD.featureHex.bigSandy.size
+      HEX_WORLD.featureHex.bigSandy.size &&
+      HEX_WORLD.featureHex.applegateDesert
     ) {
       return;
     }
@@ -12300,12 +12355,20 @@
       branchChoiceValue("sublette_or_bridger") === "sublette"
         ? samplePolylineToHexes(HEX_FEATURE_POLYLINES.subletteDesert, spacing)
         : new Set();
+    const applegate =
+      branchChoiceValue("applegate_cutoff") === "applegate"
+        ? samplePolylineToHexes(
+            HEX_FEATURE_POLYLINES.applegateBlackRockHighRock,
+            spacing
+          )
+        : new Set();
 
     HEX_WORLD.featureHex.snakeRiver = expandHexSet(snake, 2);
     HEX_WORLD.featureHex.columbiaRiver = expandHexSet(columbia, 2);
     HEX_WORLD.featureHex.humboldtRiver = expandHexSet(humboldt, 2);
     HEX_WORLD.featureHex.bigSandy = expandHexSet(bigSandy, 1);
     HEX_WORLD.featureHex.subletteDesert = expandHexSet(sublette, 2);
+    HEX_WORLD.featureHex.applegateDesert = expandHexSet(applegate, 2);
     LAST_FEATURE_BRANCH = cacheKey;
   }
 
@@ -12615,6 +12678,7 @@
     poiHex: {},
     poiByHex: {},
     trailHex: new Set(),
+    activeRouteMilestones: [],
     activePath: [],
     activePathMiles: [],
     activePathIndex: {},
@@ -12624,6 +12688,7 @@
       humboldtRiver: new Set(),
       subletteDesert: new Set(),
       bigSandy: new Set(),
+      applegateDesert: new Set(),
     },
   };
 
@@ -12700,31 +12765,111 @@
     return val === edge.branchValue;
   }
 
-  function rebuildActiveRoutePath() {
-    preparePoiCaches();
-    HEX_WORLD.trailHex = new Set();
-    HEX_WORLD.activePathIndex = {};
-    const startId =
-      OT_ROUTE_GRAPH.starts[gameState.startingPoint || "independence"] ||
-      OT_ROUTE_GRAPH.starts.independence;
-    const destination = OT_ROUTE_GRAPH.destination;
+  function pickEdgeForCursor(edges) {
+    if (!edges || !edges.length) return null;
+    const matchingBranch = edges.find(function (edge) {
+      return edge.branchKey && branchChoiceValue(edge.branchKey) === edge.branchValue;
+    });
+    if (matchingBranch) return matchingBranch;
+    const defaultEdge = edges.find(function (edge) {
+      return !edge.branchKey;
+    });
+    if (defaultEdge) return defaultEdge;
+    return edges[0] || null;
+  }
+
+  function buildEdgesByFrom() {
     const edgesByFrom = {};
     OT_ROUTE_GRAPH.edges.forEach(function (e) {
       if (!edgesByFrom[e.from]) edgesByFrom[e.from] = [];
       edgesByFrom[e.from].push(e);
     });
-    const pickEdgeForCursor = function (edges) {
-      if (!edges || !edges.length) return null;
-      const matchingBranch = edges.find(function (edge) {
-        return edge.branchKey && branchChoiceValue(edge.branchKey) === edge.branchValue;
+    return edgesByFrom;
+  }
+
+  function getActiveRoutePoiSequence(edgesByFromOverride, startOverride, destOverride) {
+    preparePoiCaches();
+    const startId =
+      startOverride ||
+      OT_ROUTE_GRAPH.starts[gameState.startingPoint || "independence"] ||
+      OT_ROUTE_GRAPH.starts.independence;
+    const destination = destOverride || OT_ROUTE_GRAPH.destination;
+    const edgesByFrom = edgesByFromOverride || buildEdgesByFrom();
+    const sequence = [];
+    const visited = new Set();
+    let cursor = startId;
+    let safety = 0;
+    while (cursor && safety < 300) {
+      sequence.push(cursor);
+      visited.add(cursor);
+      if (cursor === destination) break;
+      const edge = pickEdgeForCursor(edgesByFrom[cursor]);
+      if (!edge) break;
+      if (visited.has(edge.to)) {
+        sequence.push(edge.to);
+        break;
+      }
+      cursor = edge.to;
+      safety++;
+    }
+    return sequence;
+  }
+
+  function buildActiveRouteMilestones(edgesByFromOverride, startOverride, destOverride) {
+    if (!HEX_WORLD.activePath.length) rebuildActiveRoutePath();
+    const poiIds = getActiveRoutePoiSequence(
+      edgesByFromOverride,
+      startOverride,
+      destOverride
+    );
+    const milestones = [];
+    poiIds.forEach(function (poiId) {
+      const poi = HEX_WORLD.poiById[poiId];
+      if (!poi) return;
+      const h = HEX_WORLD.poiHex[poiId];
+      const key = h ? axialKey(h.q, h.r) : null;
+      let idx = key != null ? HEX_WORLD.activePathIndex[key] : null;
+      if (idx == null && h) {
+        const foundIdx = HEX_WORLD.activePath.findIndex(function (hex) {
+          return hex.q === h.q && hex.r === h.r;
+        });
+        if (foundIdx >= 0) {
+          idx = foundIdx;
+          HEX_WORLD.activePathIndex[key] = foundIdx;
+        }
+      }
+      let mile = idx != null ? HEX_WORLD.activePathMiles[idx] : null;
+      if (mile == null && idx != null) {
+        mile = idx * HEX_MILES_PER_STEP;
+      }
+      milestones.push({
+        poiId: poiId,
+        name: poi.name,
+        mile: mile != null ? mile : null,
+        region: poi.region || "plains",
       });
-      if (matchingBranch) return matchingBranch;
-      const defaultEdge = edges.find(function (edge) {
-        return !edge.branchKey;
-      });
-      if (defaultEdge) return defaultEdge;
-      return edges[0] || null;
-    };
+    });
+    HEX_WORLD.activeRouteMilestones = milestones;
+    return milestones;
+  }
+
+  function getActiveRouteMilestones() {
+    if (!HEX_WORLD.activeRouteMilestones || !HEX_WORLD.activeRouteMilestones.length) {
+      buildActiveRouteMilestones();
+    }
+    return HEX_WORLD.activeRouteMilestones || [];
+  }
+
+  function rebuildActiveRoutePath() {
+    preparePoiCaches();
+    HEX_WORLD.trailHex = new Set();
+    HEX_WORLD.activeRouteMilestones = [];
+    HEX_WORLD.activePathIndex = {};
+    const startId =
+      OT_ROUTE_GRAPH.starts[gameState.startingPoint || "independence"] ||
+      OT_ROUTE_GRAPH.starts.independence;
+    const destination = OT_ROUTE_GRAPH.destination;
+    const edgesByFrom = buildEdgesByFrom();
     const path = [];
     const pathMiles = [];
     let cursor = startId;
@@ -12733,8 +12878,9 @@
     while (cursor && safety < 200) {
       const poi = HEX_WORLD.poiById[cursor];
       const h = HEX_WORLD.poiHex[cursor];
+      let key = null;
       if (h) {
-        const key = axialKey(h.q, h.r);
+        key = axialKey(h.q, h.r);
         if (!HEX_WORLD.poiByHex[key]) HEX_WORLD.poiByHex[key] = [];
         if (HEX_WORLD.poiByHex[key].indexOf(cursor) === -1) {
           HEX_WORLD.poiByHex[key].push(cursor);
@@ -12743,6 +12889,7 @@
       if (path.length === 0 || path[path.length - 1].q !== h.q || path[path.length - 1].r !== h.r) {
         path.push({ q: h.q, r: h.r });
         pathMiles.push(miles);
+        HEX_WORLD.activePathIndex[key] = path.length - 1;
       }
       if (cursor === destination) break;
       const edge = pickEdgeForCursor(edgesByFrom[cursor], cursor);
@@ -12763,10 +12910,17 @@
     }
     HEX_WORLD.activePath = path;
     HEX_WORLD.activePathMiles = pathMiles;
+    const totalMiles = pathMiles.length ? pathMiles[pathMiles.length - 1] : miles;
+    gameState.targetMiles = totalMiles;
+    if (gameState.milesTraveled > totalMiles) {
+      gameState.milesTraveled = totalMiles;
+    }
     path.forEach(function (h) {
       HEX_WORLD.trailHex.add(axialKey(h.q, h.r));
     });
     ensureFeatureCorridors();
+    buildActiveRouteMilestones(edgesByFrom, startId, destination);
+    updateRegionAndLocation();
   }
 
   function ensureExplorerState(gs) {
@@ -12897,6 +13051,12 @@
   }
 
   function hexBiomeForLatLon(lat, lon) {
+    const inGreatBasin = lon < -112 && lon > -121 && lat > 39 && lat < 43.8;
+    if (inGreatBasin) {
+      const noise = Math.sin((lat * 12.3 + lon * 7.7) * Math.PI * 0.07) * 0.5 + 0.5;
+      if (noise < 0.32) return { region: "great_basin", biome: "alkali_flat" };
+      return { region: "great_basin", biome: "great_basin_desert" };
+    }
     if (lon > -97) return { region: "plains", biome: "prairie" };
     if (lon > -102) return { region: "central_plains", biome: "river_bottom" };
     if (lon > -108) return { region: "high_plains", biome: "steppe" };
@@ -12916,6 +13076,7 @@
       nearHumboldtRiver: HEX_WORLD.featureHex.humboldtRiver.has(key),
       inSubletteDesert: HEX_WORLD.featureHex.subletteDesert.has(key),
       atBigSandy: HEX_WORLD.featureHex.bigSandy.has(key),
+      inApplegateDesert: HEX_WORLD.featureHex.applegateDesert.has(key),
       key: key,
     };
   }
@@ -12944,6 +13105,10 @@
         return { water: 0.8, wood: 0.45, game: 0.35, forage: 0.3 };
       case "valley":
         return { water: 0.65, wood: 0.55, game: 0.35, forage: 0.55 };
+      case "great_basin_desert":
+        return { water: 0.18, wood: 0.08, game: 0.28, forage: 0.18 };
+      case "alkali_flat":
+        return { water: 0.08, wood: 0.05, game: 0.2, forage: 0.12 };
       default:
         return base;
     }
@@ -12966,12 +13131,10 @@
       return p && p.type && p.type.indexOf("river") !== -1;
     });
 
-    if (
-      mods.nearSnakeRiver ||
-      mods.nearColumbiaRiver ||
-      mods.nearHumboldtRiver ||
-      nearPoiWater
-    ) {
+    const hasRiverWater =
+      mods.nearSnakeRiver || mods.nearColumbiaRiver || mods.nearHumboldtRiver || nearPoiWater;
+
+    if (hasRiverWater) {
       profile.water = Math.min(1, profile.water + 0.3);
       profile.game = Math.min(1, profile.game + 0.12);
       profile.forage = Math.min(1, profile.forage + 0.1);
@@ -12987,6 +13150,14 @@
       profile.game = Math.max(0.05, profile.game * 0.55);
       waterQualityHint = "alkali";
       tags.push("Sublette desert stretch");
+    }
+
+    if (mods.inApplegateDesert) {
+      profile.water = Math.max(0.04, profile.water * 0.28);
+      profile.forage = Math.max(0.04, profile.forage * 0.4);
+      profile.game = Math.max(0.04, profile.game * 0.45);
+      if (!hasRiverWater) waterQualityHint = "alkali";
+      tags.push("Black Rock / High Rock waterless stretch");
     }
 
     if (mods.atBigSandy) {
@@ -13186,6 +13357,14 @@
       addLog("You leave the worst of the desert behind and find slightly better ground.");
     }
 
+    if (mods.inApplegateDesert && !prev.inApplegateDesert) {
+      addLog(
+        "You roll into the Black Rock / High Rock waterless stretch—alkali flats and scant graze ahead."
+      );
+    } else if (!mods.inApplegateDesert && prev.inApplegateDesert) {
+      addLog("You emerge from the worst of the Applegate desert corridor and find a hint more graze.");
+    }
+
     if (mods.nearSnakeRiver && !prev.nearSnakeRiver) {
       addLog("The Snake River winds nearby—water and bottomland brush are within reach.");
     }
@@ -13220,6 +13399,10 @@
         return "#2a3c4a";
       case "valley":
         return "#42533a";
+      case "great_basin_desert":
+        return "#7a6a4f";
+      case "alkali_flat":
+        return "#8a7b63";
       default:
         return "#444";
     }
@@ -13298,6 +13481,11 @@
           }
           if (mods.atBigSandy) {
             ctx.fillStyle = fog && !seen ? "rgba(190,150,110,0.16)" : "rgba(220,180,120,0.25)";
+            drawHex(ctx, px, py, metrics.radiusPx - 1.2);
+            ctx.fill();
+          }
+          if (mods.inApplegateDesert) {
+            ctx.fillStyle = fog && !seen ? "rgba(200,170,130,0.16)" : "rgba(230,190,140,0.26)";
             drawHex(ctx, px, py, metrics.radiusPx - 1.2);
             ctx.fill();
           }
@@ -13533,23 +13721,7 @@
 
     renderTravelTargetUI();
 
-    ROUTE_MILESTONES.forEach(function (m) {
-      const row = document.createElement("div");
-      row.className = "ot-trail-dot-row";
-      const dot = document.createElement("div");
-      dot.className = "ot-trail-dot";
-      if (miles >= m.mile && miles < m.mile + 80) {
-        dot.classList.add("ot-trail-dot-current");
-      }
-      if (seenMile >= m.mile) {
-        dot.classList.add("ot-trail-dot-seen");
-      }
-      row.appendChild(dot);
-      const label = document.createElement("div");
-      label.textContent = m.name;
-      row.appendChild(label);
-      dom.trailMap.appendChild(row);
-    });
+    renderMilestoneList(dom.trailMap, miles, seenMile);
 
     updateMapListVisibility();
   }

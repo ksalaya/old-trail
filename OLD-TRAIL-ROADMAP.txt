@@ -243,3 +243,21 @@ Map v2 follow-ups (deferred)
 - Replace POI-based pass prompts with tile-tag-driven triggers after mountain pass tiles are painted.
 - Extend desert corridor overlays for the Black Rock/High Rock sections of the Applegate route and related waterless stretches.
 - Run a biome painting pass to better convey Great Basin desert terrain on southern approach routes.
+
+Map v2 follow-ups (still deferred — next steps)
+- Full California Trail destination endpoints + alternate victory conditions
+  - What: Add west-coast termini (e.g., Sacramento/Sutter's Fort and branch endpoints) so California-bound runs conclude somewhere meaningful; adapt arrival/win text and scoring to the chosen route.
+  - Why: Current runs still end in Oregon City even when players pick California/Applegate; the milestone and distance work needs a proper destination.
+  - Implementation sketch: Expand OT_ROUTE_GRAPH with California destination nodes and routeChoice-aware destination selection; update arrival checks, end-screen copy, and scoring triggers to branch on the chosen terminus and seasonality.
+- Milestone system deepening
+  - What: Group/flag milestones by route and importance (major vs. minor), and let the map UI collapse/expand sections per branch.
+  - Why: Dynamic milestones are in place, but presentation is still flat and main-route-centric; route-specific clarity will help longer alternate paths.
+  - Implementation sketch: Tag POIs with milestone tiers, generate grouped lists by branch/segment, and add simple UI affordances (headers/toggles) without breaking save data.
+- Replace POI-name string matching for pass prompts with tile-tag-driven triggers
+  - What: Fire pass/grade prompts based on explicit tile tags instead of matching POI names once pass tiles are painted.
+  - Why: Name matching is brittle and will miss new branches; tags make prompts reliable across future map art.
+  - Implementation sketch: Add tileTags (e.g., tileTags.pass.salt_river) when painting passes, hit-test player hexes against tags, and gate prompts so each fires once per run without save/load regressions.
+- Great Basin biome enhancement pass
+  - What: Broaden and refine Great Basin painting (sage vs. alkali flats), extend desert corridor overlays, and tune waterless stretch difficulty and local weather for route variants.
+  - Why: Current pass is minimal; deeper tuning will make southern approaches feel distinct and keep scarcity coherent across weather and resource systems.
+  - Implementation sketch: Add more granular lat/lon + noise bands, expand corridor sampling (Black Rock/High Rock extensions), and adjust region/weather parameters for basin tiles once new art/tiles are available.
