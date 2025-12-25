@@ -218,3 +218,10 @@ STORYTELLER – FUTURE WORK (Phase 3+)
 * Complete romance and rivalry multi-step arcs with contextual camp tasks and closing beats.
 * Add lifeline and illness cascade analytics to the end screen, grouped as a mini timeline.
 * Expand major mental break resolution trees, including rare departures or leadership changes.
+ 
+Map v2 (Hex world follow-ups)
+- Add click-to-move/pathfinding on the hex trail with time/mile sync rather than camera-only panning.
+- Replace simplified river boosts with explicit river corridor polylines (Snake/Columbia) and Big Sandy/Sublette desert hazards.
+- Integrate resource profiles into hunting/gathering/water actions so yields reflect nearby biome richness.
+- Add additional historic cutoffs (Lander Road, Applegate, California Trail junction) and mountain passes once tile data is ready.
+- Implement hex hit-testing for POI tooltips and future event triggers, plus UI toggles for fog-of-war silhouettes.

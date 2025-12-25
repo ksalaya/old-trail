@@ -737,12 +737,29 @@
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.07);
   box-shadow: 0 16px 44px rgba(0, 0, 0, 0.72);
-  min-height: 150px;
-  background-size: cover;
-  background-position: center;
-  background-image:
-    linear-gradient(to top, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.15)),
-    url("https://www.kylesalaya.com/uploads/9/3/7/0/93707764/chatgpt-image-nov-30-2025-at-02-18-05-am_orig.png");
+  min-height: 200px;
+  background: radial-gradient(circle at top, #182029, #0a0f16);
+  position: relative;
+  overflow: hidden;
+}
+
+.ot-map-canvas,
+.ot-overview-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.ot-map-hint {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #d8d3c5;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
 }
 
 .ot-trail-map {
@@ -3433,6 +3450,7 @@
     seasonStart: "late_april",
     startProfileId: "late_april",
     startProfile: null,
+    startingPoint: "independence",
     startDayOfYear: null,
     highRiverRisk: false,
     partyId: null,
@@ -3445,6 +3463,7 @@
     nutritionStatus: null,
     travelView: "journal",
     explorer: { x: 6, y: 20, hourBuffer: 0 },
+    hexMap: null,
     traillines: {
       visualMiles: 0,
       laneOffset: 0,
@@ -5744,6 +5763,10 @@
       : "classic";
     gameState.storytellerPresetId = presetId;
 
+    gameState.startingPoint = dom.departureSelect
+      ? dom.departureSelect.value
+      : gameState.startingPoint || "independence";
+
     gameState.startingMoney = bg.startingMoney;
     gameState.money = bg.startingMoney;
     resetSupplies();
@@ -5770,6 +5793,8 @@
     gameState.travelView = "journal";
     gameState.traillines = defaultTraillinesState();
     gameState.explorer = { x: 6, y: 20, hourBuffer: 0, initializedFromProgress: true };
+    rebuildActiveRoutePath();
+    recenterCameraOnPlayer();
 
     updateRegionAndLocation();
     refreshWeather();
@@ -7554,15 +7579,16 @@
     const bullets = ammoBoxes * 20;
     const shots = Math.min(10, bullets);
     const skill = person.skills.hunting || 1;
+    const local = getLocalResourceProfile();
 
     const regionBase =
-      gameState.region === "plains"
+      (gameState.region === "plains"
         ? 0.22
         : gameState.region === "central_plains"
         ? 0.28
         : gameState.region === "snake_plain"
         ? 0.18
-        : 0.16;
+        : 0.16) * (0.5 + (local.game || 0.3));
 
     let meat = 0;
     for (let i = 0; i < shots; i++) {
@@ -7602,14 +7628,15 @@
   }
 
   function performGatherWood(person) {
+    const local = getLocalResourceProfile();
     const yieldBase =
-      gameState.region === "plains"
+      (gameState.region === "plains"
         ? 4
         : gameState.region === "central_plains"
         ? 6
         : gameState.region === "blue_mountains"
         ? 10
-        : 5;
+        : 5) * (0.6 + (local.wood || 0.3));
     const skill = person.skills.woodcutting || 1;
     const bundles = yieldBase * (0.3 + skill * 0.2);
     if (!gameState.supplies.firewood) gameState.supplies.firewood = 0;
@@ -7621,7 +7648,7 @@
     ) {
       if (!gameState.supplies.buffalo_chips)
         gameState.supplies.buffalo_chips = 0;
-      gameState.supplies.buffalo_chips += bundles * 0.3;
+      gameState.supplies.buffalo_chips += bundles * 0.3 * (0.8 + (local.forage || 0.2));
     }
 
     addLog(
@@ -7641,10 +7668,11 @@
 
   function performFetchWater(person) {
     const ss = ensureStoryState();
-    let factor = 0.5;
+    const local = getLocalResourceProfile();
+    let factor = 0.35 + (local.water || 0.3);
     const name = gameState.locationName.toLowerCase();
-    let quality = "stagnant";
-    let qualityTag = "risky";
+    let quality = local.waterQualityHint || "stagnant";
+    let qualityTag = quality === "river" ? "good" : "risky";
     if (
       name.indexOf("river") >= 0 ||
       name.indexOf("ford") >= 0 ||
@@ -7652,18 +7680,18 @@
       name.indexOf("falls") >= 0 ||
       name.indexOf("springs") >= 0
     ) {
-      factor = 1.0;
+      factor = Math.max(factor, 1.0 * (0.7 + (local.water || 0.3)));
       quality = "running";
       qualityTag = "good";
     } else if (
       gameState.region === "snake_plain" ||
       gameState.region === "mountains"
     ) {
-      factor = 0.7;
+      factor = Math.max(factor, 0.7 * (0.6 + (local.water || 0.3)));
       quality = "alkali";
       qualityTag = "alkali";
     } else if (gameState.region === "blue_mountains") {
-      factor = 0.8;
+      factor = Math.max(factor, 0.8 * (0.7 + (local.water || 0.3)));
       quality = "cold_stream";
       qualityTag = "good";
     }
@@ -10333,10 +10361,16 @@
           ctx.storyState.risk.overloaded_wagon = true;
           addLog("You choose the toll gate climb. It's shorter but punishing on the wagon.", { tone: "warning" });
           recordStoryBeat("route", "route", "Chose the Toll Gate Road shortcut", {});
+          rebuildActiveRoutePath();
+          recenterCameraOnPlayer();
+          renderAll();
         } else {
           gameState.routeChoices.blue_cutoff = "valley";
           addLog("You follow the valley road, safer but days longer. Everyone breathes easier.", { tone: "event" });
           recordStoryBeat("route", "route", "Stayed on the safer valley road", {});
+          rebuildActiveRoutePath();
+          recenterCameraOnPlayer();
+          renderAll();
         }
       },
     },
@@ -11586,23 +11620,704 @@
   }
 
   function handleExplorerStep(dx, dy) {
-    if (gameState.phase !== "travel" || gameState.mode !== "travel") return;
-    if (gameState.travelView !== "explorer") return;
-    ensureExplorerState();
-    const ex = gameState.explorer;
-    const nx = ex.x + dx;
-    const ny = ex.y + dy;
-    if (nx < 0 || ny < 0) return;
-    if (nx >= EXPLORER_WORLD.width || ny >= EXPLORER_WORLD.height) return;
-    const tile = getExplorerTile(nx, ny);
-    if (tile === "water" || tile === "void") return;
-
-    ex.x = nx;
-    ex.y = ny;
-    tickExplorerTimeForStep();
-    saveGame();
-    renderAll();
+    moveHexCamera(dx, dy);
   }
+
+  /* ========= OREGON TRAIL HEX MAP ===================================== */
+
+  const HEX_FLAT_WIDTH_MI = 4;
+  const HEX_RADIUS_MI = HEX_FLAT_WIDTH_MI / Math.sqrt(3);
+  const HEX_MILES_PER_STEP = HEX_FLAT_WIDTH_MI;
+  const OT_MID_LAT_RAD = (43 * Math.PI) / 180;
+  const milesPerDegLat = 69;
+  const milesPerDegLon = 69 * Math.cos(OT_MID_LAT_RAD);
+  const OT_LAT0 = 37.5;
+  const OT_LON0 = -124.0;
+  const OT_LAT_MAX = 47;
+  const OT_LON_MAX = -93;
+
+  function latLonToMilesXY(lat, lon) {
+    return {
+      xMi: (lon - OT_LON0) * milesPerDegLon,
+      yMi: (lat - OT_LAT0) * milesPerDegLat,
+    };
+  }
+
+  function milesXYToLatLon(xMi, yMi) {
+    return {
+      lat: OT_LAT0 + yMi / milesPerDegLat,
+      lon: OT_LON0 + xMi / milesPerDegLon,
+    };
+  }
+
+  function axialToMilesXY(q, r) {
+    const xMi = HEX_RADIUS_MI * Math.sqrt(3) * (q + r / 2);
+    const yMi = HEX_RADIUS_MI * 1.5 * r;
+    return { xMi: xMi, yMi: yMi };
+  }
+
+  function axialToPixel(q, r, pxPerMi) {
+    const miles = axialToMilesXY(q, r);
+    return { xPx: miles.xMi * pxPerMi, yPx: miles.yMi * pxPerMi };
+  }
+
+  function axialToCube(q, r) {
+    return { x: q, z: r, y: -q - r };
+  }
+
+  function cubeToAxial(c) {
+    return { q: c.x, r: c.z };
+  }
+
+  function cubeRound(c) {
+    let rx = Math.round(c.x);
+    let ry = Math.round(c.y);
+    let rz = Math.round(c.z);
+
+    const xDiff = Math.abs(rx - c.x);
+    const yDiff = Math.abs(ry - c.y);
+    const zDiff = Math.abs(rz - c.z);
+
+    if (xDiff > yDiff && xDiff > zDiff) {
+      rx = -ry - rz;
+    } else if (yDiff > zDiff) {
+      ry = -rx - rz;
+    } else {
+      rz = -rx - ry;
+    }
+    return { x: rx, y: ry, z: rz };
+  }
+
+  function milesXYToAxial(xMi, yMi) {
+    const q = ((Math.sqrt(3) / 3) * xMi - (1 / 3) * yMi) / HEX_RADIUS_MI;
+    const r = ((2 / 3) * yMi) / HEX_RADIUS_MI;
+    const rounded = cubeRound(axialToCube(q, r));
+    return { q: rounded.x, r: rounded.z };
+  }
+
+  function latLonToAxial(lat, lon) {
+    const miles = latLonToMilesXY(lat, lon);
+    return milesXYToAxial(miles.xMi, miles.yMi);
+  }
+
+  function axialKey(q, r) {
+    return q + "," + r;
+  }
+
+  function hexNeighbors(q, r) {
+    return [
+      { q: q + 1, r: r },
+      { q: q - 1, r: r },
+      { q: q, r: r + 1 },
+      { q: q, r: r - 1 },
+      { q: q + 1, r: r - 1 },
+      { q: q - 1, r: r + 1 },
+    ];
+  }
+
+  function drawHex(ctx, xPx, yPx, radiusPx) {
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const angle = (Math.PI / 180) * (60 * i - 30);
+      const px = xPx + radiusPx * Math.cos(angle);
+      const py = yPx + radiusPx * Math.sin(angle);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+  }
+
+  const OT_POIS = [
+    { id: "independence_mo", name: "Independence, MO", type: "town", lat: 39.0911, lon: -94.4155, region: "plains", tags: [] },
+    { id: "st_joseph_mo", name: "St. Joseph, MO", type: "town", lat: 39.76685, lon: -94.83415, region: "plains", tags: [] },
+    { id: "council_bluffs_ia", name: "Council Bluffs, IA", type: "town", lat: 41.25085, lon: -95.88204, region: "plains", tags: [] },
+    { id: "kansas_river_pappans_ferry", name: "Pappan's Ferry (Kansas River)", type: "river_crossing", lat: 39.06385, lon: -95.68312, region: "plains", tags: ["kansas_river"] },
+    { id: "alcove_springs_ks", name: "Alcove Springs", type: "springs", lat: 39.68882, lon: -96.63438, region: "plains", tags: [] },
+    { id: "big_blue_independence_xing", name: "Big Blue Independence Crossing", type: "river_crossing", lat: 39.74972, lon: -96.6878, region: "plains", tags: ["big_blue_river"] },
+    { id: "fort_kearny_ne", name: "Fort Kearny", type: "fort", lat: 40.65, lon: -99.0, region: "central_plains", tags: [] },
+    { id: "courthouse_jail_rocks", name: "Courthouse & Jail Rocks", type: "landmark", lat: 41.59694, lon: -103.11583, region: "central_plains", tags: [] },
+    { id: "chimney_rock_ne", name: "Chimney Rock", type: "landmark", lat: 41.70361, lon: -103.34833, region: "central_plains", tags: [] },
+    { id: "scotts_bluff", name: "Scotts Bluff", type: "landmark", lat: 41.83472, lon: -103.70722, region: "central_plains", tags: [] },
+    { id: "fort_laramie_wy", name: "Fort Laramie", type: "fort", lat: 42.20917, lon: -104.53586, region: "high_plains", tags: [] },
+    { id: "register_cliff_wy", name: "Register Cliff", type: "landmark", lat: 42.24747, lon: -104.70552, region: "high_plains", tags: [] },
+    { id: "independence_rock_wy", name: "Independence Rock", type: "landmark", lat: 42.49398, lon: -107.13259, region: "high_plains", tags: [] },
+    { id: "devils_gate_wy", name: "Devil's Gate", type: "landmark", lat: 42.44889, lon: -107.21028, region: "high_plains", tags: [] },
+    { id: "split_rock_wy", name: "Split Rock", type: "landmark", lat: 42.45358, lon: -107.5458, region: "high_plains", tags: [] },
+    { id: "south_pass_wy", name: "South Pass", type: "mountain_pass", lat: 42.37, lon: -108.91361, region: "high_plains", tags: [] },
+    { id: "parting_of_ways_wy", name: "Parting of the Ways", type: "junction", lat: 42.2575, lon: -109.22833, region: "high_plains", tags: [] },
+    { id: "green_river_lombard_ferry", name: "Green River Ferry", type: "river_crossing", lat: 42.87978, lon: -109.80752, region: "mountains", tags: ["green_river"] },
+    { id: "fort_bridger_wy", name: "Fort Bridger", type: "fort", lat: 41.31872, lon: -110.38642, region: "mountains", tags: [] },
+    { id: "soda_springs_id", name: "Soda Springs", type: "springs", lat: 42.65806, lon: -111.59611, region: "snake_plain", tags: [] },
+    { id: "fort_hall_id", name: "Fort Hall", type: "fort", lat: 42.98833, lon: -112.48167, region: "snake_plain", tags: [] },
+    { id: "register_rock_id", name: "Register Rock", type: "landmark", lat: 42.65278, lon: -113.01611, region: "snake_plain", tags: [] },
+    { id: "three_island_crossing_id", name: "Three Island Crossing", type: "river_crossing", lat: 42.9447, lon: -115.3181, region: "snake_plain", tags: ["snake_river"] },
+    { id: "fort_boise_id", name: "Fort Boise", type: "fort", lat: 43.82364, lon: -117.02038, region: "snake_plain", tags: [] },
+    { id: "burnt_river_or", name: "Burnt River", type: "river", lat: 44.57183, lon: -117.52103, region: "snake_plain", tags: [] },
+    { id: "la_grande_or", name: "La Grande Valley", type: "valley", lat: 45.32722, lon: -118.09333, region: "blue_mountains", tags: [] },
+    { id: "meacham_or", name: "Meacham Pass", type: "mountain_pass", lat: 45.50652, lon: -118.42135, region: "blue_mountains", tags: [] },
+    { id: "fort_walla_walla_wa", name: "Fort Walla Walla", type: "fort", lat: 46.04819, lon: -118.36413, region: "columbia", tags: [] },
+    { id: "whitman_mission_wa", name: "Whitman Mission", type: "mission", lat: 46.04, lon: -118.46139, region: "columbia", tags: [] },
+    { id: "the_dalles_or", name: "The Dalles", type: "town", lat: 45.60167, lon: -121.175, region: "columbia", tags: [] },
+    { id: "government_camp_or", name: "Government Camp", type: "barlow_road_node", lat: 45.30222, lon: -121.7525, region: "mountains", tags: [] },
+    { id: "fort_vancouver_wa", name: "Fort Vancouver", type: "fort", lat: 45.62233, lon: -122.66169, region: "columbia", tags: [] },
+    { id: "oregon_city_or", name: "Oregon City", type: "town", lat: 45.35694, lon: -122.60667, region: "willamette", tags: [] },
+    // filler to keep registers
+  ];
+
+  const OT_ROUTE_GRAPH = {
+    starts: {
+      independence: "independence_mo",
+      st_joseph: "st_joseph_mo",
+      council_bluffs: "council_bluffs_ia",
+    },
+    destination: "oregon_city_or",
+    edges: [
+      { id: "independence_kansas", from: "independence_mo", to: "kansas_river_pappans_ferry" },
+      { id: "stjoseph_kansas", from: "st_joseph_mo", to: "kansas_river_pappans_ferry" },
+      { id: "kansas_alcove", from: "kansas_river_pappans_ferry", to: "alcove_springs_ks" },
+      { id: "alcove_bigblue", from: "alcove_springs_ks", to: "big_blue_independence_xing" },
+      { id: "bigblue_kearny", from: "big_blue_independence_xing", to: "fort_kearny_ne" },
+      { id: "council_kearny", from: "council_bluffs_ia", to: "fort_kearny_ne" },
+      { id: "kearny_courthouse", from: "fort_kearny_ne", to: "courthouse_jail_rocks" },
+      { id: "courthouse_chimney", from: "courthouse_jail_rocks", to: "chimney_rock_ne" },
+      { id: "chimney_scotts", from: "chimney_rock_ne", to: "scotts_bluff" },
+      { id: "scotts_laramie", from: "scotts_bluff", to: "fort_laramie_wy" },
+      { id: "laramie_register", from: "fort_laramie_wy", to: "register_cliff_wy" },
+      { id: "register_independence", from: "register_cliff_wy", to: "independence_rock_wy" },
+      { id: "independence_devils", from: "independence_rock_wy", to: "devils_gate_wy" },
+      { id: "devils_split", from: "devils_gate_wy", to: "split_rock_wy" },
+      { id: "split_south", from: "split_rock_wy", to: "south_pass_wy" },
+      { id: "south_parting", from: "south_pass_wy", to: "parting_of_ways_wy" },
+      {
+        id: "parting_bridger",
+        from: "parting_of_ways_wy",
+        to: "fort_bridger_wy",
+        branchKey: "sublette_or_bridger",
+        branchValue: "bridger",
+      },
+      {
+        id: "bridger_soda",
+        from: "fort_bridger_wy",
+        to: "soda_springs_id",
+        branchKey: "sublette_or_bridger",
+        branchValue: "bridger",
+      },
+      {
+        id: "parting_green",
+        from: "parting_of_ways_wy",
+        to: "green_river_lombard_ferry",
+        branchKey: "sublette_or_bridger",
+        branchValue: "sublette",
+      },
+      {
+        id: "green_soda",
+        from: "green_river_lombard_ferry",
+        to: "soda_springs_id",
+        branchKey: "sublette_or_bridger",
+        branchValue: "sublette",
+      },
+      { id: "soda_forthall", from: "soda_springs_id", to: "fort_hall_id" },
+      { id: "hall_register", from: "fort_hall_id", to: "register_rock_id" },
+      { id: "register_threeisland", from: "register_rock_id", to: "three_island_crossing_id" },
+      { id: "threeisland_boise", from: "three_island_crossing_id", to: "fort_boise_id" },
+      { id: "boise_burnt", from: "fort_boise_id", to: "burnt_river_or" },
+      { id: "burnt_lagrande", from: "burnt_river_or", to: "la_grande_or" },
+      { id: "lagrande_meacham", from: "la_grande_or", to: "meacham_or" },
+      { id: "meacham_walla", from: "meacham_or", to: "fort_walla_walla_wa" },
+      { id: "walla_whitman", from: "fort_walla_walla_wa", to: "whitman_mission_wa" },
+      { id: "whitman_dalles", from: "whitman_mission_wa", to: "the_dalles_or" },
+      {
+        id: "dalles_vancouver",
+        from: "the_dalles_or",
+        to: "fort_vancouver_wa",
+        branchKey: "dalles_route",
+        branchValue: "columbia",
+      },
+      {
+        id: "vancouver_oregon",
+        from: "fort_vancouver_wa",
+        to: "oregon_city_or",
+        branchKey: "dalles_route",
+        branchValue: "columbia",
+      },
+      {
+        id: "dalles_barlow",
+        from: "the_dalles_or",
+        to: "government_camp_or",
+        branchKey: "dalles_route",
+        branchValue: "barlow",
+      },
+      {
+        id: "barlow_oregon",
+        from: "government_camp_or",
+        to: "oregon_city_or",
+        branchKey: "dalles_route",
+        branchValue: "barlow",
+      },
+    ],
+  };
+
+  const HEX_WORLD = {
+    poiById: {},
+    poiHex: {},
+    poiByHex: {},
+    trailHex: new Set(),
+    activePath: [],
+    activePathMiles: [],
+  };
+
+  function preparePoiCaches() {
+    HEX_WORLD.poiById = {};
+    HEX_WORLD.poiHex = {};
+    HEX_WORLD.poiByHex = {};
+    OT_POIS.forEach(function (p) {
+      HEX_WORLD.poiById[p.id] = p;
+      const h = latLonToAxial(p.lat, p.lon);
+      HEX_WORLD.poiHex[p.id] = h;
+      const key = axialKey(h.q, h.r);
+      if (!HEX_WORLD.poiByHex[key]) HEX_WORLD.poiByHex[key] = [];
+      HEX_WORLD.poiByHex[key].push(p.id);
+    });
+  }
+
+  function hexDistance(a, b) {
+    const ac = axialToCube(a.q, a.r);
+    const bc = axialToCube(b.q, b.r);
+    return Math.max(Math.abs(ac.x - bc.x), Math.abs(ac.y - bc.y), Math.abs(ac.z - bc.z));
+  }
+
+  function hexLerp(a, b, t) {
+    const ac = axialToCube(a.q, a.r);
+    const bc = axialToCube(b.q, b.r);
+    return {
+      x: ac.x + (bc.x - ac.x) * t,
+      y: ac.y + (bc.y - ac.y) * t,
+      z: ac.z + (bc.z - ac.z) * t,
+    };
+  }
+
+  function hexLine(a, b) {
+    const n = hexDistance(a, b);
+    const results = [];
+    for (let i = 0; i <= n; i++) {
+      const t = n === 0 ? 0 : i / n;
+      const c = cubeRound(hexLerp(a, b, t));
+      results.push(cubeToAxial(c));
+    }
+    return results;
+  }
+
+  function branchChoiceValue(branchKey) {
+    if (!branchKey) return null;
+    if (!gameState.routeChoices) gameState.routeChoices = {};
+    if (branchKey === "dalles_route" && gameState.routeChoices.blue_cutoff) {
+      return gameState.routeChoices.blue_cutoff === "toll"
+        ? "barlow"
+        : "columbia";
+    }
+    if (gameState.routeChoices[branchKey]) return gameState.routeChoices[branchKey];
+    if (branchKey === "sublette_or_bridger") return "bridger";
+    if (branchKey === "dalles_route") return "barlow";
+    return null;
+  }
+
+  function edgeMatchesBranch(edge) {
+    if (!edge.branchKey) return true;
+    const val = branchChoiceValue(edge.branchKey);
+    if (!val) return false;
+    return val === edge.branchValue;
+  }
+
+  function rebuildActiveRoutePath() {
+    preparePoiCaches();
+    HEX_WORLD.trailHex = new Set();
+    const startId =
+      OT_ROUTE_GRAPH.starts[gameState.startingPoint || "independence"] ||
+      OT_ROUTE_GRAPH.starts.independence;
+    const destination = OT_ROUTE_GRAPH.destination;
+    const edgesByFrom = {};
+    OT_ROUTE_GRAPH.edges.forEach(function (e) {
+      if (!edgesByFrom[e.from]) edgesByFrom[e.from] = [];
+      edgesByFrom[e.from].push(e);
+    });
+    const path = [];
+    const pathMiles = [];
+    let cursor = startId;
+    let safety = 0;
+    let miles = 0;
+    while (cursor && safety < 200) {
+      const poi = HEX_WORLD.poiById[cursor];
+      const h = HEX_WORLD.poiHex[cursor];
+      if (h) {
+        const key = axialKey(h.q, h.r);
+        if (!HEX_WORLD.poiByHex[key]) HEX_WORLD.poiByHex[key] = [];
+        if (HEX_WORLD.poiByHex[key].indexOf(cursor) === -1) {
+          HEX_WORLD.poiByHex[key].push(cursor);
+        }
+      }
+      if (path.length === 0 || path[path.length - 1].q !== h.q || path[path.length - 1].r !== h.r) {
+        path.push({ q: h.q, r: h.r });
+        pathMiles.push(miles);
+      }
+      if (cursor === destination) break;
+      const edges = (edgesByFrom[cursor] || []).filter(edgeMatchesBranch);
+      if (!edges.length) break;
+      const edge = edges[0];
+      const nextPoi = HEX_WORLD.poiHex[edge.to];
+      const segment = hexLine(h, nextPoi);
+      for (let i = 1; i < segment.length; i++) {
+        const hex = segment[i];
+        const key = axialKey(hex.q, hex.r);
+        HEX_WORLD.trailHex.add(key);
+        miles += HEX_MILES_PER_STEP;
+        path.push({ q: hex.q, r: hex.r });
+        pathMiles.push(miles);
+      }
+      cursor = edge.to;
+      safety++;
+    }
+    HEX_WORLD.activePath = path;
+    HEX_WORLD.activePathMiles = pathMiles;
+  }
+
+  function ensureExplorerState(gs) {
+    const state = gs || gameState;
+    ensureHexMapState();
+    if (!state.explorer) state.explorer = { x: 0, y: 0 };
+    if (!HEX_WORLD.activePath.length) rebuildActiveRoutePath();
+    const playerHex = getPlayerHexFromMiles();
+    state.explorer.x = playerHex.q;
+    state.explorer.y = playerHex.r;
+    state.explorer.initializedFromProgress = true;
+    return state.explorer;
+  }
+
+  function ensureHexMapState() {
+    if (!gameState.hexMap) {
+      gameState.hexMap = { follow: true, camQ: 0, camR: 0, zoom: 1, seen: {} };
+    }
+    if (!gameState.hexMap.seen) gameState.hexMap.seen = {};
+    if (!gameState.hexMap.zoom) gameState.hexMap.zoom = 1;
+    if (gameState.hexMap.follow == null) gameState.hexMap.follow = true;
+    return gameState.hexMap;
+  }
+
+  function getPlayerHexFromMiles() {
+    if (!HEX_WORLD.activePath.length) rebuildActiveRoutePath();
+    const miles = Math.max(0, gameState.milesTraveled || 0);
+    const idx = clamp(Math.floor(miles / HEX_MILES_PER_STEP), 0, HEX_WORLD.activePath.length - 1);
+    return HEX_WORLD.activePath[idx] || { q: 0, r: 0 };
+  }
+
+  function moveHexCamera(dq, dr) {
+    ensureHexMapState();
+    const hm = gameState.hexMap;
+    hm.follow = false;
+    hm.camQ += dq;
+    hm.camR += dr;
+    const bound = 220;
+    hm.camQ = clamp(hm.camQ, -bound, bound);
+    hm.camR = clamp(hm.camR, -bound, bound);
+    renderExplorer();
+  }
+
+  function recenterCameraOnPlayer() {
+    const playerHex = getPlayerHexFromMiles();
+    ensureHexMapState();
+    const hm = gameState.hexMap;
+    hm.camQ = playerHex.q;
+    hm.camR = playerHex.r;
+  }
+
+  function hexBiomeForLatLon(lat, lon) {
+    if (lon > -97) return { region: "plains", biome: "prairie" };
+    if (lon > -102) return { region: "central_plains", biome: "river_bottom" };
+    if (lon > -108) return { region: "high_plains", biome: "steppe" };
+    if (lon > -111) return { region: "mountains", biome: "alpine" };
+    if (lon > -118) return { region: "snake_plain", biome: "desert_sage" };
+    if (lon > -120) return { region: "blue_mountains", biome: "conifer_forest" };
+    if (lon > -122.4) return { region: "columbia", biome: "river_gorge" };
+    return { region: "willamette", biome: "valley" };
+  }
+
+  function resourceProfileForBiome(biome) {
+    const base = {
+      water: 0.3,
+      wood: 0.3,
+      game: 0.3,
+      forage: 0.25,
+    };
+    switch (biome) {
+      case "prairie":
+        return { water: 0.35, wood: 0.1, game: 0.4, forage: 0.3 };
+      case "river_bottom":
+        return { water: 0.7, wood: 0.3, game: 0.4, forage: 0.45 };
+      case "steppe":
+        return { water: 0.3, wood: 0.15, game: 0.5, forage: 0.3 };
+      case "desert_sage":
+        return { water: 0.2, wood: 0.1, game: 0.3, forage: 0.2 };
+      case "alpine":
+        return { water: 0.6, wood: 0.45, game: 0.4, forage: 0.25 };
+      case "conifer_forest":
+        return { water: 0.55, wood: 0.65, game: 0.45, forage: 0.4 };
+      case "river_gorge":
+        return { water: 0.8, wood: 0.45, game: 0.35, forage: 0.3 };
+      case "valley":
+        return { water: 0.65, wood: 0.55, game: 0.35, forage: 0.55 };
+      default:
+        return base;
+    }
+  }
+
+  function getLocalResourceProfile() {
+    const playerHex = getPlayerHexFromMiles();
+    const miles = axialToMilesXY(playerHex.q, playerHex.r);
+    const latlon = milesXYToLatLon(miles.xMi, miles.yMi);
+    const regionBiome = hexBiomeForLatLon(latlon.lat, latlon.lon);
+    const profile = resourceProfileForBiome(regionBiome.biome);
+    const key = axialKey(playerHex.q, playerHex.r);
+    const poiHere = HEX_WORLD.poiByHex[key] || [];
+    const nearWater = poiHere.some(function (id) {
+      const p = HEX_WORLD.poiById[id];
+      return p && p.type && p.type.indexOf("river") !== -1;
+    });
+    if (nearWater) {
+      profile.water = Math.min(1, profile.water + 0.2);
+      profile.game = Math.min(1, profile.game + 0.05);
+    }
+    profile.waterQualityHint = nearWater ? "river" : "mixed";
+    return profile;
+  }
+
+  function getNearestPOIToPlayerHex(maxHexDistance) {
+    const limit = maxHexDistance || 2;
+    const playerHex = getPlayerHexFromMiles();
+    let best = null;
+    OT_POIS.forEach(function (p) {
+      const h = HEX_WORLD.poiHex[p.id];
+      const d = hexDistance(playerHex, h);
+      if (d <= limit && (!best || d < best.dist)) {
+        best = { poi: p, dist: d };
+      }
+    });
+    return best ? best.poi : null;
+  }
+
+  function updateRegionAndLocation() {
+    if (!HEX_WORLD.activePath.length) rebuildActiveRoutePath();
+    const playerHex = getPlayerHexFromMiles();
+    const miles = axialToMilesXY(playerHex.q, playerHex.r);
+    const latlon = milesXYToLatLon(miles.xMi, miles.yMi);
+    const regionBiome = hexBiomeForLatLon(latlon.lat, latlon.lon);
+    gameState.region = regionBiome.region;
+    const nearby = getNearestPOIToPlayerHex(1);
+    if (nearby) {
+      gameState.locationName = nearby.name;
+    } else {
+      gameState.locationName = "On the trail — " + regionBiome.biome.replace(/_/g, " ");
+    }
+  }
+
+  function getHexColorForBiome(biome) {
+    switch (biome) {
+      case "prairie":
+        return "#4f5b3c";
+      case "river_bottom":
+        return "#3f4c39";
+      case "steppe":
+        return "#6b5f3e";
+      case "desert_sage":
+        return "#6c5b47";
+      case "alpine":
+        return "#4a585c";
+      case "conifer_forest":
+        return "#2f3c32";
+      case "river_gorge":
+        return "#2a3c4a";
+      case "valley":
+        return "#42533a";
+      default:
+        return "#444";
+    }
+  }
+
+  function renderExplorer() {
+    if (!dom.trailCanvas) return;
+    const canvas = dom.trailCanvas;
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, rect.width, rect.height);
+    if (!HEX_WORLD.activePath.length) rebuildActiveRoutePath();
+    ensureHexMapState();
+    const playerHex = getPlayerHexFromMiles();
+    if (gameState.hexMap.follow || gameState.hexMap.camQ == null) {
+      recenterCameraOnPlayer();
+    }
+    const cam = gameState.hexMap;
+    const milesCenter = axialToMilesXY(cam.camQ, cam.camR);
+    const pxPerMi = (rect.width / 14) / HEX_FLAT_WIDTH_MI * (cam.zoom || 1);
+    const radiusPx = HEX_RADIUS_MI * pxPerMi;
+    const viewRange = 16;
+    for (let dq = -viewRange; dq <= viewRange; dq++) {
+      for (let dr = -viewRange; dr <= viewRange; dr++) {
+        const hq = cam.camQ + dq;
+        const hr = cam.camR + dr;
+        const miles = axialToMilesXY(hq, hr);
+        const px = rect.width / 2 + (miles.xMi - milesCenter.xMi) * pxPerMi;
+        const py = rect.height / 2 + (miles.yMi - milesCenter.yMi) * pxPerMi;
+        if (px < -radiusPx * 2 || py < -radiusPx * 2 || px > rect.width + radiusPx * 2 || py > rect.height + radiusPx * 2) {
+          continue;
+        }
+        const latlon = milesXYToLatLon(miles.xMi, miles.yMi);
+        const regionBiome = hexBiomeForLatLon(latlon.lat, latlon.lon);
+        const color = getHexColorForBiome(regionBiome.biome);
+        ctx.fillStyle = color;
+        drawHex(ctx, px, py, radiusPx - 0.6);
+        ctx.fill();
+        const key = axialKey(hq, hr);
+        if (HEX_WORLD.trailHex.has(key)) {
+          ctx.strokeStyle = "rgba(245,210,139,0.9)";
+          ctx.lineWidth = 1.4;
+          drawHex(ctx, px, py, radiusPx * 0.7);
+          ctx.stroke();
+        }
+        const poiHere = HEX_WORLD.poiByHex[key];
+        if (poiHere && poiHere.length) {
+          ctx.fillStyle = "#f3d19c";
+          ctx.beginPath();
+          ctx.arc(px, py, Math.max(3, radiusPx * 0.18), 0, Math.PI * 2);
+          ctx.fill();
+          const name = HEX_WORLD.poiById[poiHere[0]].name;
+          ctx.fillStyle = "#e7e0d2";
+          ctx.font = "10px 'Inter', system-ui";
+          ctx.fillText(name, px + 8, py - 6);
+        }
+      }
+    }
+    const wagon = axialToMilesXY(playerHex.q, playerHex.r);
+    const wagonPx = rect.width / 2 + (wagon.xMi - milesCenter.xMi) * pxPerMi;
+    const wagonPy = rect.height / 2 + (wagon.yMi - milesCenter.yMi) * pxPerMi;
+    ctx.fillStyle = "#f4e3c2";
+    ctx.strokeStyle = "#3a2b1d";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(wagonPx, wagonPy, Math.max(4, radiusPx * 0.25), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.fillRect(8, rect.height - 26, 200, 20);
+    ctx.fillStyle = "#e7e0d2";
+    ctx.font = "11px 'Inter', system-ui";
+    ctx.fillText("Arrow keys pan · F follow · C recenter", 14, rect.height - 12);
+  }
+
+  function renderTrailMap() {
+    if (dom.mapViewport) {
+      dom.mapViewport.innerHTML = "";
+      const canvas = document.createElement("canvas");
+      canvas.className = "ot-overview-canvas";
+      dom.mapViewport.appendChild(canvas);
+      const ctx = canvas.getContext("2d");
+      const dpr = window.devicePixelRatio || 1;
+      const rect = dom.mapViewport.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.fillStyle = "#0e141b";
+      ctx.fillRect(0, 0, rect.width, rect.height);
+      const hint = document.createElement("div");
+      hint.className = "ot-map-hint";
+      hint.textContent = "Trail overview — gold line = route, pale dots = POI";
+      dom.mapViewport.appendChild(hint);
+      if (!HEX_WORLD.activePath.length) rebuildActiveRoutePath();
+      const xs = HEX_WORLD.activePath.map(function (h) {
+        return axialToMilesXY(h.q, h.r).xMi;
+      });
+      const ys = HEX_WORLD.activePath.map(function (h) {
+        return axialToMilesXY(h.q, h.r).yMi;
+      });
+      const minX = Math.min.apply(null, xs);
+      const maxX = Math.max.apply(null, xs);
+      const minY = Math.min.apply(null, ys);
+      const maxY = Math.max.apply(null, ys);
+      const pad = 12;
+      const scale = Math.min(
+        (rect.width - pad * 2) / Math.max(1, maxX - minX),
+        (rect.height - pad * 2) / Math.max(1, maxY - minY)
+      );
+      ctx.strokeStyle = "#c39b6a";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      HEX_WORLD.activePath.forEach(function (h, idx) {
+        const miles = axialToMilesXY(h.q, h.r);
+        const x = pad + (miles.xMi - minX) * scale;
+        const y = rect.height - pad - (miles.yMi - minY) * scale;
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      Object.keys(HEX_WORLD.poiByHex).forEach(function (key) {
+        const ids = HEX_WORLD.poiByHex[key];
+        const hParts = key.split(",");
+        const h = { q: parseInt(hParts[0], 10), r: parseInt(hParts[1], 10) };
+        const miles = axialToMilesXY(h.q, h.r);
+        const x = pad + (miles.xMi - minX) * scale;
+        const y = rect.height - pad - (miles.yMi - minY) * scale;
+        ctx.fillStyle = "#f0e4d0";
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      const playerHex = getPlayerHexFromMiles();
+      const wagon = axialToMilesXY(playerHex.q, playerHex.r);
+      const wx = pad + (wagon.xMi - minX) * scale;
+      const wy = rect.height - pad - (wagon.yMi - minY) * scale;
+      ctx.fillStyle = "#ffdb9c";
+      ctx.beginPath();
+      ctx.arc(wx, wy, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    dom.trailMap.innerHTML = "";
+    const miles = gameState.milesTraveled;
+    const seenMile = (gameState.traillines && gameState.traillines.fogMaxMile) || 0;
+    const mapSub = document.getElementById("ot-map-sub");
+    if (mapSub) {
+      mapSub.textContent =
+        "Miles traveled: " + Math.round(miles) + " / " + Math.round(gameState.targetMiles || 0);
+    }
+
+    ROUTE_MILESTONES.forEach(function (m) {
+      const row = document.createElement("div");
+      row.className = "ot-trail-dot-row";
+      const dot = document.createElement("div");
+      dot.className = "ot-trail-dot";
+      if (miles >= m.mile && miles < m.mile + 80) {
+        dot.classList.add("ot-trail-dot-current");
+      }
+      if (seenMile >= m.mile) {
+        dot.classList.add("ot-trail-dot-seen");
+      }
+      row.appendChild(dot);
+      const label = document.createElement("div");
+      label.textContent = m.name;
+      row.appendChild(label);
+      dom.trailMap.appendChild(row);
+    });
+
+    updateMapListVisibility();
+  }
+
+  function getExplorerTile(x, y) {
+    return "void";
+  }
+
+  function tickExplorerTimeForStep() {}
 
   function renderCompanionDetail() {
     dom.companionDetail.innerHTML = "";
@@ -12266,6 +12981,9 @@
       if (!Array.isArray(gameState.socialHistory.rescues)) gameState.socialHistory.rescues = [];
       if (!gameState.routeChoices) gameState.routeChoices = {};
       if (!gameState.actingLeaderId) gameState.actingLeaderId = null;
+      if (!gameState.startingPoint) gameState.startingPoint = "independence";
+      if (!gameState.hexMap)
+        gameState.hexMap = { follow: true, camQ: 0, camR: 0, zoom: 1 };
 
       ensureTraillinesState();
       ensureExplorerState();
@@ -12707,6 +13425,19 @@
           evt.key === "S"
         ) {
           handleExplorerStep(0, 1);
+          evt.preventDefault();
+          return;
+        } else if (evt.key === "f" || evt.key === "F") {
+          if (gameState.hexMap) {
+            gameState.hexMap.follow = true;
+            recenterCameraOnPlayer();
+            renderExplorer();
+          }
+          evt.preventDefault();
+          return;
+        } else if (evt.key === "c" || evt.key === "C") {
+          recenterCameraOnPlayer();
+          renderExplorer();
           evt.preventDefault();
           return;
         }
