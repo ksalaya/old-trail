@@ -10450,6 +10450,238 @@
       },
     },
     {
+      id: "lander_cutoff_choice",
+      kind: "major",
+      condition: function (ctx) {
+        const loc = (ctx.location || "").toLowerCase();
+        return loc.indexOf("south pass") >= 0 && !ctx.storyState.eventFlags.lander_cutoff_choice;
+      },
+      weight: function () {
+        return 5;
+      },
+      run: function (ctx) {
+        ctx.storyState.eventFlags.lander_cutoff_choice = true;
+        gameState.routeChoices = gameState.routeChoices || {};
+        let take = false;
+        if (typeof window !== "undefined" && window.confirm) {
+          take = window.confirm("Take the Lander Cutoff toward the Salt River highlands?");
+        }
+        if (take) {
+          gameState.routeChoices.lander_route = "lander";
+          addLog("You turn onto the Lander Road, hoping to make time over the higher ground.", { tone: "event" });
+          recordStoryBeat("route", "route", "Chose the Lander Cutoff", {});
+        } else {
+          gameState.routeChoices.lander_route = "main";
+          addLog("You stay on the main Oregon Trail toward Parting of the Ways.", { tone: "event" });
+          recordStoryBeat("route", "route", "Stayed on main road at South Pass", {});
+        }
+        rebuildActiveRoutePath();
+        recenterCameraOnPlayer();
+        renderAll();
+      },
+    },
+    {
+      id: "fort_hall_california_choice",
+      kind: "major",
+      condition: function (ctx) {
+        const loc = (ctx.location || "").toLowerCase();
+        return loc.indexOf("fort hall") >= 0 && !ctx.storyState.eventFlags.fort_hall_california_choice;
+      },
+      weight: function () {
+        return 5;
+      },
+      run: function (ctx) {
+        ctx.storyState.eventFlags.fort_hall_california_choice = true;
+        gameState.routeChoices = gameState.routeChoices || {};
+        let pick = 1;
+        if (typeof window !== "undefined" && window.prompt) {
+          const resp = window.prompt(
+            "1) Continue on Oregon Trail  2) Branch toward the California Trail corridor",
+            "1"
+          );
+          const num = parseInt(resp, 10);
+          if (!isNaN(num)) pick = num;
+        }
+        if (pick === 2) {
+          gameState.routeChoices.california_branch = "california";
+          gameState.routeChoices.applegate_cutoff = "applegate";
+          addLog("You angle toward the Raft River and the California Trail corridor.", { tone: "event" });
+          recordStoryBeat("route", "route", "Branched toward California Trail", {});
+        } else {
+          gameState.routeChoices.california_branch = "oregon";
+          addLog("You commit to the Oregon Trail westward from Fort Hall.", { tone: "event" });
+          recordStoryBeat("route", "route", "Stayed on Oregon Trail at Fort Hall", {});
+        }
+        rebuildActiveRoutePath();
+        recenterCameraOnPlayer();
+        renderAll();
+      },
+    },
+    {
+      id: "lassen_applegate_choice",
+      kind: "major",
+      condition: function (ctx) {
+        const loc = (ctx.location || "").toLowerCase();
+        return loc.indexOf("lassen meadows") >= 0 && !ctx.storyState.eventFlags.lassen_applegate_choice;
+      },
+      weight: function () {
+        return 4;
+      },
+      run: function (ctx) {
+        ctx.storyState.eventFlags.lassen_applegate_choice = true;
+        gameState.routeChoices = gameState.routeChoices || {};
+        let pick = 1;
+        if (typeof window !== "undefined" && window.prompt) {
+          const resp = window.prompt(
+            "Applegate Cutoff toward Oregon? 1) Take Applegate  2) Continue west toward California (not implemented)",
+            "1"
+          );
+          const num = parseInt(resp, 10);
+          if (!isNaN(num)) pick = num;
+        }
+        if (pick === 1) {
+          gameState.routeChoices.applegate_cutoff = "applegate";
+          addLog("You follow the Applegate Cutoff north toward Goose Lake and the Rogue Valley.", { tone: "event" });
+          recordStoryBeat("route", "route", "Chose the Applegate Cutoff", {});
+        } else {
+          addLog(
+            "California destination not implemented yet; staying on the Applegate route toward Oregon for now.",
+            { tone: "warning" }
+          );
+          gameState.routeChoices.applegate_cutoff = "applegate";
+          recordStoryBeat("route", "route", "Deferred California destination, following Applegate", {});
+        }
+        rebuildActiveRoutePath();
+        recenterCameraOnPlayer();
+        renderAll();
+      },
+    },
+    {
+      id: "salt_river_pass_choice",
+      kind: "minor",
+      condition: function (ctx) {
+        const loc = (ctx.location || "").toLowerCase();
+        return loc.indexOf("salt river pass") >= 0 && !ctx.storyState.eventFlags.salt_river_pass_choice;
+      },
+      weight: function () {
+        return 4;
+      },
+      run: function () {
+        const ss = ensureStoryState();
+        ss.eventFlags.salt_river_pass_choice = true;
+        const people = getAllPeople().filter(function (p) {
+          return p && p.alive;
+        });
+        let push = true;
+        if (typeof window !== "undefined" && window.confirm) {
+          push = window.confirm("Push over Salt River Pass today (hard) instead of resting a night?");
+        }
+        if (push) {
+          gameState.lastHourMiles = (gameState.lastHourMiles || 0) + 1;
+          people.forEach(function (p) {
+            p.energy = clamp(p.energy - 4, 0, 100);
+            p.condition = clamp(p.condition - 1, 0, 100);
+          });
+          addLog("You press over Salt River Pass now—hard on the team but quicker miles.", { tone: "warning" });
+          recordStoryBeat("route", "route", "Pushed over Salt River Pass", {});
+        } else {
+          const s = (gameState.supplies = gameState.supplies || {});
+          s.water = Math.max(0, (s.water || 0) - 3);
+          s.meal_simple = Math.max(0, (s.meal_simple || 0) - 1);
+          people.forEach(function (p) {
+            p.energy = clamp(p.energy + 3, 0, 100);
+            p.morale = clamp(p.morale + 2, 0, 100);
+          });
+          gameState.lastHourMiles = Math.max(0, (gameState.lastHourMiles || 0) - 0.5);
+          addLog("You camp below the pass, water up, and rest the teams for a cooler climb tomorrow.", { tone: "event" });
+          recordStoryBeat("route", "route", "Rested before Salt River Pass", {});
+        }
+      },
+    },
+    {
+      id: "granite_pass_choice",
+      kind: "minor",
+      condition: function (ctx) {
+        const loc = (ctx.location || "").toLowerCase();
+        return loc.indexOf("granite pass") >= 0 && !ctx.storyState.eventFlags.granite_pass_choice;
+      },
+      weight: function () {
+        return 4;
+      },
+      run: function () {
+        const ss = ensureStoryState();
+        ss.eventFlags.granite_pass_choice = true;
+        const people = getAllPeople().filter(function (p) {
+          return p && p.alive;
+        });
+        let push = true;
+        if (typeof window !== "undefined" && window.confirm) {
+          push = window.confirm("Push wagons over Granite Pass now for a small speed boost?");
+        }
+        if (push) {
+          gameState.lastHourMiles = (gameState.lastHourMiles || 0) + 0.8;
+          people.forEach(function (p) {
+            p.energy = clamp(p.energy - 3, 0, 100);
+            p.condition = clamp(p.condition - 1, 0, 100);
+          });
+          addLog("You chain wheels and shove over Granite Pass, spending energy but saving daylight.", { tone: "warning" });
+          recordStoryBeat("route", "route", "Pushed over Granite Pass", {});
+        } else {
+          const s = (gameState.supplies = gameState.supplies || {});
+          s.water = Math.max(0, (s.water || 0) - 2);
+          s.meal_simple = Math.max(0, (s.meal_simple || 0) - 1);
+          people.forEach(function (p) {
+            p.energy = clamp(p.energy + 2, 0, 100);
+          });
+          gameState.lastHourMiles = Math.max(0, (gameState.lastHourMiles || 0) - 0.4);
+          addLog("You cool the stock and scout the grade at Granite Pass before tackling it tomorrow.", { tone: "event" });
+          recordStoryBeat("route", "route", "Rested before Granite Pass", {});
+        }
+      },
+    },
+    {
+      id: "siskiyou_pass_choice",
+      kind: "minor",
+      condition: function (ctx) {
+        const loc = (ctx.location || "").toLowerCase();
+        return loc.indexOf("siskiyou pass") >= 0 && !ctx.storyState.eventFlags.siskiyou_pass_choice;
+      },
+      weight: function () {
+        return 4;
+      },
+      run: function () {
+        const ss = ensureStoryState();
+        ss.eventFlags.siskiyou_pass_choice = true;
+        const people = getAllPeople().filter(function (p) {
+          return p && p.alive;
+        });
+        let push = true;
+        if (typeof window !== "undefined" && window.confirm) {
+          push = window.confirm("Push over Siskiyou Pass today or rest and try tomorrow?");
+        }
+        if (push) {
+          gameState.lastHourMiles = (gameState.lastHourMiles || 0) + 0.9;
+          people.forEach(function (p) {
+            p.energy = clamp(p.energy - 3, 0, 100);
+            p.morale = clamp(p.morale - 1, 0, 100);
+          });
+          addLog("You press over Siskiyou Pass despite fatigue, eager to reach the Rogue Valley.", { tone: "warning" });
+          recordStoryBeat("route", "route", "Pushed over Siskiyou Pass", {});
+        } else {
+          const s = (gameState.supplies = gameState.supplies || {});
+          s.water = Math.max(0, (s.water || 0) - 2);
+          s.meal_simple = Math.max(0, (s.meal_simple || 0) - 1);
+          people.forEach(function (p) {
+            p.energy = clamp(p.energy + 2, 0, 100);
+            p.morale = clamp(p.morale + 1, 0, 100);
+          });
+          gameState.lastHourMiles = Math.max(0, (gameState.lastHourMiles || 0) - 0.4);
+          addLog("You camp below Siskiyou Pass, saving strength for the final climb into Oregon.", { tone: "event" });
+          recordStoryBeat("route", "route", "Rested before Siskiyou Pass", {});
+        }
+      },
+    },
+    {
       id: "snake_three_islands_choice",
       kind: "major",
       minTension: 24,
@@ -11902,53 +12134,85 @@
 
   const HEX_FEATURE_POLYLINES = {
     snakeRiver: [
-      { lat: 42.4, lon: -111.3 },
-      { lat: 42.8, lon: -111.8 },
-      { lat: 42.99, lon: -112.2 },
+      { lat: 42.3, lon: -110.9 },
+      { lat: 42.55, lon: -111.3 },
+      { lat: 42.8, lon: -111.7 },
+      { lat: 42.98, lon: -112.2 },
       { lat: 43.2, lon: -112.6 },
       { lat: 43.35, lon: -112.95 },
-      { lat: 43.55, lon: -113.2 },
-      { lat: 43.7, lon: -113.55 },
-      { lat: 43.9, lon: -113.9 },
-      { lat: 44.05, lon: -114.35 },
-      { lat: 43.96, lon: -114.9 },
-      { lat: 43.9, lon: -115.1 },
-      { lat: 43.8, lon: -115.8 },
-      { lat: 43.7, lon: -116.2 },
-      { lat: 43.65, lon: -116.6 },
-      { lat: 43.6, lon: -117.0 },
-      { lat: 43.55, lon: -117.2 },
-      { lat: 43.45, lon: -117.4 },
+      { lat: 43.45, lon: -113.2 },
+      { lat: 43.55, lon: -113.55 },
+      { lat: 43.7, lon: -113.9 },
+      { lat: 43.85, lon: -114.25 },
+      { lat: 43.96, lon: -114.6 },
+      { lat: 43.9, lon: -115.0 },
+      { lat: 43.82, lon: -115.3 },
+      { lat: 43.76, lon: -115.6 },
+      { lat: 43.7, lon: -115.9 },
+      { lat: 43.65, lon: -116.2 },
+      { lat: 43.62, lon: -116.5 },
+      { lat: 43.58, lon: -116.8 },
+      { lat: 43.55, lon: -117.05 },
+      { lat: 43.5, lon: -117.3 },
+      { lat: 43.4, lon: -117.55 },
+      { lat: 43.25, lon: -117.8 },
     ],
     columbiaRiver: [
-      { lat: 46.25, lon: -117.9 },
+      { lat: 46.3, lon: -117.6 },
+      { lat: 46.2, lon: -117.9 },
       { lat: 46.05, lon: -118.35 },
-      { lat: 45.95, lon: -118.9 },
+      { lat: 45.98, lon: -118.7 },
+      { lat: 45.9, lon: -119.1 },
       { lat: 45.85, lon: -119.6 },
       { lat: 45.9, lon: -120.15 },
-      { lat: 45.85, lon: -120.7 },
-      { lat: 45.82, lon: -121.0 },
+      { lat: 45.86, lon: -120.55 },
+      { lat: 45.82, lon: -120.9 },
+      { lat: 45.78, lon: -121.25 },
       { lat: 45.75, lon: -121.5 },
-      { lat: 45.68, lon: -121.85 },
-      { lat: 45.62, lon: -122.2 },
+      { lat: 45.72, lon: -121.75 },
+      { lat: 45.68, lon: -121.95 },
+      { lat: 45.65, lon: -122.2 },
+      { lat: 45.63, lon: -122.4 },
       { lat: 45.62, lon: -122.66 },
     ],
     bigSandy: [
       { lat: 42.6, lon: -109.55 },
-      { lat: 42.55, lon: -109.35 },
-      { lat: 42.52, lon: -109.2 },
-      { lat: 42.52, lon: -109.0 },
-      { lat: 42.55, lon: -108.85 },
-      { lat: 42.55, lon: -108.65 },
+      { lat: 42.58, lon: -109.45 },
+      { lat: 42.56, lon: -109.35 },
+      { lat: 42.54, lon: -109.25 },
+      { lat: 42.53, lon: -109.15 },
+      { lat: 42.52, lon: -109.05 },
+      { lat: 42.51, lon: -108.9 },
+      { lat: 42.52, lon: -108.75 },
+      { lat: 42.54, lon: -108.6 },
+      { lat: 42.56, lon: -108.5 },
     ],
     subletteDesert: [
-      { lat: 42.55, lon: -110.5 },
-      { lat: 42.5, lon: -110.2 },
-      { lat: 42.45, lon: -109.9 },
-      { lat: 42.45, lon: -109.6 },
-      { lat: 42.48, lon: -109.35 },
-      { lat: 42.5, lon: -109.2 },
-      { lat: 42.55, lon: -109.05 },
+      { lat: 42.6, lon: -110.55 },
+      { lat: 42.55, lon: -110.35 },
+      { lat: 42.52, lon: -110.2 },
+      { lat: 42.5, lon: -110.05 },
+      { lat: 42.47, lon: -109.9 },
+      { lat: 42.45, lon: -109.75 },
+      { lat: 42.44, lon: -109.6 },
+      { lat: 42.45, lon: -109.45 },
+      { lat: 42.47, lon: -109.3 },
+      { lat: 42.5, lon: -109.18 },
+      { lat: 42.54, lon: -109.05 },
+      { lat: 42.57, lon: -108.95 },
+    ],
+    humboldtRiver: [
+      { lat: 41.12, lon: -114.96 },
+      { lat: 41.02, lon: -115.35 },
+      { lat: 41.0, lon: -115.7 },
+      { lat: 40.95, lon: -116.1 },
+      { lat: 40.9, lon: -116.5 },
+      { lat: 40.82, lon: -116.9 },
+      { lat: 40.76, lon: -117.3 },
+      { lat: 40.72, lon: -117.6 },
+      { lat: 40.68, lon: -117.9 },
+      { lat: 40.63, lon: -118.15 },
+      { lat: 40.6, lon: -118.35 },
     ],
   };
 
@@ -12002,22 +12266,35 @@
     return set;
   }
 
+  function featureCorridorChoiceKey() {
+    const choices = gameState.routeChoices || {};
+    const ordered = {};
+    Object.keys(choices)
+      .sort()
+      .forEach(function (key) {
+        ordered[key] = choices[key];
+      });
+    return JSON.stringify(ordered);
+  }
+
   function ensureFeatureCorridors() {
-    const branchToken = branchChoiceValue("sublette_or_bridger") || "bridger";
-    const cacheKey = branchToken;
+    const cacheKey = featureCorridorChoiceKey();
     if (
       LAST_FEATURE_BRANCH === cacheKey &&
       HEX_WORLD.featureHex.snakeRiver.size &&
-      HEX_WORLD.featureHex.columbiaRiver.size
+      HEX_WORLD.featureHex.columbiaRiver.size &&
+      HEX_WORLD.featureHex.humboldtRiver.size &&
+      HEX_WORLD.featureHex.bigSandy.size
     ) {
       return;
     }
-    const spacing = HEX_MILES_PER_STEP / 2;
+    const spacing = HEX_MILES_PER_STEP / 3;
     const snake = samplePolylineToHexes(HEX_FEATURE_POLYLINES.snakeRiver, spacing);
     const columbia = samplePolylineToHexes(
       HEX_FEATURE_POLYLINES.columbiaRiver,
       spacing
     );
+    const humboldt = samplePolylineToHexes(HEX_FEATURE_POLYLINES.humboldtRiver, spacing);
     const bigSandy = samplePolylineToHexes(HEX_FEATURE_POLYLINES.bigSandy, spacing);
     const sublette =
       branchChoiceValue("sublette_or_bridger") === "sublette"
@@ -12026,6 +12303,7 @@
 
     HEX_WORLD.featureHex.snakeRiver = expandHexSet(snake, 2);
     HEX_WORLD.featureHex.columbiaRiver = expandHexSet(columbia, 2);
+    HEX_WORLD.featureHex.humboldtRiver = expandHexSet(humboldt, 2);
     HEX_WORLD.featureHex.bigSandy = expandHexSet(bigSandy, 1);
     HEX_WORLD.featureHex.subletteDesert = expandHexSet(sublette, 2);
     LAST_FEATURE_BRANCH = cacheKey;
@@ -12060,9 +12338,28 @@
     { id: "devils_gate_wy", name: "Devil's Gate", type: "landmark", lat: 42.44889, lon: -107.21028, region: "high_plains", tags: [] },
     { id: "split_rock_wy", name: "Split Rock", type: "landmark", lat: 42.45358, lon: -107.5458, region: "high_plains", tags: [] },
     { id: "south_pass_wy", name: "South Pass", type: "mountain_pass", lat: 42.37, lon: -108.91361, region: "high_plains", tags: [] },
-    { id: "lander_meadows_wy", name: "Lander Meadows", type: "cutoff_stop", lat: 42.82, lon: -109.65, region: "high_plains", tags: ["lander_road"] },
-    { id: "california_trail_junction_nv", name: "California Trail Junction", type: "junction", lat: 42.07, lon: -113.3, region: "snake_plain", tags: ["california_trail"] },
-    { id: "applegate_split_or", name: "Applegate Cutoff Junction", type: "junction", lat: 43.21, lon: -117.0, region: "snake_plain", tags: ["applegate_cutoff"] },
+    { id: "lander_cutoff_turnoff_wy", name: "Lander Cutoff Turnoff", type: "junction", lat: 42.626, lon: -109.658, region: "high_plains", tags: ["lander_road", "cutoff", "junction"] },
+    { id: "big_piney_wy", name: "Big Piney", type: "landmark", lat: 42.539768, lon: -110.11535, region: "high_plains", tags: ["lander_road"] },
+    { id: "salt_river_pass_wy", name: "Salt River Pass", type: "pass", lat: 42.506154, lon: -110.908256, region: "mountains", tags: ["lander_road", "pass"] },
+    { id: "afton_star_valley_wy", name: "Star Valley (Afton)", type: "landmark", lat: 42.724928, lon: -110.931869, region: "mountains", tags: ["lander_road"] },
+    { id: "lander_idaho_junction_id", name: "Lander Road Junction (near Fort Hall)", type: "junction", lat: 43.0, lon: -112.26, region: "snake_plain", tags: ["lander_road", "junction"] },
+    { id: "raft_river_parting_id", name: "Raft River Parting of the Ways", type: "junction", lat: 42.2846, lon: -113.4245, region: "snake_plain", tags: ["california_trail", "junction"] },
+    { id: "city_of_rocks_id", name: "City of Rocks", type: "landmark", lat: 42.06988, lon: -113.71241, region: "snake_plain", tags: ["california_trail", "landmark"] },
+    { id: "granite_pass_id", name: "Granite Pass", type: "pass", lat: 41.9926, lon: -113.856, region: "snake_plain", tags: ["california_trail", "pass"] },
+    { id: "thousand_springs_valley_nv", name: "Thousand Springs Valley", type: "landmark", lat: 41.57297, lon: -114.43586, region: "snake_plain", tags: ["california_trail"] },
+    { id: "wells_nv", name: "Wells", type: "landmark", lat: 41.112, lon: -114.964, region: "snake_plain", tags: ["california_trail"] },
+    { id: "elko_nv", name: "Elko", type: "landmark", lat: 40.8324, lon: -115.7631, region: "snake_plain", tags: ["california_trail"] },
+    { id: "battle_mountain_nv", name: "Battle Mountain", type: "landmark", lat: 40.6421, lon: -116.9343, region: "snake_plain", tags: ["california_trail"] },
+    { id: "humboldt_corridor_nv", name: "Humboldt River Corridor", type: "river", lat: 40.6924, lon: -118.204, region: "snake_plain", tags: ["california_trail", "river"] },
+    { id: "lassen_meadows_nv", name: "Lassen Meadows (Applegate Junction)", type: "junction", lat: 40.4617, lon: -118.3083, region: "snake_plain", tags: ["applegate_trail", "junction"] },
+    { id: "black_rock_desert_nv", name: "Black Rock Desert", type: "landmark", lat: 40.910733, lon: -119.05601, region: "snake_plain", tags: ["applegate_trail", "desert"] },
+    { id: "high_rock_canyon_nv", name: "High Rock Canyon", type: "landmark", lat: 41.3563, lon: -119.6107, region: "snake_plain", tags: ["applegate_trail"] },
+    { id: "cedarville_ca", name: "Surprise Valley (Cedarville)", type: "landmark", lat: 41.53, lon: -120.1792, region: "snake_plain", tags: ["applegate_trail"] },
+    { id: "goose_lake_border", name: "Goose Lake", type: "river", lat: 41.99433, lon: -120.32329, region: "snake_plain", tags: ["applegate_trail", "water"] },
+    { id: "klamath_falls_or", name: "Klamath Basin (Klamath Falls)", type: "landmark", lat: 42.2249, lon: -121.7817, region: "blue_mountains", tags: ["applegate_trail"] },
+    { id: "siskiyou_pass_caor", name: "Siskiyou Pass", type: "pass", lat: 42.050414, lon: -122.602806, region: "columbia", tags: ["applegate_trail", "pass"] },
+    { id: "medford_or", name: "Rogue Valley (Medford)", type: "landmark", lat: 42.3265, lon: -122.8756, region: "columbia", tags: ["applegate_trail"] },
+    { id: "willamette_entry_or", name: "Willamette Valley Entry", type: "landmark", lat: 44.0531, lon: -122.9911, region: "willamette", tags: ["applegate_trail", "valley"] },
     { id: "parting_of_ways_wy", name: "Parting of the Ways", type: "junction", lat: 42.2575, lon: -109.22833, region: "high_plains", tags: [] },
     { id: "green_river_lombard_ferry", name: "Green River Ferry", type: "river_crossing", lat: 42.87978, lon: -109.80752, region: "mountains", tags: ["green_river"] },
     { id: "fort_bridger_wy", name: "Fort Bridger", type: "fort", lat: 41.31872, lon: -110.38642, region: "mountains", tags: [] },
@@ -12110,16 +12407,46 @@
       {
         id: "south_lander",
         from: "south_pass_wy",
-        to: "lander_meadows_wy",
+        to: "lander_cutoff_turnoff_wy",
         branchKey: "lander_route",
         branchValue: "lander",
+        routeKey: "lander",
       },
       {
-        id: "lander_hall",
-        from: "lander_meadows_wy",
+        id: "lander_big_piney",
+        from: "lander_cutoff_turnoff_wy",
+        to: "big_piney_wy",
+        routeKey: "lander",
+      },
+      {
+        id: "big_piney_salt_river",
+        from: "big_piney_wy",
+        to: "salt_river_pass_wy",
+        routeKey: "lander",
+      },
+      {
+        id: "salt_river_afton",
+        from: "salt_river_pass_wy",
+        to: "afton_star_valley_wy",
+        routeKey: "lander",
+      },
+      {
+        id: "afton_soda",
+        from: "afton_star_valley_wy",
         to: "soda_springs_id",
-        branchKey: "lander_route",
-        branchValue: "lander",
+        routeKey: "lander",
+      },
+      {
+        id: "soda_lander_junction",
+        from: "soda_springs_id",
+        to: "lander_idaho_junction_id",
+        routeKey: "lander",
+      },
+      {
+        id: "lander_junction_forthall",
+        from: "lander_idaho_junction_id",
+        to: "fort_hall_id",
+        routeKey: "lander",
       },
       {
         id: "parting_bridger",
@@ -12151,37 +12478,102 @@
       },
       { id: "soda_forthall", from: "soda_springs_id", to: "fort_hall_id" },
       {
-        id: "hall_california",
+        id: "hall_raft_river",
         from: "fort_hall_id",
-        to: "california_trail_junction_nv",
+        to: "raft_river_parting_id",
         branchKey: "california_branch",
         branchValue: "california",
+        routeKey: "california",
       },
       { id: "hall_register", from: "fort_hall_id", to: "register_rock_id" },
       {
-        id: "california_boise",
-        from: "california_trail_junction_nv",
-        to: "fort_boise_id",
-        branchKey: "california_branch",
-        branchValue: "california",
+        id: "raft_city_of_rocks",
+        from: "raft_river_parting_id",
+        to: "city_of_rocks_id",
+        routeKey: "california",
+      },
+      { id: "city_of_rocks_granite", from: "city_of_rocks_id", to: "granite_pass_id", routeKey: "california" },
+      { id: "granite_thousand_springs", from: "granite_pass_id", to: "thousand_springs_valley_nv", routeKey: "california" },
+      { id: "thousand_wells", from: "thousand_springs_valley_nv", to: "wells_nv", routeKey: "california" },
+      { id: "wells_elko", from: "wells_nv", to: "elko_nv", routeKey: "california" },
+      { id: "elko_battle_mountain", from: "elko_nv", to: "battle_mountain_nv", routeKey: "california" },
+      { id: "battle_humboldt_corridor", from: "battle_mountain_nv", to: "humboldt_corridor_nv", routeKey: "california" },
+      { id: "humboldt_lassen", from: "humboldt_corridor_nv", to: "lassen_meadows_nv", routeKey: "california" },
+      {
+        id: "lassen_black_rock",
+        from: "lassen_meadows_nv",
+        to: "black_rock_desert_nv",
+        branchKey: "applegate_cutoff",
+        branchValue: "applegate",
+        routeKey: "applegate",
+      },
+      {
+        id: "black_rock_high_rock",
+        from: "black_rock_desert_nv",
+        to: "high_rock_canyon_nv",
+        branchKey: "applegate_cutoff",
+        branchValue: "applegate",
+        routeKey: "applegate",
+      },
+      {
+        id: "high_rock_cedarville",
+        from: "high_rock_canyon_nv",
+        to: "cedarville_ca",
+        branchKey: "applegate_cutoff",
+        branchValue: "applegate",
+        routeKey: "applegate",
+      },
+      {
+        id: "cedarville_goose_lake",
+        from: "cedarville_ca",
+        to: "goose_lake_border",
+        branchKey: "applegate_cutoff",
+        branchValue: "applegate",
+        routeKey: "applegate",
+      },
+      {
+        id: "goose_lake_klamath",
+        from: "goose_lake_border",
+        to: "klamath_falls_or",
+        branchKey: "applegate_cutoff",
+        branchValue: "applegate",
+        routeKey: "applegate",
+      },
+      {
+        id: "klamath_siskiyou",
+        from: "klamath_falls_or",
+        to: "siskiyou_pass_caor",
+        branchKey: "applegate_cutoff",
+        branchValue: "applegate",
+        routeKey: "applegate",
+      },
+      {
+        id: "siskiyou_medford",
+        from: "siskiyou_pass_caor",
+        to: "medford_or",
+        branchKey: "applegate_cutoff",
+        branchValue: "applegate",
+        routeKey: "applegate",
+      },
+      {
+        id: "medford_willamette_entry",
+        from: "medford_or",
+        to: "willamette_entry_or",
+        branchKey: "applegate_cutoff",
+        branchValue: "applegate",
+        routeKey: "applegate",
+      },
+      {
+        id: "willamette_entry_oregon_city",
+        from: "willamette_entry_or",
+        to: "oregon_city_or",
+        branchKey: "applegate_cutoff",
+        branchValue: "applegate",
+        routeKey: "applegate",
       },
       { id: "register_threeisland", from: "register_rock_id", to: "three_island_crossing_id" },
       { id: "threeisland_boise", from: "three_island_crossing_id", to: "fort_boise_id" },
-      {
-        id: "boise_applegate",
-        from: "fort_boise_id",
-        to: "applegate_split_or",
-        branchKey: "applegate_cutoff",
-        branchValue: "applegate",
-      },
       { id: "boise_burnt", from: "fort_boise_id", to: "burnt_river_or" },
-      {
-        id: "applegate_burnt",
-        from: "applegate_split_or",
-        to: "burnt_river_or",
-        branchKey: "applegate_cutoff",
-        branchValue: "applegate",
-      },
       { id: "burnt_lagrande", from: "burnt_river_or", to: "la_grande_or" },
       { id: "lagrande_meacham", from: "la_grande_or", to: "meacham_or" },
       { id: "meacham_walla", from: "meacham_or", to: "fort_walla_walla_wa" },
@@ -12229,6 +12621,7 @@
     featureHex: {
       snakeRiver: new Set(),
       columbiaRiver: new Set(),
+      humboldtRiver: new Set(),
       subletteDesert: new Set(),
       bigSandy: new Set(),
     },
@@ -12282,6 +12675,13 @@
   function branchChoiceValue(branchKey) {
     if (!branchKey) return null;
     if (!gameState.routeChoices) gameState.routeChoices = {};
+    if (
+      branchKey === "applegate_cutoff" &&
+      gameState.routeChoices.california_branch === "california" &&
+      !gameState.routeChoices.applegate_cutoff
+    ) {
+      return "applegate";
+    }
     if (branchKey === "dalles_route" && gameState.routeChoices.blue_cutoff) {
       return gameState.routeChoices.blue_cutoff === "toll"
         ? "barlow"
@@ -12313,6 +12713,18 @@
       if (!edgesByFrom[e.from]) edgesByFrom[e.from] = [];
       edgesByFrom[e.from].push(e);
     });
+    const pickEdgeForCursor = function (edges) {
+      if (!edges || !edges.length) return null;
+      const matchingBranch = edges.find(function (edge) {
+        return edge.branchKey && branchChoiceValue(edge.branchKey) === edge.branchValue;
+      });
+      if (matchingBranch) return matchingBranch;
+      const defaultEdge = edges.find(function (edge) {
+        return !edge.branchKey;
+      });
+      if (defaultEdge) return defaultEdge;
+      return edges[0] || null;
+    };
     const path = [];
     const pathMiles = [];
     let cursor = startId;
@@ -12333,9 +12745,8 @@
         pathMiles.push(miles);
       }
       if (cursor === destination) break;
-      const edges = (edgesByFrom[cursor] || []).filter(edgeMatchesBranch);
-      if (!edges.length) break;
-      const edge = edges[0];
+      const edge = pickEdgeForCursor(edgesByFrom[cursor], cursor);
+      if (!edge) break;
       const nextPoi = HEX_WORLD.poiHex[edge.to];
       const segment = hexLine(h, nextPoi);
       for (let i = 1; i < segment.length; i++) {
@@ -12502,6 +12913,7 @@
     return {
       nearSnakeRiver: HEX_WORLD.featureHex.snakeRiver.has(key),
       nearColumbiaRiver: HEX_WORLD.featureHex.columbiaRiver.has(key),
+      nearHumboldtRiver: HEX_WORLD.featureHex.humboldtRiver.has(key),
       inSubletteDesert: HEX_WORLD.featureHex.subletteDesert.has(key),
       atBigSandy: HEX_WORLD.featureHex.bigSandy.has(key),
       key: key,
@@ -12554,13 +12966,19 @@
       return p && p.type && p.type.indexOf("river") !== -1;
     });
 
-    if (mods.nearSnakeRiver || mods.nearColumbiaRiver || nearPoiWater) {
+    if (
+      mods.nearSnakeRiver ||
+      mods.nearColumbiaRiver ||
+      mods.nearHumboldtRiver ||
+      nearPoiWater
+    ) {
       profile.water = Math.min(1, profile.water + 0.3);
       profile.game = Math.min(1, profile.game + 0.12);
       profile.forage = Math.min(1, profile.forage + 0.1);
       waterQualityHint = "river";
       if (mods.nearSnakeRiver) tags.push("Snake corridor");
       if (mods.nearColumbiaRiver) tags.push("Columbia corridor");
+      if (mods.nearHumboldtRiver) tags.push("Humboldt corridor");
     }
 
     if (mods.inSubletteDesert) {
@@ -12774,6 +13192,9 @@
     if (mods.nearColumbiaRiver && !prev.nearColumbiaRiver) {
       addLog("You travel close to the Columbia; the air smells of damp river wind.");
     }
+    if (mods.nearHumboldtRiver && !prev.nearHumboldtRiver) {
+      addLog("Wagon ruts bunch toward the Humboldt River corridor, a slim lifeline through the basin.");
+    }
 
     if (mods.atBigSandy && !prev.atBigSandy) {
       addLog("Dry ground near Big Sandy tests the team; keep an eye on water stores.");
@@ -12862,6 +13283,11 @@
           }
           if (mods.nearColumbiaRiver) {
             ctx.fillStyle = fog && !seen ? "rgba(70,120,180,0.18)" : "rgba(70,140,210,0.26)";
+            drawHex(ctx, px, py, metrics.radiusPx - 1.2);
+            ctx.fill();
+          }
+          if (mods.nearHumboldtRiver) {
+            ctx.fillStyle = fog && !seen ? "rgba(90,150,150,0.16)" : "rgba(100,170,175,0.26)";
             drawHex(ctx, px, py, metrics.radiusPx - 1.2);
             ctx.fill();
           }

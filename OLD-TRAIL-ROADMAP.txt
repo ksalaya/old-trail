@@ -236,3 +236,10 @@ Map v2 (Hex world follow-ups)
 - Integrate resource profiles into hunting/gathering/water actions so yields reflect nearby biome richness.
 - Add additional historic cutoffs (Lander Road, Applegate, California Trail junction) and mountain passes once tile data is ready.
 - Implement hex hit-testing for POI tooltips and future event triggers, plus UI toggles for fog-of-war silhouettes.
+
+Map v2 follow-ups (deferred)
+- Add full California Trail destination endpoints and alternate victory conditions once western terminus content is ready.
+- Rework milestone lists to adjust dynamically per chosen route (main vs. Lander vs. California/Applegate).
+- Replace POI-based pass prompts with tile-tag-driven triggers after mountain pass tiles are painted.
+- Extend desert corridor overlays for the Black Rock/High Rock sections of the Applegate route and related waterless stretches.
+- Run a biome painting pass to better convey Great Basin desert terrain on southern approach routes.
