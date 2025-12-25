@@ -157,7 +157,13 @@ New specifics:
    * e.g. Dysentery: risk from bad water, onset with cramps & weakness, crisis with major dehydration and potential death if not treated with boiled water + rest.
    3. Doctoring gameplay
    * Doctoring skill influences:
-   * Chance to correctly diagnose (log text clarity).
+    * Chance to correctly diagnose (log text clarity).
+
+TODO – Historic cutoffs and passes (follow-up)
+* Add POI nodes for Lander Road / California Trail junction / Applegate cutoff / key passes.
+  - Needed: coordinates + tags for Lander Meadows, Big Sandy emigrant road split, Raft River junction, Goose Lake branch.
+* Extend OT_ROUTE_GRAPH with branch keys/values for those choices; keep dormant until map data is ready.
+* UI: prompt when reaching the new forks; ensure map pathfinder honors additional branch-specific trailHex segments.
    * Effectiveness of treatments (fewer hours needed, less resource waste).
    * Fort doctors and missions can offer superior care for high price or with narrative consequences.
 I. HTML5 Overlay, Audio & Fullscreen Hooks (Polish Phase)
