@@ -288,3 +288,10 @@ RDR-inspired Enhancements (Deferred)
 - Longer “stranger mission” callbacks and caravan travel segments where prior choices trigger chained follow-ups across regions.
 - NPC caravan travel buffs/risks with richer guard coverage integration and mood impact when you part ways.
 - HUD minimalism/cinematic travel toggle that auto-fades noncritical panels while moving but surfaces alerts instantly on hover/tap.
+
+Deferred from Procedural Characters / Social / Mythic Chains update
+- Rapid-fire seed events pack (B-set and filler beats) – still to be added.
+- Tier B Big Setpieces (B-01..B-05 etc.) – not implemented in this pass.
+- Deeper faction politics (two rival forts, Open Eye Revival cult, Men in Gray full arc) – future milestone.
+- Chain follow-ups still stubbed: EX-01 through EX-10, H-01/H-02/H-04/H-05/H-07, S-01/S-05/S-06/S-08, and mythic M-01/M-02/M-05/M-08 remain to be staged.
+- Future: sprite movement/actions for chores, visual inventory deltas, caravan/fort UI polish.
