@@ -330,3 +330,19 @@ Deferred (next passes)
 - HUD minimalism/cinematic travel toggle.
 
 - RimWorld-like continuous-time travel loop with pause, top-down caravan control, and sprite movement replacing the hourly tick.
+
+Deferred from Fort Trading Ledger pass (2025-05-07):
+- Add fort-specific stock rotations and scarcity hooks so not all SUPPLY_ITEMS are always available.
+- Tie faction/vendor flavor and additional trade posts into the pricing model (caravans, open-eye, men-in-gray) once their POIs are enabled.
+- Add per-vendor filters/exports for the trade ledger when more vendors exist beyond forts.
+
+Validation Checklist (Fort Trading Ledger pass):
+- Start a new run: no console errors.
+- Travel near a fort: “Trading Post” button appears; hides once you move away.
+- Trading modal: Buy/Sell tabs toggle and backdrop/close/Esc all close the modal.
+- Buying goods reduces money, increases supplies, and refreshes HUD/modal.
+- Selling goods increases money, reduces supplies, and never dips below zero held.
+- Fort reputation changes prices (adjust rep values and confirm buy/sell shifts).
+- Anti-arbitrage holds: buy then immediately sell never yields profit.
+- Save mid-run and reload: no crashes; ledger persists; legacy supply aliases (wheel/axle/medicine) normalize cleanly.
+- Trail log stays clean of per-click trade spam; transactions appear only in the ledger.

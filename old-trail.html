@@ -1263,6 +1263,105 @@
   cursor: pointer;
 }
 
+.ot-trade-content {
+  background: linear-gradient(135deg, rgba(59, 50, 38, 0.45), rgba(17, 14, 12, 0.85)),
+    radial-gradient(circle at top left, #2a2b3b, #0a090e);
+  border: 1px solid rgba(230, 204, 160, 0.28);
+  width: min(960px, 100% - 28px);
+}
+
+.ot-trade-summary {
+  font-size: 11px;
+  color: #d6cfc0;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(245, 210, 139, 0.18);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+
+.ot-trade-tabs {
+  display: inline-flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.ot-trade-tabs .ot-btn-outline.ot-trade-tab-active {
+  background: rgba(245, 210, 139, 0.14);
+  border-color: rgba(245, 210, 139, 0.8);
+  color: #f7e7c6;
+}
+
+.ot-trade-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(260px, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.ot-trade-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.ot-trade-table th,
+.ot-trade-table td {
+  padding: 6px 6px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ot-trade-table th {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #cbbba0;
+}
+
+.ot-trade-table td:last-child {
+  white-space: nowrap;
+}
+
+.ot-trade-ledger {
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(245, 210, 139, 0.12);
+  border-radius: 12px;
+  padding: 10px;
+  min-height: 240px;
+}
+
+.ot-trade-ledger-title {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #e9d7b3;
+  margin-bottom: 6px;
+}
+
+.ot-trade-ledger-entry {
+  font-size: 11px;
+  color: #e9e3d5;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+  padding: 6px 0;
+}
+
+.ot-trade-ledger-entry small {
+  display: block;
+  color: #b6b1a7;
+  margin-top: 2px;
+}
+
+@media (max-width: 780px) {
+  .ot-trade-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ot-trade-ledger {
+    min-height: auto;
+  }
+}
+
 .ot-inv-btn:hover {
   background: rgba(245, 210, 139, 0.12);
 }
@@ -2103,6 +2202,14 @@
             >
               Inventory
             </button>
+            <button
+              id="ot-btn-open-trade"
+              class="ot-link-button"
+              type="button"
+              style="display:none;"
+            >
+              Trading Post
+            </button>
           </div>
           <div class="ot-panel-body" id="ot-supplies-overview"></div>
         </div>
@@ -2300,6 +2407,48 @@
         <button id="ot-btn-close-inventory" class="ot-btn-outline">
           Close
         </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="ot-trade-modal" class="ot-modal" aria-hidden="true">
+    <div class="ot-modal-backdrop"></div>
+    <div class="ot-modal-content ot-trade-content">
+      <div class="ot-modal-title" id="ot-trade-title">Trading Post</div>
+      <div id="ot-trade-sub" class="ot-modal-sub"></div>
+
+      <div class="ot-trade-summary" id="ot-trade-summary"></div>
+
+      <div class="ot-trade-tabs">
+        <button id="ot-trade-tab-buy" class="ot-btn-outline">Buy</button>
+        <button id="ot-trade-tab-sell" class="ot-btn-outline">Sell</button>
+      </div>
+
+      <div class="ot-trade-grid">
+        <div>
+          <table class="ot-trade-table">
+            <thead>
+              <tr>
+                <th>Goods</th>
+                <th>Owned</th>
+                <th>Buy</th>
+                <th>Sell</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="ot-trade-body"></tbody>
+          </table>
+          <div id="ot-trade-msg" class="ot-modal-sub" style="min-height:16px; margin-top:6px;"></div>
+        </div>
+
+        <div class="ot-trade-ledger">
+          <div class="ot-trade-ledger-title">Ledger</div>
+          <div id="ot-trade-ledger-body"></div>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; margin-top:6px;">
+        <button id="ot-btn-close-trade" class="ot-btn-outline">Close</button>
       </div>
     </div>
   </div>
@@ -3337,7 +3486,7 @@
             paid = true;
           }
           if (paid) {
-            gameState.supplies.medicine = (gameState.supplies.medicine || 0) + medicineGain;
+            gameState.supplies.med_kits = (gameState.supplies.med_kits || 0) + medicineGain;
             adjustFactionRep("open_eye", 4, null, ctx);
             const target = choice(ctx.people || getAllPeople());
             if (target) {
@@ -4830,6 +4979,7 @@
       fogMaxMile: 0,
       lastFrameTime: null,
     },
+    ui: { trade: { open: false, tab: "buy", vendorKey: "forts", poiId: null } },
     storyState: null,
     storytellerPresetId: "classic",
     waterQuality: "safe",
@@ -5226,6 +5376,7 @@
         mythicCurios: { owned: [], slots: [null, null], upkeepState: {} },
         factionRep: { caravans: 0, forts: 0, open_eye: 0, men_in_gray: 0 },
         mythicRumor: 0,
+        tradeLedger: [],
       };
     }
     const ss = gameState.storyState;
@@ -5273,6 +5424,7 @@
     if (typeof ss.factionRep.open_eye !== "number") ss.factionRep.open_eye = 0;
     if (typeof ss.factionRep.men_in_gray !== "number") ss.factionRep.men_in_gray = 0;
     if (typeof ss.mythicRumor !== "number") ss.mythicRumor = 0;
+    if (!Array.isArray(ss.tradeLedger)) ss.tradeLedger = [];
     return ss;
   }
 
@@ -5737,6 +5889,10 @@
 
   function formatMoney(n) {
     return "$" + n.toFixed(2);
+  }
+
+  function roundToCents(n) {
+    return Math.round(n * 100) / 100;
   }
 
   function formatDateTime(d) {
@@ -6913,6 +7069,7 @@
     dom.btnChangePace = document.getElementById("ot-btn-change-pace");
     dom.btnChangeRations = document.getElementById("ot-btn-change-rations");
     dom.btnOpenInventory = document.getElementById("ot-btn-open-inventory");
+    dom.btnOpenTrade = document.getElementById("ot-btn-open-trade");
     dom.btnOpenCamp = document.getElementById("ot-btn-open-camp-tasks");
     dom.explorerChip = document.getElementById("ot-explorer-chip");
     dom.btnCampfireMoment = document.getElementById("ot-btn-campfire-moment");
@@ -6935,6 +7092,20 @@
     dom.inventorySub = document.getElementById("ot-inventory-sub");
     dom.inventoryBody = document.getElementById("ot-inventory-body");
     dom.btnCloseInventory = document.getElementById("ot-btn-close-inventory");
+
+    dom.tradeModal = document.getElementById("ot-trade-modal");
+    dom.tradeBackdrop = dom.tradeModal
+      ? dom.tradeModal.querySelector(".ot-modal-backdrop")
+      : null;
+    dom.tradeTitle = document.getElementById("ot-trade-title");
+    dom.tradeSub = document.getElementById("ot-trade-sub");
+    dom.tradeSummary = document.getElementById("ot-trade-summary");
+    dom.tradeBody = document.getElementById("ot-trade-body");
+    dom.tradeMsg = document.getElementById("ot-trade-msg");
+    dom.tradeLedgerBody = document.getElementById("ot-trade-ledger-body");
+    dom.btnTradeBuyTab = document.getElementById("ot-trade-tab-buy");
+    dom.btnTradeSellTab = document.getElementById("ot-trade-tab-sell");
+    dom.btnCloseTrade = document.getElementById("ot-btn-close-trade");
 
     dom.btnOpenPriorities = document.getElementById("ot-btn-open-priorities");
     dom.prioritiesModal = document.getElementById("ot-priorities-modal");
@@ -8403,6 +8574,12 @@
       gainMult = 0.82;
     }
     return { costMult: costMult, gainMult: gainMult, label: tier.label, tier: tier };
+  }
+
+  function getFortTradeTerms() {
+    const terms = getTradeTermsForFaction("forts");
+    const tier = getFactionRepTier("forts");
+    return { terms: terms, tier: tier };
   }
 
   function ensureMythicCurioState() {
@@ -11945,9 +12122,9 @@
           defaultId: "aid",
         });
         if (choice === "aid") {
-          const onHand = gameState.supplies.medicine || 0;
+          const onHand = gameState.supplies.med_kits || 0;
           const spend = Math.min(onHand, 1);
-          gameState.supplies.medicine = Math.max(0, onHand - spend);
+          gameState.supplies.med_kits = Math.max(0, onHand - spend);
           const careLine =
             spend > 0
               ? "You clean and wrap the bite, leaving a precious dose of medicine behind."
@@ -12311,7 +12488,7 @@
           addLog("The fiddle tune carries over the wagons, easing hearts for a night.", { tone: "morale" });
         } else if (choice === "trade") {
           gameState.money = Math.max(0, (gameState.money || 0) - 2);
-          gameState.supplies.medicine = (gameState.supplies.medicine || 0) + 1;
+          gameState.supplies.med_kits = (gameState.supplies.med_kits || 0) + 1;
           addLog("You pay for a tune and a pouch of herbs the preacher swears by.", { tone: "event" });
         } else {
           addLog("You keep the fire close and the stranger moves on into the dark.", { tone: "info" });
@@ -12877,8 +13054,8 @@
         const medGain = Math.max(1, Math.round(1 * terms.gainMult));
         const medCost = Math.max(4, Math.round(10 * terms.costMult));
         const sellPayout = Math.max(3, Math.round(6 * terms.gainMult));
-        const hasAxle = (gameState.supplies.axle || 0) > 0;
-        const hasWheel = (gameState.supplies.wheel || 0) > 0;
+        const hasAxle = (gameState.supplies.axles || 0) > 0;
+        const hasWheel = (gameState.supplies.wheels || 0) > 0;
         const hasFlour = (gameState.supplies.flour || 0) >= 5;
         const selection = await presentEncounter({
           id: "fort_sutler_quick_trade",
@@ -12930,7 +13107,7 @@
         } else if (selection === "buy_med") {
           if ((gameState.money || 0) >= medCost) {
             gameState.money = Math.max(0, (gameState.money || 0) - medCost);
-            gameState.supplies.medicine = (gameState.supplies.medicine || 0) + medGain;
+            gameState.supplies.med_kits = (gameState.supplies.med_kits || 0) + medGain;
             adjustFactionRep("forts", 2, null, ctx);
             logText = `The sutler slips over ${medGain} dose of tonic for $${medCost}.`;
           } else {
@@ -12938,12 +13115,12 @@
           }
         } else if (selection === "sell_parts") {
           if (hasAxle) {
-            gameState.supplies.axle = Math.max(0, (gameState.supplies.axle || 0) - 1);
+            gameState.supplies.axles = Math.max(0, (gameState.supplies.axles || 0) - 1);
             gameState.money = (gameState.money || 0) + sellPayout;
             adjustFactionRep("forts", 1, null, ctx);
             logText = `You part with a spare axle and take $${sellPayout} in return.`;
           } else if (hasWheel) {
-            gameState.supplies.wheel = Math.max(0, (gameState.supplies.wheel || 0) - 1);
+            gameState.supplies.wheels = Math.max(0, (gameState.supplies.wheels || 0) - 1);
             gameState.money = (gameState.money || 0) + sellPayout;
             adjustFactionRep("forts", 1, null, ctx);
             logText = `You sell a wheel to the sutler and pocket $${sellPayout}.`;
@@ -14403,8 +14580,8 @@
         });
         if (selection === "volunteer") {
           const cost = distrusted ? 3 : generous ? 1 : 2;
-          const spent = Math.min(gameState.supplies.medicine || 0, cost);
-          gameState.supplies.medicine = Math.max(0, (gameState.supplies.medicine || 0) - spent);
+          const spent = Math.min(gameState.supplies.med_kits || 0, cost);
+          gameState.supplies.med_kits = Math.max(0, (gameState.supplies.med_kits || 0) - spent);
           const friendA = ctx.people && ctx.people.length ? choice(ctx.people) : null;
           const friendB = ctx.people && ctx.people.length ? choice(ctx.people) : null;
           if (friendA && friendB) adjustOpinion(friendA, friendB, 1, "clinic_help");
@@ -14421,8 +14598,8 @@
           ctx.storyState.eventFlags.fort_clinic_favor = true;
           if (generous || rep >= 10) gameState.reputationFlags.clinic_priority = true;
         } else if (selection === "modest") {
-          const spent = Math.min(gameState.supplies.medicine || 0, 1);
-          gameState.supplies.medicine = Math.max(0, (gameState.supplies.medicine || 0) - spent);
+          const spent = Math.min(gameState.supplies.med_kits || 0, 1);
+          gameState.supplies.med_kits = Math.max(0, (gameState.supplies.med_kits || 0) - spent);
           addLog("You leave a small bundle of bandages and move on.", { tone: "info" });
           adjustReputation(1, "Offered modest clinic help");
         } else {
@@ -14808,7 +14985,7 @@
             ctx.storyState.eventFlags.forcedCampHours || 0
           );
           gameState.money = Math.max(0, (gameState.money || 0) - 6);
-          gameState.supplies.medicine = (gameState.supplies.medicine || 0) + 1;
+          gameState.supplies.med_kits = (gameState.supplies.med_kits || 0) + 1;
           adjustFactionRep("open_eye", 10, null, ctx);
           setEventFlag("open_eye_seen", true);
           logText = "You leave a donation and receive a wrapped bundle of herbs and tonics before moving on.";
@@ -17313,6 +17490,11 @@
     return best ? best.poi : null;
   }
 
+  function getNearbyFortPOI() {
+    const p = getNearestPOIToPlayerHex(1);
+    return p && p.type === "fort" ? p : null;
+  }
+
   function estimateMilesPerHour() {
     const mph = computeMilesForHour();
     if (mph > 0.05) return mph;
@@ -18171,6 +18353,17 @@
     dom.suppliesOverview.innerHTML = html;
   }
 
+  function renderTradingPostAccess() {
+    if (!dom.btnOpenTrade) return;
+    const fort = getNearbyFortPOI();
+    const show = gameState.phase === "travel" && !!fort;
+    dom.btnOpenTrade.style.display = show ? "inline-flex" : "none";
+    if (show) {
+      const tradeUi = ensureTradeUiState();
+      tradeUi.poiId = fort.id;
+    }
+  }
+
 
   function renderFooter() {
     const miles = gameState.milesTraveled;
@@ -18375,6 +18568,300 @@
         });
       });
     }
+  }
+
+  function ensureTradeUiState() {
+    if (!gameState.ui) gameState.ui = {};
+    if (!gameState.ui.trade)
+      gameState.ui.trade = {
+        open: false,
+        tab: "buy",
+        vendorKey: "forts",
+        poiId: null,
+      };
+    if (!gameState.ui.trade.tab) gameState.ui.trade.tab = "buy";
+    if (!gameState.ui.trade.vendorKey) gameState.ui.trade.vendorKey = "forts";
+    return gameState.ui.trade;
+  }
+
+  function recordTradeLedgerEntry(entry) {
+    const ss = ensureStoryState();
+    const fort = getNearbyFortPOI();
+    const payload = {
+      ts: gameState.date instanceof Date ? new Date(gameState.date) : new Date(),
+      location: entry.location || (fort && fort.name) || gameState.locationName,
+      vendor: entry.vendor || "forts",
+      action: entry.action,
+      itemId: entry.itemId,
+      itemName: entry.itemName,
+      qty: entry.qty,
+      unitPrice: entry.unitPrice,
+      total: entry.total,
+      moneyAfter: gameState.money || 0,
+      rep: (ss.factionRep && ss.factionRep.forts) || 0,
+      repLabel: getTradeTermsForFaction("forts").label,
+    };
+    ss.tradeLedger.push(payload);
+    if (ss.tradeLedger.length > 80) {
+      ss.tradeLedger.splice(0, ss.tradeLedger.length - 80);
+    }
+  }
+
+  function renderTradeLedger() {
+    if (!dom.tradeLedgerBody) return;
+    const entries = (ensureStoryState().tradeLedger || []).slice(-10).reverse();
+    if (!entries.length) {
+      dom.tradeLedgerBody.innerHTML =
+        '<div class="ot-trade-ledger-entry">No recent trades logged.</div>';
+      return;
+    }
+    dom.tradeLedgerBody.innerHTML = "";
+    entries.forEach(function (e) {
+      const row = document.createElement("div");
+      row.className = "ot-trade-ledger-entry";
+      const verb = e.action === "sell" ? "Sell" : "Buy";
+      const label = e.itemName || e.itemId || "goods";
+      row.textContent = `${verb} ${e.qty} ${label} — ${formatMoney(e.total || 0)}`;
+      const meta = document.createElement("small");
+      const ts = e.ts instanceof Date ? e.ts : new Date(e.ts);
+      const timeLabel = formatDateTime(ts);
+      const repLabel = e.repLabel || "";
+      meta.textContent = `${e.location || "On the trail"} · ${repLabel} (${e.rep || 0}) · ${timeLabel}`;
+      row.appendChild(meta);
+      dom.tradeLedgerBody.appendChild(row);
+    });
+  }
+
+  function renderTradeModal() {
+    if (!dom.tradeModal || !dom.tradeBody) return;
+    if (dom.tradeMsg) dom.tradeMsg.textContent = "";
+    const tradeUi = ensureTradeUiState();
+    const fort =
+      (tradeUi.poiId &&
+        OT_POIS.find(function (p) {
+          return p && p.id === tradeUi.poiId;
+        })) ||
+      getNearbyFortPOI();
+    if (fort && tradeUi.poiId !== fort.id) {
+      tradeUi.poiId = fort.id;
+    }
+    const termsInfo = getFortTradeTerms();
+    const terms = termsInfo.terms;
+    const tier = termsInfo.tier;
+
+    if (dom.tradeTitle) dom.tradeTitle.textContent = "Trading Post";
+    if (dom.tradeSub)
+      dom.tradeSub.textContent =
+        (fort ? fort.name : "Frontier post") +
+        " · " +
+        formatDateTime(gameState.date) +
+        " · " +
+        terms.label +
+        " terms";
+
+    const totalWeight = computeTotalWeight();
+    const draft = computeDraftPower();
+    const loadPct = draft > 0 ? Math.round((totalWeight / draft) * 100) : 0;
+    const overloadNote = draft > 0 && totalWeight > draft ? " (overloaded)" : "";
+    if (dom.tradeSummary) {
+      const summaryLoad =
+        "Cash: " +
+        formatMoney(gameState.money || 0) +
+        " · Load: " +
+        Math.round(totalWeight) +
+        " lb / " +
+        Math.max(1, Math.round(draft)) +
+        " lb pull";
+      dom.tradeSummary.textContent =
+        summaryLoad +
+        (draft > 0 ? ` (${loadPct}% capacity${overloadNote})` : " (no draft power)") +
+        ` · Buy x${terms.costMult.toFixed(2)} / Sell x${terms.gainMult.toFixed(2)} (${tier.label} ${tier.value >= 0 ? "+" : ""}${tier.value})`;
+    }
+
+    if (dom.btnTradeBuyTab && dom.btnTradeSellTab) {
+      dom.btnTradeBuyTab.classList.toggle(
+        "ot-trade-tab-active",
+        tradeUi.tab === "buy"
+      );
+      dom.btnTradeSellTab.classList.toggle(
+        "ot-trade-tab-active",
+        tradeUi.tab === "sell"
+      );
+    }
+
+    const catalog = SUPPLY_ITEMS.filter(function (item) {
+      return item && item.cost > 0 && item.readOnly !== true;
+    }).sort(function (a, b) {
+      if (a.category === b.category) return a.name.localeCompare(b.name);
+      return a.category.localeCompare(b.category);
+    });
+
+    dom.tradeBody.innerHTML = "";
+    const money = gameState.money || 0;
+
+    catalog.forEach(function (item) {
+      const tr = document.createElement("tr");
+      const owned = gameState.supplies[item.id] || 0;
+      const ownedLabel = owned % 1 === 0 ? owned : owned.toFixed(1);
+      const unitBuy = roundToCents(item.cost * terms.costMult);
+      const baseSell = item.cost * 0.6;
+      let unitSell = roundToCents(baseSell * terms.gainMult);
+      const maxSell = roundToCents(unitBuy * 0.9);
+      if (unitSell > maxSell) unitSell = maxSell;
+
+      const tdName = document.createElement("td");
+      tdName.textContent = item.name;
+      tr.appendChild(tdName);
+
+      const tdOwned = document.createElement("td");
+      tdOwned.textContent = ownedLabel;
+      tr.appendChild(tdOwned);
+
+      const tdBuy = document.createElement("td");
+      tdBuy.textContent = unitBuy > 0 ? formatMoney(unitBuy) : "—";
+      tr.appendChild(tdBuy);
+
+      const tdSell = document.createElement("td");
+      tdSell.textContent = unitSell > 0 ? formatMoney(unitSell) : "—";
+      tr.appendChild(tdSell);
+
+      const tdAction = document.createElement("td");
+      const addBtn = function (label, handler, disabled) {
+        const btn = document.createElement("button");
+        btn.className = "ot-mini-btn";
+        btn.textContent = label;
+        btn.disabled = !!disabled;
+        btn.addEventListener("click", handler);
+        tdAction.appendChild(btn);
+      };
+
+      if (tradeUi.tab === "buy") {
+        addBtn(
+          "Buy 1",
+          function () {
+            tradeBuy(item.id, 1, unitBuy);
+          },
+          money < unitBuy
+        );
+        addBtn(
+          "Buy 5",
+          function () {
+            tradeBuy(item.id, 5, unitBuy);
+          },
+          money < unitBuy * 5
+        );
+      } else {
+        addBtn(
+          "Sell 1",
+          function () {
+            tradeSell(item.id, 1, unitSell);
+          },
+          owned <= 0
+        );
+        addBtn(
+          "Sell 5",
+          function () {
+            tradeSell(item.id, 5, unitSell);
+          },
+          owned <= 0
+        );
+        addBtn(
+          "Sell all",
+          function () {
+            tradeSell(item.id, owned, unitSell);
+          },
+          owned <= 0
+        );
+      }
+      tr.appendChild(tdAction);
+      dom.tradeBody.appendChild(tr);
+    });
+
+    renderTradeLedger();
+  }
+
+  function openTradeModal() {
+    const fort = getNearbyFortPOI();
+    if (!fort || !dom.tradeModal) return;
+    const tradeUi = ensureTradeUiState();
+    tradeUi.open = true;
+    tradeUi.tab = "buy";
+    tradeUi.vendorKey = "forts";
+    tradeUi.poiId = fort.id;
+    if (dom.tradeMsg) dom.tradeMsg.textContent = "";
+    dom.tradeModal.classList.add("active");
+    renderTradeModal();
+  }
+
+  function closeTradeModal() {
+    hideModal(dom.tradeModal);
+    const tradeUi = ensureTradeUiState();
+    tradeUi.open = false;
+    saveGame();
+    renderAll();
+  }
+
+  function tradeBuy(itemId, qty, cachedUnitBuy) {
+    const tradeUi = ensureTradeUiState();
+    const item = findSupplyDef(itemId);
+    if (!item || qty <= 0) return;
+    const unitBuy = cachedUnitBuy || roundToCents(item.cost * getFortTradeTerms().terms.costMult);
+    const totalCost = roundToCents(unitBuy * qty);
+    if ((gameState.money || 0) < totalCost) {
+      if (dom.tradeMsg) dom.tradeMsg.textContent = "Not enough funds.";
+      return;
+    }
+    gameState.money = Math.max(0, (gameState.money || 0) - totalCost);
+    gameState.supplies[itemId] = (gameState.supplies[itemId] || 0) + qty;
+    recordTradeLedgerEntry({
+      action: "buy",
+      itemId: itemId,
+      itemName: item.name,
+      qty: qty,
+      unitPrice: unitBuy,
+      total: totalCost,
+      vendor: tradeUi.vendorKey,
+    });
+    saveGame();
+    renderAll();
+    renderTradeModal();
+  }
+
+  function tradeSell(itemId, qty, cachedUnitSell) {
+    const tradeUi = ensureTradeUiState();
+    const item = findSupplyDef(itemId);
+    if (!item || qty <= 0) return;
+    const owned = gameState.supplies[itemId] || 0;
+    const useQty = Math.min(Math.max(1, qty), owned);
+    if (useQty <= 0) {
+      if (dom.tradeMsg) dom.tradeMsg.textContent = "No stock to sell.";
+      return;
+    }
+    const termsInfo = getFortTradeTerms();
+    const terms = termsInfo.terms;
+    const unitBuy = roundToCents(item.cost * terms.costMult);
+    let unitSell =
+      cachedUnitSell != null
+        ? cachedUnitSell
+        : roundToCents(item.cost * 0.6 * terms.gainMult);
+    const maxSell = roundToCents(unitBuy * 0.9);
+    if (unitSell > maxSell) unitSell = maxSell;
+    const total = roundToCents(unitSell * useQty);
+    gameState.money = (gameState.money || 0) + total;
+    gameState.supplies[itemId] = owned - useQty;
+    recordTradeLedgerEntry({
+      action: "sell",
+      itemId: itemId,
+      itemName: item.name,
+      qty: useQty,
+      unitPrice: unitSell,
+      total: total,
+      vendor: tradeUi.vendorKey,
+    });
+    saveGame();
+    renderAll();
+    renderTradeModal();
+  }
   }
 
   function renderOnTrailHeader() {
@@ -18637,6 +19124,7 @@
       renderTrailLog();
       renderCascadeSummary();
       renderSuppliesOverview();
+      renderTradingPostAccess();
       renderFooter();
     }
   }
@@ -18656,6 +19144,39 @@
       gameState.supplies.meal_hearty = Math.round(old * 0.4);
       gameState.supplies.meal_feast = old - gameState.supplies.meal_simple - gameState.supplies.meal_hearty;
     }
+  }
+
+  function normalizeLegacySupplyAliases() {
+    if (!gameState.supplies) return;
+    const s = gameState.supplies;
+
+    if (s.wheel) {
+      s.wheels = (s.wheels || 0) + (s.wheel || 0);
+      delete s.wheel;
+    }
+    if (s.axle) {
+      s.axles = (s.axles || 0) + (s.axle || 0);
+      delete s.axle;
+    }
+    if (s.medicine) {
+      s.med_kits = (s.med_kits || 0) + (s.medicine || 0);
+      delete s.medicine;
+    }
+  }
+
+  function rehydrateTradeLedger() {
+    const ss = ensureStoryState();
+    if (!Array.isArray(ss.tradeLedger)) {
+      ss.tradeLedger = [];
+      return;
+    }
+    ss.tradeLedger = ss.tradeLedger
+      .filter(Boolean)
+      .map(function (entry) {
+        const copy = Object.assign({}, entry);
+        if (copy.ts && !(copy.ts instanceof Date)) copy.ts = new Date(copy.ts);
+        return copy;
+      });
   }
 
   function saveGame() {
@@ -18754,6 +19275,17 @@
       ensureTraillinesState();
       ensureExplorerState();
       ensureStoryState();
+      if (!gameState.ui) gameState.ui = {};
+      if (!gameState.ui.trade)
+        gameState.ui.trade = {
+          open: false,
+          tab: "buy",
+          vendorKey: "forts",
+          poiId: null,
+        };
+      if (!gameState.ui.trade.tab) gameState.ui.trade.tab = "buy";
+      if (!gameState.ui.trade.vendorKey) gameState.ui.trade.vendorKey = "forts";
+      rehydrateTradeLedger();
 
       getAllPeople().forEach(function (p) {
         ensurePersonStoryFields(p);
@@ -18815,6 +19347,7 @@
       });
 
       normalizeLegacyMeals();
+      normalizeLegacySupplyAliases();
       ensureDelegationState();
       updateRegionAndLocation();
       refreshWeather();
@@ -19074,6 +19607,29 @@
     dom.btnCloseInventory.addEventListener("click", function () {
       dom.inventoryModal.classList.remove("active");
     });
+    if (dom.btnOpenTrade) {
+      dom.btnOpenTrade.addEventListener("click", openTradeModal);
+    }
+    if (dom.tradeBackdrop && dom.tradeModal) {
+      dom.tradeBackdrop.addEventListener("click", closeTradeModal);
+    }
+    if (dom.btnCloseTrade) {
+      dom.btnCloseTrade.addEventListener("click", closeTradeModal);
+    }
+    if (dom.btnTradeBuyTab) {
+      dom.btnTradeBuyTab.addEventListener("click", function () {
+        const tradeUi = ensureTradeUiState();
+        tradeUi.tab = "buy";
+        renderTradeModal();
+      });
+    }
+    if (dom.btnTradeSellTab) {
+      dom.btnTradeSellTab.addEventListener("click", function () {
+        const tradeUi = ensureTradeUiState();
+        tradeUi.tab = "sell";
+        renderTradeModal();
+      });
+    }
     if (dom.btnOpenSocial) {
       dom.btnOpenSocial.addEventListener("click", function () {
         renderSocialWeb();
@@ -19240,6 +19796,9 @@
         hideModal(dom.prioritiesModal);
         hideModal(dom.campOverlay);
         closeMapModal();
+        if (dom.tradeModal && dom.tradeModal.classList.contains("active")) {
+          closeTradeModal();
+        }
       }
 
       const typingInForm =
