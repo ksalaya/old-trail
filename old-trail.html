@@ -18672,10 +18672,10 @@
         " lb / " +
         Math.max(1, Math.round(draft)) +
         " lb pull";
-      dom.tradeSummary.textContent =
-        summaryLoad +
-        (draft > 0 ? ` (${loadPct}% capacity${overloadNote})` : " (no draft power)") +
-        ` · Buy x${terms.costMult.toFixed(2)} / Sell x${terms.gainMult.toFixed(2)} (${tier.label} ${tier.value >= 0 ? "+" : ""}${tier.value})`;
+        dom.tradeSummary.textContent =
+          summaryLoad +
+          (draft > 0 ? ` (${loadPct}% capacity${overloadNote})` : " (no draft power)") +
+          ` · Buy x${terms.costMult.toFixed(2)} / Sell x${terms.gainMult.toFixed(2)} (${tier.label} ${tier.value >= 0 ? "+" : ""}${tier.value})`;
     }
 
     if (dom.btnTradeBuyTab && dom.btnTradeSellTab) {
@@ -18861,7 +18861,6 @@
     saveGame();
     renderAll();
     renderTradeModal();
-  }
   }
 
   function renderOnTrailHeader() {
