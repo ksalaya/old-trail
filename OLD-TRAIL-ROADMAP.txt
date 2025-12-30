@@ -346,3 +346,14 @@ Validation Checklist (Fort Trading Ledger pass):
 - Anti-arbitrage holds: buy then immediately sell never yields profit.
 - Save mid-run and reload: no crashes; ledger persists; legacy supply aliases (wheel/axle/medicine) normalize cleanly.
 - Trail log stays clean of per-click trade spam; transactions appear only in the ledger.
+
+Deferred (scarcity-aware ledger follow-ups)
+- Implement barter-first haggling with offers/counteroffers and contraband gating layered onto the trade modal.
+- Add caravan/peddler trading that reuses the ledger modal with faction inventories and rep gates.
+- Script rival forts policies/tariffs with quest hooks, threading Open Eye authorities against Men in Gray arcs (mythic gated).
+- Author Dream-West B-09+ seeds with multi-region chained callbacks triggered by trades or faction reputation shifts.
+- Build tactical hunting/ambush resolution in the encounter modal (cover/volley choices, oxen risk, injuries/loot outcomes).
+- Extend seasonal grading/night overlay/lantern glow with weather vignettes tied to region and time-of-day cues.
+- Hook sprite chore animations to visible inventory deltas around wagons and camp stockpiles.
+- Surface a cinematic HUD toggle with save-persisted visibility presets and quick keyboard/toolbar access.
+- Prototype a pausable continuous-time travel loop with top-down caravan control while retaining the hourly tick as a fallback.
