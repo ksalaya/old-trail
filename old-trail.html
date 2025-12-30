@@ -3245,6 +3245,68 @@
       },
     },
     {
+      id: "seed_b09_caravan_ledger",
+      kind: "breather",
+      condition: function (ctx) {
+        const blockOk = ctx.block === "morning" || ctx.block === "evening";
+        return (
+          blockOk &&
+          hoursSinceFlag("seed_b09_caravan_ledger_time") >= 120 &&
+          hoursSinceFlag("seed_b_global_time") >= 36 &&
+          !getNearbyFortPOI()
+        );
+      },
+      weight: function () {
+        return 2;
+      },
+      run: async function (ctx) {
+        const selection = await presentEncounter({
+          id: "seed_b09_caravan_ledger",
+          title: "Passing caravan ledger",
+          subtitle: ctx.location,
+          body: [
+            "Canvas tops ripple as a passing caravan slows. A trader sets a ledger on a crate, leather and spice thick in the dust.",
+            "Quiet eyes watch your team while mules nose at feed sacks.",
+          ],
+          tags: ["travel", "trade"],
+          options: [
+            {
+              id: "trade",
+              label: "Trade (open ledger)",
+              tone: "warm",
+              hint: "Light caravan stock; terms hinge on your standing.",
+            },
+            {
+              id: "chat",
+              label: "Chat by the wagons",
+              tone: "neutral",
+              hint: "Swap news; ease nerves a touch.",
+            },
+            { id: "move", label: "Move on", tone: "neutral", hint: "Keep the team rolling." },
+          ],
+          defaultId: "trade",
+        });
+        const nowHour = getCurrentTrailHour(gameState);
+        setEventFlag("seed_b_global_time", nowHour);
+        setEventFlag("seed_b09_caravan_ledger_time", nowHour);
+        let logText = "The caravan keeps its ledger shut as you roll past.";
+        if (selection === "trade") {
+          adjustFactionRep("caravans", 1, null, ctx);
+          logText = "You thumb through the caravan ledger and trade for what they'll spare.";
+          addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+          openVendorTradeModal("caravans", "caravan_peddler");
+          return;
+        } else if (selection === "chat") {
+          adjustFactionRep("caravans", 1, null, ctx);
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) - 1, 0, 100);
+          logText = "You share trail news and a quiet nod before they roll on.";
+        } else if (selection === "move") {
+          logText = "You wave the caravan by and keep the oxen steady.";
+        }
+        addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+      },
+    },
+    {
       id: "seed_b03_men_in_gray_sighting",
       kind: "minor",
       condition: function (ctx) {
@@ -3479,6 +3541,12 @@
           tags: ["cult", "trade"],
           options: [
             {
+              id: "ledger",
+              label: "Trade (open ledger)",
+              tone: "warm",
+              hint: "Open the peddler's ledger for small goods.",
+            },
+            {
               id: "trade",
               label: `Trade for the bundle ($${moneyCost} or ${flourCost} flour)`,
               tone: "warm",
@@ -3503,7 +3571,11 @@
         setEventFlag("seed_b_global_time", nowHour);
         setEventFlag("seed_b06_open_eye_peddler_time", nowHour);
         let logText = "The ink-eyed peddler wheels away, wagon creaking back into the dust.";
-        if (selection === "trade") {
+        if (selection === "ledger") {
+          adjustFactionRep("open_eye", 2, null, ctx);
+          logText = "You open the inked ledger; the peddler smiles thinly as you trade.";
+          openVendorTradeModal("open_eye", "open_eye_peddler");
+        } else if (selection === "trade") {
           let paid = false;
           if ((gameState.money || 0) >= moneyCost) {
             gameState.money = Math.max(0, (gameState.money || 0) - moneyCost);
@@ -3884,6 +3956,89 @@
         September: { pRain: 0.22, pStorm: 0.12, tMin: 8, tMax: 22, windKph: [8, 22] },
         October: { pRain: 0.28, pStorm: 0.14, tMin: 5, tMax: 18, windKph: [8, 20] },
       },
+    },
+    caravan_peddler: {
+      label: "Ledger of a passing caravan",
+      catalog: [
+        "flour",
+        "bacon",
+        "beans_rice",
+        "hardtack",
+        "dried_fruit",
+        "coffee",
+        "sugar",
+        "salt_soda",
+        "firewood",
+        "water_barrels",
+        "ammo",
+        "rifles",
+        "med_kits",
+      ],
+      baseStock: {
+        flour: 80,
+        bacon: 26,
+        beans_rice: 40,
+        hardtack: 36,
+        dried_fruit: 18,
+        coffee: 12,
+        sugar: 14,
+        salt_soda: 10,
+        firewood: 22,
+        water_barrels: 4,
+        ammo: 70,
+        rifles: 2,
+        med_kits: 6,
+      },
+      stockCap: {
+        flour: 120,
+        bacon: 40,
+        beans_rice: 60,
+        hardtack: 54,
+        dried_fruit: 28,
+        coffee: 20,
+        sugar: 22,
+        salt_soda: 15,
+        firewood: 32,
+        water_barrels: 6,
+        ammo: 110,
+        rifles: 3,
+        med_kits: 9,
+      },
+      restockPerDay: {
+        flour: 6,
+        bacon: 2.2,
+        beans_rice: 3.4,
+        hardtack: 3,
+        dried_fruit: 1.2,
+        coffee: 1,
+        sugar: 1,
+        salt_soda: 0.6,
+        firewood: 3,
+        water_barrels: 0.35,
+        ammo: 6,
+        rifles: 0.08,
+        med_kits: 0.25,
+      },
+      flavorNotes: [
+        "Canvas ledger smells of dust and cardamom; pages flutter with each gust.",
+        "Freighter boys tally bacon twice—once for freight, once for camp kitchens.",
+        "Ruts deep as graves near the last crossing; flour shook loose in half the sacks.",
+        "Night watch keeps rifles hidden until trust is earned.",
+        "Coffee tins are banded with twine and road grit—ask gentle.",
+      ],
+    },
+    open_eye_peddler: {
+      label: "Inked-eye satchel", 
+      catalog: ["tea", "coffee", "dried_fruit", "salt_soda", "med_kits", "buffalo_chips", "ammo"],
+      baseStock: { tea: 14, coffee: 8, dried_fruit: 12, salt_soda: 6, med_kits: 4, buffalo_chips: 18, ammo: 24 },
+      stockCap: { tea: 22, coffee: 14, dried_fruit: 18, salt_soda: 10, med_kits: 6, buffalo_chips: 28, ammo: 36 },
+      restockPerDay: { tea: 1.2, coffee: 0.8, dried_fruit: 0.8, salt_soda: 0.5, med_kits: 0.24, buffalo_chips: 1.4, ammo: 1.4 },
+      flavorNotes: [
+        "Steeped leaves sold with a blessing, wrapped in blue cloth.",
+        "Charcoal marks an open eye on the ledger's cover, watched closely as coins change hands.",
+        "They trade stories for salt-soda, listening more than they speak.",
+        "Powder tins rattle softly under dried sprigs of sage.",
+      ],
     },
   };
 
@@ -5405,6 +5560,7 @@
         mythicRumor: 0,
         tradeLedger: [],
         tradeVendors: {},
+        tradeHaggling: {},
       };
     }
     const ss = gameState.storyState;
@@ -5454,6 +5610,7 @@
     if (typeof ss.mythicRumor !== "number") ss.mythicRumor = 0;
     if (!Array.isArray(ss.tradeLedger)) ss.tradeLedger = [];
     if (!ss.tradeVendors) ss.tradeVendors = {};
+    if (!ss.tradeHaggling) ss.tradeHaggling = {};
     return ss;
   }
 
@@ -19117,7 +19274,7 @@
     dom.btnOpenTrade.style.display = show ? "inline-flex" : "none";
     if (show) {
       const tradeUi = ensureTradeUiState();
-      tradeUi.poiId = fort.id;
+      if (tradeUi.vendorKey === "forts") tradeUi.poiId = fort.id;
     }
   }
 
@@ -19344,16 +19501,21 @@
   function resolveTradeContext() {
     const tradeUi = ensureTradeUiState();
     let fort = null;
-    if (tradeUi.poiId) {
-      fort = OT_POIS.find(function (p) {
-        return p && p.id === tradeUi.poiId;
-      });
+    if (tradeUi.vendorKey === "forts") {
+      if (tradeUi.poiId) {
+        fort = OT_POIS.find(function (p) {
+          return p && p.id === tradeUi.poiId;
+        });
+      }
+      if (!fort) fort = getNearbyFortPOI();
+      if (fort && tradeUi.poiId !== fort.id) {
+        tradeUi.poiId = fort.id;
+      }
     }
-    if (!fort) fort = getNearbyFortPOI();
-    if (fort && tradeUi.poiId !== fort.id) {
-      tradeUi.poiId = fort.id;
-    }
-    const poiId = (fort && fort.id) || tradeUi.poiId || "frontier";
+    const poiId =
+      tradeUi.vendorKey === "forts"
+        ? (fort && fort.id) || tradeUi.poiId || "frontier"
+        : tradeUi.poiId || "frontier";
     const tradeDef = getFortTradeDef(poiId);
     const vendorState = restockVendorForPoi(poiId, tradeDef);
     return { tradeUi: tradeUi, fort: fort, poiId: poiId, tradeDef: tradeDef, vendorState: vendorState };
@@ -19425,14 +19587,78 @@
     return notes.slice(0, 4);
   }
 
+  const MAX_HAGGLE_ATTEMPTS_PER_DAY = 3;
+
+  function getVendorLabelForKey(vendorKey) {
+    if (vendorKey === "caravans") return "Passing Caravan";
+    if (vendorKey === "open_eye") return "Inked-eye Peddler";
+    if (vendorKey === "men_in_gray") return "Quiet Ledger";
+    return "Trading Post";
+  }
+
+  function getTradeRestriction(itemId, mode, vendorKey, tier) {
+    const info = { restricted: false, reason: "", tag: "" };
+    const t = tier || getFactionRepTier(vendorKey || "forts");
+    if (vendorKey === "caravans" && mode === "buy" && itemId === "rifles") {
+      if (!(t.id === "trusted" || t.id === "ally")) {
+        info.restricted = true;
+        info.tag = "contraband";
+        info.reason = "Caravan keeps rifles back until trust is earned.";
+      }
+    }
+    if (vendorKey === "forts" && mode === "buy" && itemId === "rifles" && t.id === "hostile") {
+      info.restricted = true;
+      info.tag = "restricted";
+      info.reason = "Hostile terms—no rifles sold.";
+    }
+    return info;
+  }
+
+  function getHaggleTracker(vendorKey, poiId) {
+    const ss = ensureStoryState();
+    const key = (vendorKey || "forts") + ":" + (poiId || "frontier");
+    if (!ss.tradeHaggling) ss.tradeHaggling = {};
+    const today = getDaySerial(gameState.date || new Date());
+    if (!ss.tradeHaggling[key] || ss.tradeHaggling[key].day !== today) {
+      ss.tradeHaggling[key] = { day: today, attempts: 0 };
+    }
+    if (typeof ss.tradeHaggling[key].attempts !== "number") ss.tradeHaggling[key].attempts = 0;
+    if (typeof ss.tradeHaggling[key].day !== "number") ss.tradeHaggling[key].day = today;
+    return ss.tradeHaggling[key];
+  }
+
+  function canHaggleToday(vendorKey, poiId) {
+    const tracker = getHaggleTracker(vendorKey, poiId);
+    return tracker.attempts < MAX_HAGGLE_ATTEMPTS_PER_DAY;
+  }
+
+  function remainingHaggleAttempts(vendorKey, poiId) {
+    const tracker = getHaggleTracker(vendorKey, poiId);
+    return Math.max(0, MAX_HAGGLE_ATTEMPTS_PER_DAY - (tracker.attempts || 0));
+  }
+
+  function consumeHaggleAttempt(vendorKey, poiId) {
+    const tracker = getHaggleTracker(vendorKey, poiId);
+    tracker.attempts = Math.min(MAX_HAGGLE_ATTEMPTS_PER_DAY, (tracker.attempts || 0) + 1);
+  }
+
+  function getHaggleBaseChance(tierId) {
+    if (tierId === "ally") return 0.7;
+    if (tierId === "trusted") return 0.55;
+    if (tierId === "neutral") return 0.4;
+    if (tierId === "wary") return 0.25;
+    return 0.15;
+  }
+
   function recordTradeLedgerEntry(entry) {
     const ss = ensureStoryState();
     const tradeUi = ensureTradeUiState();
     const fort = getNearbyFortPOI();
+    const vendorKey = entry.vendor || tradeUi.vendorKey || "forts";
     const payload = {
       ts: gameState.date instanceof Date ? new Date(gameState.date) : new Date(),
       location: entry.location || (fort && fort.name) || gameState.locationName,
-      vendor: entry.vendor || "forts",
+      vendor: vendorKey,
       vendorPoi: entry.vendorPoi || (fort && fort.id) || tradeUi.poiId || null,
       action: entry.action,
       itemId: entry.itemId,
@@ -19441,8 +19667,8 @@
       unitPrice: entry.unitPrice,
       total: entry.total,
       moneyAfter: gameState.money || 0,
-      rep: (ss.factionRep && ss.factionRep.forts) || 0,
-      repLabel: getTradeTermsForFaction("forts").label,
+      rep: (ss.factionRep && ss.factionRep[vendorKey]) || 0,
+      repLabel: getTradeTermsForFaction(vendorKey).label,
     };
     ss.tradeLedger.push(payload);
     if (ss.tradeLedger.length > 80) {
@@ -19501,14 +19727,17 @@
     const fort = ctx.fort;
     const tradeDef = ctx.tradeDef;
     const vendorState = ctx.vendorState;
-    const termsInfo = getFortTradeTerms();
-    const terms = termsInfo.terms;
+    const vendorKey = tradeUi.vendorKey || "forts";
+    const termsInfo = getTradeTermsForFaction(vendorKey);
+    const terms = termsInfo;
     const tier = termsInfo.tier;
 
-    if (dom.tradeTitle) dom.tradeTitle.textContent = "Trading Post";
+    if (dom.tradeTitle)
+      dom.tradeTitle.textContent = vendorKey === "forts" ? "Trading Post" : getVendorLabelForKey(vendorKey);
     if (dom.tradeSub) {
-      const subParts = [fort ? fort.name : "Frontier post"];
-      if (tradeDef && tradeDef.label) subParts.push(tradeDef.label);
+      const subParts = [];
+      if (vendorKey === "forts") subParts.push(fort ? fort.name : "Frontier post");
+      else subParts.push((tradeDef && tradeDef.label) || getVendorLabelForKey(vendorKey));
       subParts.push(formatDateTime(gameState.date));
       subParts.push(terms.label + " terms");
       dom.tradeSub.textContent = subParts.join(" · ");
@@ -19527,10 +19756,10 @@
         " lb / " +
         Math.max(1, Math.round(draft)) +
         " lb pull";
-        dom.tradeSummary.textContent =
-          summaryLoad +
-          (draft > 0 ? ` (${loadPct}% capacity${overloadNote})` : " (no draft power)") +
-          ` · Buy x${terms.costMult.toFixed(2)} / Sell x${terms.gainMult.toFixed(2)} (${tier.label} ${tier.value >= 0 ? "+" : ""}${tier.value})`;
+      dom.tradeSummary.textContent =
+        summaryLoad +
+        (draft > 0 ? ` (${loadPct}% capacity${overloadNote})` : " (no draft power)") +
+        ` · Buy x${terms.costMult.toFixed(2)} / Sell x${terms.gainMult.toFixed(2)} (${tier.label} ${tier.value >= 0 ? "+" : ""}${tier.value})`;
     }
 
     if (dom.btnTradeBuyTab && dom.btnTradeSellTab) {
@@ -19560,17 +19789,27 @@
 
     dom.tradeBody.innerHTML = "";
     const money = gameState.money || 0;
+    const haggleRemaining = remainingHaggleAttempts(vendorKey, ctx.poiId);
 
     const ledgerNotes = generateLedgerNotes(tradeDef, vendorState);
+
+    if (haggleRemaining <= 0 && dom.tradeMsg)
+      dom.tradeMsg.textContent = dom.tradeMsg.textContent || "No more haggling today.";
 
     catalog.forEach(function (item) {
       const tr = document.createElement("tr");
       const owned = gameState.supplies[item.id] || 0;
       const ownedLabel = owned % 1 === 0 ? owned : owned.toFixed(1);
       const pricing = computeTradePricing(item, tradeDef, vendorState, terms);
+      const buyRestriction = getTradeRestriction(item.id, "buy", vendorKey, tier);
+      const sellRestriction = getTradeRestriction(item.id, "sell", vendorKey, tier);
+      const activeRestriction = tradeUi.tab === "buy" ? buyRestriction : sellRestriction;
+      const nameLabel = activeRestriction.restricted ? `${item.name} (${activeRestriction.tag || "restricted"})` : item.name;
 
       const tdName = document.createElement("td");
-      tdName.textContent = item.name;
+      tdName.textContent = nameLabel;
+      if (buyRestriction.restricted || sellRestriction.restricted) tdName.classList.add("ot-text-muted");
+      if (activeRestriction.reason) tdName.title = activeRestriction.reason;
       tr.appendChild(tdName);
 
       const tdOwned = document.createElement("td");
@@ -19585,6 +19824,8 @@
       const tdBuy = document.createElement("td");
       tdBuy.textContent = pricing.unitBuy > 0 ? formatMoney(pricing.unitBuy) : "—";
       tdBuy.title = `Rep x${terms.costMult.toFixed(2)} · Scarcity x${pricing.scarcityBuyMult.toFixed(2)}`;
+      if (buyRestriction.restricted && buyRestriction.reason)
+        tdBuy.title += ` · ${buyRestriction.reason}`;
       tr.appendChild(tdBuy);
 
       const tdSell = document.createElement("td");
@@ -19593,29 +19834,58 @@
       tr.appendChild(tdSell);
 
       const tdAction = document.createElement("td");
-      const addBtn = function (label, handler, disabled) {
+      const addBtn = function (label, handler, disabled, title) {
         const btn = document.createElement("button");
         btn.className = "ot-mini-btn";
         btn.textContent = label;
         btn.disabled = !!disabled;
+        if (title) btn.title = title;
         btn.addEventListener("click", handler);
         tdAction.appendChild(btn);
       };
 
       if (tradeUi.tab === "buy") {
+        const offerDisabledReason =
+          buyRestriction.restricted
+            ? buyRestriction.reason
+            : !canHaggleToday(vendorKey, ctx.poiId)
+            ? "No more offers today."
+            : pricing.vendorStock < 1
+            ? "Out of stock."
+            : money < Math.max(1, Math.round(item.cost))
+            ? "Need enough on hand to make an offer."
+            : "";
         addBtn(
           "Buy 1",
           function () {
             tradeBuy(item.id, 1, pricing.unitBuy);
           },
-          money < pricing.unitBuy || pricing.vendorStock < 1
+          money < pricing.unitBuy || pricing.vendorStock < 1 || buyRestriction.restricted,
+          buyRestriction.restricted ? buyRestriction.reason : null
         );
         addBtn(
           "Buy 5",
           function () {
             tradeBuy(item.id, 5, pricing.unitBuy);
           },
-          money < pricing.unitBuy * 5 || pricing.vendorStock < 5
+          money < pricing.unitBuy * 5 || pricing.vendorStock < 5 || buyRestriction.restricted,
+          buyRestriction.restricted ? buyRestriction.reason : null
+        );
+        addBtn(
+          "Buy 10",
+          function () {
+            tradeBuy(item.id, 10, pricing.unitBuy);
+          },
+          money < pricing.unitBuy * 10 || pricing.vendorStock < 10 || buyRestriction.restricted,
+          buyRestriction.restricted ? buyRestriction.reason : null
+        );
+        addBtn(
+          "Offer",
+          function () {
+            offerBuy(item.id, 1);
+          },
+          !!offerDisabledReason,
+          offerDisabledReason
         );
       } else {
         addBtn(
@@ -19639,6 +19909,25 @@
           },
           owned <= 0
         );
+        const available = Math.max(0, pricing.cap - pricing.vendorStock);
+        const sellOfferReason =
+          sellRestriction.restricted
+            ? sellRestriction.reason
+            : !canHaggleToday(vendorKey, ctx.poiId)
+            ? "No more offers today."
+            : owned <= 0
+            ? "Nothing to offer."
+            : available <= 0
+            ? "They can't take more right now."
+            : "";
+        addBtn(
+          "Offer",
+          function () {
+            offerSell(item.id, 1);
+          },
+          !!sellOfferReason,
+          sellOfferReason
+        );
       }
       tr.appendChild(tdAction);
       dom.tradeBody.appendChild(tr);
@@ -19647,17 +19936,22 @@
     renderTradeLedger(ledgerNotes);
   }
 
-  function openTradeModal() {
-    const fort = getNearbyFortPOI();
-    if (!fort || !dom.tradeModal) return;
+  function openVendorTradeModal(vendorKey, poiId) {
+    if (!dom.tradeModal) return;
     const tradeUi = ensureTradeUiState();
     tradeUi.open = true;
     tradeUi.tab = "buy";
-    tradeUi.vendorKey = "forts";
-    tradeUi.poiId = fort.id;
+    tradeUi.vendorKey = vendorKey || "forts";
+    tradeUi.poiId = poiId || tradeUi.poiId || "frontier";
     if (dom.tradeMsg) dom.tradeMsg.textContent = "";
     dom.tradeModal.classList.add("active");
     renderTradeModal();
+  }
+
+  function openTradeModal() {
+    const fort = getNearbyFortPOI();
+    if (!fort || !dom.tradeModal) return;
+    openVendorTradeModal("forts", fort.id);
   }
 
   function closeTradeModal() {
@@ -19673,12 +19967,18 @@
     const tradeUi = ctx.tradeUi;
     const tradeDef = ctx.tradeDef;
     const vendorState = ctx.vendorState;
+    const vendorKey = tradeUi.vendorKey || "forts";
     const item = findSupplyDef(itemId);
     if (!item || qty <= 0) return;
     const useQty = Math.max(1, qty);
-    const terms = getFortTradeTerms().terms;
+    const terms = getTradeTermsForFaction(vendorKey);
     const pricing = computeTradePricing(item, tradeDef, vendorState, terms);
     const unitBuy = cachedUnitBuy || pricing.unitBuy;
+    const restriction = getTradeRestriction(item.id, "buy", vendorKey, terms.tier || getFactionRepTier(vendorKey));
+    if (restriction.restricted) {
+      if (dom.tradeMsg) dom.tradeMsg.textContent = restriction.reason || "They won't part with that right now.";
+      return;
+    }
     const vendorStock = pricing.vendorStock;
     if (vendorStock < useQty) {
       if (dom.tradeMsg)
@@ -19714,6 +20014,7 @@
     const tradeUi = ctx.tradeUi;
     const tradeDef = ctx.tradeDef;
     const vendorState = ctx.vendorState;
+    const vendorKey = tradeUi.vendorKey || "forts";
     const item = findSupplyDef(itemId);
     if (!item || qty <= 0) return;
     const owned = gameState.supplies[itemId] || 0;
@@ -19722,8 +20023,8 @@
       if (dom.tradeMsg) dom.tradeMsg.textContent = "No stock to sell.";
       return;
     }
-    const termsInfo = getFortTradeTerms();
-    const terms = termsInfo.terms;
+    const termsInfo = getTradeTermsForFaction(vendorKey);
+    const terms = termsInfo;
     const pricing = computeTradePricing(item, tradeDef, vendorState, terms);
     const unitSellCap = roundToCents(pricing.unitBuy * 0.9);
     let unitSell =
@@ -19760,6 +20061,224 @@
     saveGame();
     renderAll();
     renderTradeModal();
+  }
+
+  async function offerBuy(itemId, qty) {
+    const ctx = resolveTradeContext();
+    const tradeUi = ctx.tradeUi;
+    const tradeDef = ctx.tradeDef;
+    const vendorState = ctx.vendorState;
+    const vendorKey = tradeUi.vendorKey || "forts";
+    const setMsg = function (msg) {
+      if (dom.tradeMsg) dom.tradeMsg.textContent = msg;
+    };
+    const item = findSupplyDef(itemId);
+    const useQty = Math.max(1, qty || 1);
+    if (!item) return;
+    const termsInfo = getTradeTermsForFaction(vendorKey);
+    const pricing = computeTradePricing(item, tradeDef, vendorState, termsInfo);
+    const restriction = getTradeRestriction(item.id, "buy", vendorKey, termsInfo.tier);
+    if (restriction.restricted) {
+      setMsg(restriction.reason || "They won't part with that right now.");
+      return;
+    }
+    if (pricing.vendorStock < useQty) {
+      setMsg("Out of stock.");
+      return;
+    }
+    const basePrice = pricing.unitBuy;
+    const baseFundsCheck = Math.min(basePrice, Math.round(item.cost || basePrice));
+    if ((gameState.money || 0) < baseFundsCheck) {
+      setMsg("Need funds on hand to bargain.");
+      return;
+    }
+    if (!canHaggleToday(vendorKey, ctx.poiId)) {
+      setMsg("No more haggling today.");
+      return;
+    }
+
+    const selection = await presentEncounter({
+      id: `haggle_buy_${itemId}`,
+      title: `Offer for ${item.name}`,
+      subtitle: getVendorLabelForKey(vendorKey),
+      body: [`The ledger shows ${formatMoney(basePrice)} per unit. You run a finger along a lower figure.`],
+      options: [
+        { id: "offer10", label: "Offer 10% less", tone: "neutral" },
+        { id: "offer20", label: "Offer 20% less", tone: "warm" },
+        { id: "pay", label: "Pay listed price", tone: "warm" },
+        { id: "walk", label: "Walk away", tone: "neutral" },
+      ],
+      defaultId: "offer10",
+    });
+
+    if (!selection || selection === "walk") return;
+    if (selection === "pay") {
+      tradeBuy(itemId, useQty, basePrice);
+      return;
+    }
+
+    const discount = selection === "offer20" ? 0.2 : 0.1;
+    consumeHaggleAttempt(vendorKey, ctx.poiId);
+    const floorPrice = roundToCents(pricing.unitBuy * 0.75);
+    let offerPrice = clamp(roundToCents(basePrice * (1 - discount)), floorPrice, basePrice);
+    const tierId = (termsInfo.tier && termsInfo.tier.id) || "neutral";
+    const shortage = pricing.baseStock > 0 ? clamp((pricing.baseStock - pricing.vendorStock) / Math.max(1, pricing.baseStock), 0, 1) : 0;
+    const baseChance = getHaggleBaseChance(tierId);
+    let acceptChance = clamp(baseChance - discount * 0.6 - shortage * 0.25, 0, 0.9);
+    let counterChance = clamp(baseChance - discount * 0.2 - shortage * 0.1, 0.05, 0.6);
+    const roll = Math.random();
+    let outcome = "refuse";
+    if (roll < acceptChance) outcome = "accept";
+    else if (roll < acceptChance + counterChance) outcome = "counter";
+
+    if (outcome === "accept") {
+      tradeBuy(itemId, useQty, offerPrice);
+      setMsg(`Deal struck at ${formatMoney(offerPrice)}.`);
+      return;
+    }
+
+    if (outcome === "counter") {
+      const counterPct = Math.max(0.05, discount * 0.5);
+      const counterPrice = clamp(roundToCents(basePrice * (1 - counterPct)), floorPrice, basePrice);
+      const counter = await presentEncounter({
+        id: `haggle_buy_counter_${itemId}`,
+        title: "Ledger counteroffer",
+        body: [`They tap the page: ${formatMoney(counterPrice)} per unit—no lower.`],
+        options: [
+          { id: "accept", label: "Accept counter", tone: "warm" },
+          { id: "refuse", label: "Refuse", tone: "neutral" },
+        ],
+        defaultId: "accept",
+      });
+      if (counter === "accept") {
+        const totalCost = counterPrice * useQty;
+        if ((gameState.money || 0) < totalCost) {
+          const msg = "Not enough funds for the counter.";
+          setMsg(msg);
+          renderTradeModal();
+          setMsg(msg);
+          return;
+        }
+        tradeBuy(itemId, useQty, counterPrice);
+        const msg = `They counter at ${formatMoney(counterPrice)}.`;
+        setMsg(msg);
+        return;
+      } else {
+        const msg = "No deal. The trader shuts the book for now.";
+        setMsg(msg);
+        renderTradeModal();
+        setMsg(msg);
+        return;
+      }
+    }
+
+    const msg = "No deal. The trader shuts the book for now.";
+    setMsg(msg);
+    renderTradeModal();
+    setMsg(msg);
+  }
+
+  async function offerSell(itemId, qty) {
+    const ctx = resolveTradeContext();
+    const tradeUi = ctx.tradeUi;
+    const tradeDef = ctx.tradeDef;
+    const vendorState = ctx.vendorState;
+    const vendorKey = tradeUi.vendorKey || "forts";
+    const setMsg = function (msg) {
+      if (dom.tradeMsg) dom.tradeMsg.textContent = msg;
+    };
+    const item = findSupplyDef(itemId);
+    if (!item) return;
+    const owned = gameState.supplies[item.id] || 0;
+    const useQty = Math.max(1, Math.min(owned, qty || 1));
+    if (useQty <= 0) {
+      setMsg("No stock to offer.");
+      return;
+    }
+    const termsInfo = getTradeTermsForFaction(vendorKey);
+    const pricing = computeTradePricing(item, tradeDef, vendorState, termsInfo);
+    const availableSpace = Math.max(0, pricing.cap - pricing.vendorStock);
+    if (availableSpace <= 0) {
+      setMsg("They can't take more right now.");
+      return;
+    }
+    const unitSellCap = roundToCents(pricing.unitBuy * 0.9);
+    const basePrice = pricing.unitSell;
+    if (!canHaggleToday(vendorKey, ctx.poiId)) {
+      setMsg("No more haggling today.");
+      return;
+    }
+
+    const selection = await presentEncounter({
+      id: `haggle_sell_${itemId}`,
+      title: `Offer to sell ${item.name}`,
+      subtitle: getVendorLabelForKey(vendorKey),
+      body: [`Ledger shows ${formatMoney(basePrice)} each. You could press for more.`],
+      options: [
+        { id: "ask10", label: "Ask 10% more", tone: "neutral" },
+        { id: "ask20", label: "Ask 20% more", tone: "warm" },
+        { id: "take", label: "Take listed price", tone: "warm" },
+        { id: "walk", label: "Walk away", tone: "neutral" },
+      ],
+      defaultId: "ask10",
+    });
+
+    if (!selection || selection === "walk") return;
+    if (selection === "take") {
+      tradeSell(itemId, useQty, basePrice);
+      return;
+    }
+
+    const bump = selection === "ask20" ? 0.2 : 0.1;
+    consumeHaggleAttempt(vendorKey, ctx.poiId);
+    const tierId = (termsInfo.tier && termsInfo.tier.id) || "neutral";
+    const demand = pricing.baseStock > 0 ? clamp((pricing.baseStock - pricing.vendorStock) / Math.max(1, pricing.baseStock), 0, 1) : 0;
+    let askPrice = clamp(roundToCents(basePrice * (1 + bump)), basePrice, unitSellCap);
+    const baseChance = getHaggleBaseChance(tierId);
+    let acceptChance = clamp(baseChance + demand * 0.15 - bump * 0.4, 0, 0.88);
+    let counterChance = clamp(baseChance + demand * 0.05 - bump * 0.15, 0.05, 0.6);
+    const roll = Math.random();
+    let outcome = "refuse";
+    if (roll < acceptChance) outcome = "accept";
+    else if (roll < acceptChance + counterChance) outcome = "counter";
+
+    if (outcome === "accept") {
+      tradeSell(itemId, Math.min(useQty, availableSpace), askPrice);
+      setMsg(`They take it at ${formatMoney(askPrice)}.`);
+      return;
+    }
+
+    if (outcome === "counter") {
+      const counterPct = Math.max(0.05, bump * 0.5);
+      const counterPrice = clamp(roundToCents(basePrice * (1 + counterPct)), basePrice, unitSellCap);
+      const counter = await presentEncounter({
+        id: `haggle_sell_counter_${itemId}`,
+        title: "Counteroffer on the page",
+        body: [`They slide the ledger back: ${formatMoney(counterPrice)} per unit.`],
+        options: [
+          { id: "accept", label: "Accept counter", tone: "warm" },
+          { id: "refuse", label: "Refuse", tone: "neutral" },
+        ],
+        defaultId: "accept",
+      });
+      if (counter === "accept") {
+        tradeSell(itemId, Math.min(useQty, availableSpace), counterPrice);
+        const msg = `They counter at ${formatMoney(counterPrice)}.`;
+        setMsg(msg);
+        return;
+      } else {
+        const msg = "No deal. The trader shuts the book for now.";
+        setMsg(msg);
+        renderTradeModal();
+        setMsg(msg);
+        return;
+      }
+    }
+
+    const msg = "No deal. The trader shuts the book for now.";
+    setMsg(msg);
+    renderTradeModal();
+    setMsg(msg);
   }
 
   function renderOnTrailHeader() {

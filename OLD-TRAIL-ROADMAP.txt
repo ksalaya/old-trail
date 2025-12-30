@@ -347,13 +347,13 @@ Validation Checklist (Fort Trading Ledger pass):
 - Save mid-run and reload: no crashes; ledger persists; legacy supply aliases (wheel/axle/medicine) normalize cleanly.
 - Trail log stays clean of per-click trade spam; transactions appear only in the ledger.
 
-Deferred (scarcity-aware ledger follow-ups)
-- Implement barter-first haggling with offers/counteroffers and contraband gating layered onto the trade modal.
-- Add caravan/peddler trading that reuses the ledger modal with faction inventories and rep gates.
-- Script rival forts policies/tariffs with quest hooks, threading Open Eye authorities against Men in Gray arcs (mythic gated).
-- Author Dream-West B-09+ seeds with multi-region chained callbacks triggered by trades or faction reputation shifts.
-- Build tactical hunting/ambush resolution in the encounter modal (cover/volley choices, oxen risk, injuries/loot outcomes).
-- Extend seasonal grading/night overlay/lantern glow with weather vignettes tied to region and time-of-day cues.
-- Hook sprite chore animations to visible inventory deltas around wagons and camp stockpiles.
-- Surface a cinematic HUD toggle with save-persisted visibility presets and quick keyboard/toolbar access.
-- Prototype a pausable continuous-time travel loop with top-down caravan control while retaining the hourly tick as a fallback.
+Deferred (trade and traversal follow-ups)
+- Implement true barter currency and item-for-item offers inside the trade modal once cash flow is stable.
+- Layer fort policies/tariffs plus rival fort quest hooks that react to faction reputation and trading history.
+- Build a Men in Gray (mythic-gated) vendor path with contraband threads and consequences.
+- Add Dream-West B-10+ seeds with multi-region callbacks triggered by trade or faction reputation changes.
+- Ship tactical hunting/ambush resolution in the encounter modal (cover/volley, oxen risk, injury/loot tables).
+- Pass for seasonal color grading, night overlay, lantern glow, and weather vignettes across regions.
+- Hook up sprite chore animations with visual inventory deltas during stock moves and camp chores.
+- Add a cinematic HUD toggle with save-persisted settings.
+- Prototype a continuous-time travel loop with pause and top-down caravan control to supplant the hourly tick.
