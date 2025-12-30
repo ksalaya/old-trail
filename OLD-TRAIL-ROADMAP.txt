@@ -306,3 +306,16 @@ Deferred from Procedural Characters / Social / Mythic Chains update
 - Deeper faction politics (two rival forts, Open Eye Revival cult, Men in Gray full arc) – future milestone.
 - Chain follow-ups still stubbed: EX-01 through EX-10, H-01/H-02/H-04/H-05/H-07, S-01/S-05/S-06/S-08, and mythic M-01/M-02/M-05/M-08 remain to be staged.
 - Future: sprite movement/actions for chores, visual inventory deltas, caravan/fort UI polish.
+
+Deferred (new)
+- Wire Open Eye and Men in Gray faction reputation into fort/caravan trade modifiers and UI surfacing once faction hooks are ready.
+- Fill in remaining Dream-West B-set seeds and callbacks (b06+), with region-aware variants and tension tuning.
+- Extend Open Eye revival into later-tier confrontations or aid (escort, fort delivery options) once additional chain support is available.
+
+Validation Checklist (Dream-West B-set)
+- Start new run; no console errors.
+- Fast-forward 5–10 days; seeds appear but are spaced out (global seed gate + per-seed cooldown).
+- Mythic OFF: Men in Gray seed never triggers; Open Eye events still behave (non-mythic).
+- Open Eye setpiece triggers once; follow-up triggers within the window; no repeats.
+- Save + reload mid-run; no crashes.
+- Trail log: one line per new event (no spam).
