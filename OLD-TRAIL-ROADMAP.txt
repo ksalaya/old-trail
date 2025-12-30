@@ -319,3 +319,12 @@ Validation Checklist (Dream-West B-set)
 - Open Eye setpiece triggers once; follow-up triggers within the window; no repeats.
 - Save + reload mid-run; no crashes.
 - Trail log: one line per new event (no spam).
+
+Deferred (next passes)
+- Full ledger-style fort trading UI with itemized buy/sell lists, rep-based dynamic pricing, and visible ledgers.
+- Deeper faction politics: rival forts, Open Eye vs fort authorities, Men in Gray full arc.
+- Additional Dream-West B-seeds (B-09+) and longer chained callbacks across regions.
+- Hunting/ambush tactical resolution via encounter modal.
+- Seasonal color grading + night overlay + lantern glow.
+- Chores sprite movement/actions and visual inventory deltas.
+- HUD minimalism/cinematic travel toggle.
