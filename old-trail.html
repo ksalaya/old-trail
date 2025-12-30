@@ -206,6 +206,12 @@
   line-height: 1.5;
 }
 
+.ot-draft-skills {
+  font-size: 11px;
+  color: #b8b2a7;
+  margin-top: 4px;
+}
+
 .ot-draft-tags {
   display: flex;
   flex-wrap: wrap;
@@ -1729,15 +1735,10 @@
             </div>
 
             <div class="ot-field">
-              <div class="ot-label">Background</div>
-              <select id="ot-background" class="ot-select">
-                <option value="farmer">Farmer from Illinois</option>
-                <option value="banker">Banker from the East</option>
-                <option value="carpenter">Carpenter from Ohio</option>
-                <option value="teacher">Schoolteacher from New England</option>
-              </select>
+              <div class="ot-label">Leader calling</div>
+              <div id="ot-leader-calling" class="ot-panel-body-sm"></div>
               <div
-                id="ot-background-desc"
+                id="ot-leader-starting-funds"
                 class="ot-panel-body-sm ot-text-muted"
                 style="margin-top: 4px;"
               ></div>
@@ -4308,37 +4309,6 @@
 
   const WATER_PER_DRINK = 0.25; // gallons per drink
 
-  const BACKGROUNDS = {
-    farmer: {
-      label: "Farmer from Illinois",
-      startingMoney: 700,
-      skillBias: { travel: 2, hunting: 1, cooking: 1, woodcutting: 2, doctoring: 0 },
-      desc:
-        "Low on cash but used to livestock, rough work, and making do with simple food.",
-    },
-    banker: {
-      label: "Banker from the East",
-      startingMoney: 1100,
-      skillBias: { travel: 1, hunting: 0, cooking: 0, woodcutting: 0, doctoring: 1 },
-      desc:
-        "Arrives with a long purse and fine clothes, but little experience of trail hardships.",
-    },
-    carpenter: {
-      label: "Carpenter from Ohio",
-      startingMoney: 800,
-      skillBias: { travel: 2, hunting: 1, cooking: 0, woodcutting: 2, doctoring: 0 },
-      desc:
-        "Handy with tools and repairs. A good choice if you're worried about the wagon.",
-    },
-    teacher: {
-      label: "Schoolteacher from New England",
-      startingMoney: 750,
-      skillBias: { travel: 1, hunting: 0, cooking: 1, woodcutting: 0, doctoring: 2 },
-      desc:
-        "Thoughtful and literate, with a knack for keeping spirits up and treating minor ailments.",
-    },
-  };
-
   const START_PROFILES = {
     early_april: {
       id: "early_april",
@@ -6858,8 +6828,8 @@
     dom.btnReset = document.getElementById("ot-btn-reset");
 
     dom.leaderName = document.getElementById("ot-leader-name");
-    dom.backgroundSelect = document.getElementById("ot-background");
-    dom.backgroundDesc = document.getElementById("ot-background-desc");
+    dom.leaderCallingPreview = document.getElementById("ot-leader-calling");
+    dom.leaderFundsPreview = document.getElementById("ot-leader-starting-funds");
     dom.departureSelect = document.getElementById("ot-departure");
     dom.departureSeason = document.getElementById("ot-departure-season");
     dom.departureSeasonDesc = document.getElementById(
@@ -7243,6 +7213,104 @@
     return out;
   }
 
+  const SKILL_PREVIEW_ORDER = [
+    "travel",
+    "hunting",
+    "cooking",
+    "repair",
+    "doctoring",
+    "woodcutting",
+    "guard",
+    "foraging",
+    "craft",
+  ];
+
+  const SKILL_LABELS = {
+    travel: "Travel",
+    hunting: "Hunting",
+    cooking: "Cooking",
+    repair: "Repair",
+    doctoring: "Doctoring",
+    woodcutting: "Woodcutting",
+    guard: "Guard",
+    foraging: "Foraging",
+    craft: "Craft",
+  };
+
+  function previewSkillsFromDraft(draft) {
+    const baseSkills = {
+      travel: 1,
+      hunting: 1,
+      cooking: 1,
+      woodcutting: 1,
+      doctoring: 1,
+      repair: 1,
+      guard: 1,
+      craft: 1,
+      foraging: 1,
+    };
+    const out = {};
+    SKILL_PREVIEW_ORDER.forEach(function (key) {
+      const bias = (draft && draft.skillBias && draft.skillBias[key]) || 0;
+      out[key] = clamp((baseSkills[key] || 0) + bias, 0, 6);
+    });
+    return out;
+  }
+
+  function computeLeaderStartProfile(leaderDraft) {
+    const draft = leaderDraft || {};
+    const callingLabel =
+      draft.backstoryLabel || draft.backstoryId || "Trail organizer";
+    const callingOrigin = draft.origin || draft.backstorySummary || "";
+    const prosperous = {
+      river_trader: true,
+      riverboat_gambler: true,
+      fur_buyer: true,
+    };
+    const skilled = {
+      millwright: true,
+      wheelwright: true,
+      blacksmith: true,
+      barrel_maker: true,
+      scribe_clerk: true,
+      bookish_student: true,
+      city_apprentice: true,
+      stage_driver: true,
+      apprentice_doc: true,
+      frontier_midwife: true,
+    };
+    const lean = {
+      prairie_farmer: true,
+      wagon_cook: true,
+      ranch_hand: true,
+      mountain_trapper: true,
+      buffalo_hunter: true,
+      herb_gatherer: true,
+      shore_fisher: true,
+      comet_witness: true,
+      graveyard_caretaker: true,
+      army_teamster: true,
+    };
+
+    const id = draft.backstoryId;
+    let startingMoney = 900;
+    if (id && prosperous[id]) startingMoney = 1125;
+    else if (id && skilled[id]) startingMoney = 950;
+    else if (id && lean[id]) startingMoney = 820;
+
+    const traits = draft.traits || [];
+    if (traits.indexOf("frugal") >= 0) startingMoney += 75;
+    if (traits.indexOf("wasteful") >= 0) startingMoney -= 60;
+
+    startingMoney = clamp(startingMoney, 600, 1250);
+
+    return {
+      callingLabel: callingLabel,
+      callingOrigin: callingOrigin,
+      startingMoney: startingMoney,
+    };
+  }
+
   function generateDraftForSlot(slot) {
     const draft = ensurePartyDraftState();
     if (draft.locks[slot]) return draft.people[slot];
@@ -7287,6 +7355,10 @@
       btns.info.textContent = "";
       return;
     }
+    const skillsPreview = previewSkillsFromDraft(draft);
+    const skillsLine = SKILL_PREVIEW_ORDER.map(function (key) {
+      return `${SKILL_LABELS[key]} ${skillsPreview[key] || 0}`;
+    }).join(" · ");
     btns.info.innerHTML =
       `<div>${draft.age} yrs · ${draft.origin}</div>` +
       `<div>${draft.backstoryLabel}</div>` +
@@ -7296,7 +7368,12 @@
           const def = getTraitDef(t);
           return `<span class="ot-draft-tag">${def ? def.label : t}</span>`;
         })
-        .join("")}</div>`;
+        .join("")}</div>` +
+      `<div class="ot-draft-skills ot-text-muted">Skills — ${skillsLine}</div>`;
+
+    if (slot === "leader") {
+      renderLeaderStartPreview();
+    }
   }
 
   function renderAllDraftInfo() {
@@ -7785,17 +7862,106 @@
     renderNarratorRules();
   }
 
+  function rollStartingCarryIns(draftState, chosenDrafts) {
+    const freeSupplies = {};
+    const noteLines = [];
+    const pool = [
+      { id: "ammo", baseWeight: 3, qty: 1, tags: ["hunter", "guard"] },
+      { id: "med_kits", baseWeight: 3, qty: 1, tags: ["doctor"] },
+      { id: "coffee", baseWeight: 2, qty: 2, tags: ["cook", "traveler"] },
+      { id: "firewood", baseWeight: 1.5, qty: 1, tags: ["craft", "wood"] },
+      { id: "dried_fruit", baseWeight: 2, qty: 3, tags: ["forager"] },
+      { id: "salt_soda", baseWeight: 2, qty: 2, tags: ["cook", "craft"] },
+    ];
+
+    function callingTags(draft) {
+      const tags = [];
+      const id = draft && draft.backstoryId;
+      if (!id) return tags;
+      if (
+        ["buffalo_hunter", "mountain_trapper", "ranch_hand", "border_ranger"].indexOf(
+          id
+        ) >= 0
+      ) {
+        tags.push("hunter");
+      }
+      if (["apprentice_doc", "frontier_midwife"].indexOf(id) >= 0) {
+        tags.push("doctor");
+      }
+      if (["wagon_cook", "kitchen_servant"].indexOf(id) >= 0) {
+        tags.push("cook");
+      }
+      if (
+        [
+          "millwright",
+          "wheelwright",
+          "blacksmith",
+          "barrel_maker",
+        ].indexOf(id) >= 0
+      ) {
+        tags.push("craft");
+        tags.push("wood");
+      }
+      if (["herb_gatherer", "shore_fisher", "fur_buyer"].indexOf(id) >= 0) {
+        tags.push("forager");
+      }
+      if (["river_trader", "riverboat_gambler", "wagon_scout"].indexOf(id) >= 0) {
+        tags.push("traveler");
+      }
+      return tags;
+    }
+
+    function pickCarryItem(rng, tags) {
+      const weighted = pool.map(function (p) {
+        let weight = p.baseWeight;
+        (p.tags || []).forEach(function (tag) {
+          if (tags.indexOf(tag) >= 0) weight += 1.5;
+        });
+        return { def: p, weight: weight };
+      });
+      const total = weighted.reduce(function (sum, w) {
+        return sum + (w.weight || 0);
+      }, 0);
+      let pick = rng() * total;
+      let choice = null;
+      weighted.forEach(function (w) {
+        if (pick <= (w.weight || 0) && !choice) choice = w;
+        pick -= w.weight || 0;
+      });
+      if (!choice && weighted.length) choice = weighted[weighted.length - 1];
+      return choice ? choice.def : null;
+    }
+
+    (chosenDrafts || []).forEach(function (entry) {
+      if (!entry || !entry.slot) return;
+      const rng = draftRng(entry.slot);
+      const draft = entry.draft || {};
+      if (rng() >= 0.11) return;
+      const tags = callingTags(draft);
+      const item = pickCarryItem(rng, tags);
+      if (!item || !item.id) return;
+      const qty = item.qty || 1;
+      freeSupplies[item.id] = (freeSupplies[item.id] || 0) + qty;
+      const def = findSupplyDef(item.id);
+      const label = def ? def.name.toLowerCase() : item.id;
+      const who = draft.name || (entry.slot === "leader" ? "Leader" : "Companion");
+      noteLines.push(`${who} carried in +${qty} ${label}.`);
+    });
+
+    return { freeSupplies: freeSupplies, noteLines: noteLines };
+  }
+
   function startNewGameFromForm() {
-    const bgId = dom.backgroundSelect.value;
-    const bg = BACKGROUNDS[bgId] || BACKGROUNDS.farmer;
     const draftState = ensurePartyDraftState();
 
     const leaderName = dom.leaderName.value.trim() || "Unnamed leader";
     const leaderDraft = draftState.people.leader;
-    const leaderBias = blendSkillBias(bg.skillBias, leaderDraft && leaderDraft.skillBias);
+    const leaderProfile = computeLeaderStartProfile(leaderDraft);
+    const leaderBias = blendSkillBias({}, leaderDraft && leaderDraft.skillBias);
     const leader = createPerson(leaderName, true, leaderBias, leaderDraft);
 
     const companions = [];
+    const chosenDrafts = [{ slot: "leader", draft: leaderDraft }];
     dom.companionInputs.forEach(function (input, idx) {
       const v = input.value.trim();
       if (v) {
@@ -7803,6 +7969,7 @@
         const d = draftState.people[slot];
         const bias = d ? blendSkillBias({}, d.skillBias) : null;
         companions.push(createPerson(v, false, bias, d));
+        chosenDrafts.push({ slot: slot, draft: d });
       }
     });
     if (companions.length === 0) {
@@ -7815,6 +7982,7 @@
           fallback
         )
       );
+      chosenDrafts.push({ slot: "companion-0", draft: fallback });
     }
 
     gameState.leader = leader;
@@ -7839,9 +8007,23 @@
       ? dom.departureSelect.value
       : gameState.startingPoint || "independence";
 
-    gameState.startingMoney = bg.startingMoney;
-    gameState.money = bg.startingMoney;
+    gameState.startingMoney = leaderProfile.startingMoney;
+    gameState.money = leaderProfile.startingMoney;
+    gameState.startingFreeSupplies = {};
+    gameState.startingFreeSuppliesNotes = [];
     resetSupplies();
+
+    const carry = rollStartingCarryIns(draftState, chosenDrafts);
+    if (carry && carry.freeSupplies) {
+      gameState.startingFreeSupplies = carry.freeSupplies;
+      Object.keys(carry.freeSupplies).forEach(function (id) {
+        gameState.supplies[id] =
+          (gameState.supplies[id] || 0) + (carry.freeSupplies[id] || 0);
+      });
+    }
+    if (carry && carry.noteLines) {
+      gameState.startingFreeSuppliesNotes = carry.noteLines;
+    }
 
     gameState.date = pickStartDateFromSeason();
     const partyKey =
@@ -7875,7 +8057,9 @@
     );
 
     dom.leaderPill.textContent =
-      "Leader  " + bg.label.replace("from", "from");
+      "Leader — " +
+      leader.name +
+      (leader.backstoryLabel ? " · " + leader.backstoryLabel : "");
 
     updateStartArt();
     buildOutfitTable();
@@ -8562,15 +8746,21 @@
     let spent = 0;
     SUPPLY_ITEMS.forEach(function (item) {
       const qty = gameState.supplies[item.id] || 0;
-      const subtotal = item.cost * qty;
+      const freeQty =
+        (gameState.startingFreeSupplies &&
+          gameState.startingFreeSupplies[item.id]) ||
+        0;
+      const chargeQty = Math.max(0, qty - freeQty);
+      const subtotal = item.cost * chargeQty;
       spent += subtotal;
       if (outfitDom.totals[item.id]) {
         outfitDom.totals[item.id].textContent = formatMoney(subtotal);
       }
     });
 
-    gameState.money = gameState.startingMoney - spent;
-    dom.sumStarting.textContent = formatMoney(gameState.startingMoney);
+    const startingMoney = gameState.startingMoney || 0;
+    gameState.money = startingMoney - spent;
+    dom.sumStarting.textContent = formatMoney(startingMoney);
     dom.sumMoney.textContent = formatMoney(gameState.money);
     dom.sumMoney.classList.toggle("ot-text-warning", gameState.money < 0.01);
 
@@ -8609,14 +8799,65 @@
     saveGame();
   }
 
+  function findSupplyDef(id) {
+    return SUPPLY_ITEMS.find(function (s) {
+      return s.id === id;
+    });
+  }
+
+  function formatFreeSuppliesSummary() {
+    const free = gameState.startingFreeSupplies || {};
+    const entries = Object.keys(free).filter(function (k) {
+      return free[k] > 0;
+    });
+    if (!entries.length) return null;
+    const parts = entries.map(function (id) {
+      const def = findSupplyDef(id);
+      const label = def ? def.name.toLowerCase() : id;
+      return `+${free[id]} ${label}`;
+    });
+    return parts.join(", ");
+  }
+
   function updateOutfitIntro() {
     const mouths = 1 + gameState.companions.length;
-    dom.outfitIntro.textContent =
+    let text =
       "You begin with " +
-      formatMoney(gameState.startingMoney) +
+      formatMoney(gameState.startingMoney || 0) +
       " and a party of " +
       mouths +
       ". Outfit them for five to six months on the trail.";
+
+    const freeSummary = formatFreeSuppliesSummary();
+    if (freeSummary) {
+      text +=
+        " Some companions arrived with supplies already in the wagon: " +
+        freeSummary +
+        ".";
+    } else if (
+      gameState.startingFreeSuppliesNotes &&
+      gameState.startingFreeSuppliesNotes.length
+    ) {
+      text += " " + gameState.startingFreeSuppliesNotes.join(" ");
+    }
+
+    dom.outfitIntro.textContent = text;
+  }
+
+  function renderLeaderStartPreview() {
+    if (!dom.leaderCallingPreview || !dom.leaderFundsPreview) return;
+    const draft = ensurePartyDraftState().people.leader;
+    if (!draft) {
+      dom.leaderCallingPreview.textContent = "Draft a leader to begin.";
+      dom.leaderFundsPreview.textContent = "Starting funds: —";
+      return;
+    }
+    const profile = computeLeaderStartProfile(draft);
+    const callingText = profile.callingLabel;
+    const originText = profile.callingOrigin ? ` · ${profile.callingOrigin}` : "";
+    dom.leaderCallingPreview.textContent = callingText + originText;
+    dom.leaderFundsPreview.textContent =
+      "Starting funds: " + formatMoney(profile.startingMoney || 0);
   }
 
   function updateStartArt() {
@@ -18363,9 +18604,7 @@
 
   function renderAll() {
     if (gameState.phase === "start") {
-      const bgId = dom.backgroundSelect.value;
-      const bg = BACKGROUNDS[bgId] || BACKGROUNDS.farmer;
-      dom.backgroundDesc.textContent = bg.desc;
+      renderLeaderStartPreview();
       renderDepartureSeasonDesc();
       updateStartArt();
       return;
@@ -18441,6 +18680,9 @@
       gameState.date = new Date(gameState.date);
 
       if (!gameState.supplies) resetSupplies();
+      if (!gameState.startingFreeSupplies) gameState.startingFreeSupplies = {};
+      if (!Array.isArray(gameState.startingFreeSuppliesNotes))
+        gameState.startingFreeSuppliesNotes = [];
       if (!gameState.companions) gameState.companions = [];
       if (!Array.isArray(gameState.log)) gameState.log = [];
       if (!Array.isArray(gameState.nutritionHistory)) {
@@ -18677,13 +18919,6 @@
   }
 
   function wireEvents() {
-
-    dom.backgroundSelect.addEventListener("change", function () {
-      const bgId = dom.backgroundSelect.value;
-      const bg = BACKGROUNDS[bgId] || BACKGROUNDS.farmer;
-      dom.backgroundDesc.textContent = bg.desc;
-    });
-
     if (dom.departureSeason) {
       dom.departureSeason.addEventListener("change", function () {
         renderDepartureSeasonDesc();
@@ -20770,9 +21005,7 @@
 
     const loaded = loadGame();
     if (!loaded || !gameState.leader) {
-      const bgId = dom.backgroundSelect.value;
-      const bg = BACKGROUNDS[bgId] || BACKGROUNDS.farmer;
-      dom.backgroundDesc.textContent = bg.desc;
+      renderLeaderStartPreview();
       renderDepartureSeasonDesc();
       updateStartArt();
       showScreen("start");

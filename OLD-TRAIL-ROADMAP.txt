@@ -328,3 +328,5 @@ Deferred (next passes)
 - Seasonal color grading + night overlay + lantern glow.
 - Chores sprite movement/actions and visual inventory deltas.
 - HUD minimalism/cinematic travel toggle.
+
+- RimWorld-like continuous-time travel loop with pause, top-down caravan control, and sprite movement replacing the hourly tick.
