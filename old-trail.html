@@ -1323,6 +1323,28 @@
   white-space: nowrap;
 }
 
+.ot-trade-ledger-notes {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(245, 210, 139, 0.08);
+  border-radius: 8px;
+  padding: 8px;
+  margin-bottom: 10px;
+}
+
+.ot-trade-ledger-notes-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #d7c7a8;
+  margin-bottom: 4px;
+}
+
+.ot-trade-ledger-note {
+  font-size: 11px;
+  color: #e9e3d5;
+  margin-bottom: 2px;
+}
+
 .ot-trade-ledger {
   background: rgba(0, 0, 0, 0.18);
   border: 1px solid rgba(245, 210, 139, 0.12);
@@ -2431,6 +2453,7 @@
               <tr>
                 <th>Goods</th>
                 <th>Owned</th>
+                <th>Stock</th>
                 <th>Buy</th>
                 <th>Sell</th>
                 <th>Action</th>
@@ -2442,6 +2465,10 @@
         </div>
 
         <div class="ot-trade-ledger">
+          <div class="ot-trade-ledger-notes">
+            <div class="ot-trade-ledger-notes-title">Ledger Notes</div>
+            <div id="ot-trade-ledger-notes"></div>
+          </div>
           <div class="ot-trade-ledger-title">Ledger</div>
           <div id="ot-trade-ledger-body"></div>
         </div>
@@ -5377,6 +5404,7 @@
         factionRep: { caravans: 0, forts: 0, open_eye: 0, men_in_gray: 0 },
         mythicRumor: 0,
         tradeLedger: [],
+        tradeVendors: {},
       };
     }
     const ss = gameState.storyState;
@@ -5425,6 +5453,7 @@
     if (typeof ss.factionRep.men_in_gray !== "number") ss.factionRep.men_in_gray = 0;
     if (typeof ss.mythicRumor !== "number") ss.mythicRumor = 0;
     if (!Array.isArray(ss.tradeLedger)) ss.tradeLedger = [];
+    if (!ss.tradeVendors) ss.tradeVendors = {};
     return ss;
   }
 
@@ -7102,6 +7131,7 @@
     dom.tradeSummary = document.getElementById("ot-trade-summary");
     dom.tradeBody = document.getElementById("ot-trade-body");
     dom.tradeMsg = document.getElementById("ot-trade-msg");
+    dom.tradeLedgerNotes = document.getElementById("ot-trade-ledger-notes");
     dom.tradeLedgerBody = document.getElementById("ot-trade-ledger-body");
     dom.btnTradeBuyTab = document.getElementById("ot-trade-tab-buy");
     dom.btnTradeSellTab = document.getElementById("ot-trade-tab-sell");
@@ -8580,6 +8610,733 @@
     const terms = getTradeTermsForFaction("forts");
     const tier = getFactionRepTier("forts");
     return { terms: terms, tier: tier };
+  }
+
+  const DEFAULT_FORT_TRADE_DEF = {
+    label: "Frontier sutler",
+    catalog: [
+      "flour",
+      "bacon",
+      "beans_rice",
+      "hardtack",
+      "dried_fruit",
+      "coffee",
+      "sugar",
+      "salt_soda",
+      "water_barrels",
+      "firewood",
+      "buffalo_chips",
+      "oxen",
+      "wheels",
+      "axles",
+      "tongues",
+      "ammo",
+      "rifles",
+      "med_kits",
+    ],
+    baseStock: {
+      flour: 360,
+      bacon: 120,
+      beans_rice: 110,
+      hardtack: 90,
+      dried_fruit: 55,
+      coffee: 22,
+      sugar: 42,
+      salt_soda: 18,
+      water_barrels: 4,
+      firewood: 28,
+      buffalo_chips: 18,
+      oxen: 6,
+      wheels: 5,
+      axles: 4,
+      tongues: 3,
+      ammo: 240,
+      rifles: 4,
+      med_kits: 10,
+    },
+    stockCap: {
+      flour: 500,
+      bacon: 160,
+      beans_rice: 150,
+      hardtack: 130,
+      dried_fruit: 80,
+      coffee: 32,
+      sugar: 60,
+      salt_soda: 26,
+      water_barrels: 6,
+      firewood: 40,
+      buffalo_chips: 26,
+      oxen: 9,
+      wheels: 7,
+      axles: 6,
+      tongues: 5,
+      ammo: 340,
+      rifles: 6,
+      med_kits: 14,
+    },
+    restockPerDay: {
+      flour: 20,
+      bacon: 8,
+      beans_rice: 7,
+      hardtack: 6,
+      dried_fruit: 4,
+      coffee: 2,
+      sugar: 3,
+      salt_soda: 1,
+      water_barrels: 0.6,
+      firewood: 5,
+      buffalo_chips: 4,
+      oxen: 0.25,
+      wheels: 0.4,
+      axles: 0.35,
+      tongues: 0.2,
+      ammo: 14,
+      rifles: 0.15,
+      med_kits: 0.6,
+    },
+    flavorNotes: ["Army trains pass through; sutlers mind their ledgers.", "Pay fair, mind the scales, and they keep the gate open."],
+  };
+
+  const FORT_TRADE_DEFS = {
+    fort_kearny_ne: {
+      label: "Platte River sutler",
+      catalog: [
+        "flour",
+        "bacon",
+        "beans_rice",
+        "hardtack",
+        "dried_fruit",
+        "coffee",
+        "sugar",
+        "salt_soda",
+        "water_barrels",
+        "firewood",
+        "oxen",
+        "wheels",
+        "axles",
+        "tongues",
+        "ammo",
+        "rifles",
+        "med_kits",
+      ],
+      baseStock: {
+        flour: 420,
+        bacon: 140,
+        beans_rice: 120,
+        hardtack: 96,
+        dried_fruit: 60,
+        coffee: 24,
+        sugar: 50,
+        salt_soda: 20,
+        water_barrels: 5,
+        firewood: 30,
+        oxen: 8,
+        wheels: 6,
+        axles: 5,
+        tongues: 3,
+        ammo: 260,
+        rifles: 5,
+        med_kits: 12,
+      },
+      stockCap: {
+        flour: 560,
+        bacon: 190,
+        beans_rice: 160,
+        hardtack: 140,
+        dried_fruit: 90,
+        coffee: 34,
+        sugar: 70,
+        salt_soda: 28,
+        water_barrels: 8,
+        firewood: 46,
+        oxen: 11,
+        wheels: 8,
+        axles: 7,
+        tongues: 5,
+        ammo: 360,
+        rifles: 7,
+        med_kits: 16,
+      },
+      restockPerDay: {
+        flour: 24,
+        bacon: 10,
+        beans_rice: 8,
+        hardtack: 7,
+        dried_fruit: 5,
+        coffee: 2.2,
+        sugar: 3.5,
+        salt_soda: 1.2,
+        water_barrels: 0.8,
+        firewood: 6,
+        oxen: 0.3,
+        wheels: 0.5,
+        axles: 0.45,
+        tongues: 0.22,
+        ammo: 16,
+        rifles: 0.2,
+        med_kits: 0.7,
+      },
+      flavorNotes: ["Army freight claims the best bacon first.", "Fresh teams sell quick after muddy weeks."],
+    },
+    fort_laramie_wy: {
+      label: "Laramie sutler",
+      catalog: [
+        "flour",
+        "bacon",
+        "beans_rice",
+        "hardtack",
+        "dried_fruit",
+        "coffee",
+        "sugar",
+        "salt_soda",
+        "water_barrels",
+        "buffalo_chips",
+        "oxen",
+        "wheels",
+        "axles",
+        "tongues",
+        "ammo",
+        "rifles",
+        "med_kits",
+      ],
+      baseStock: {
+        flour: 380,
+        bacon: 130,
+        beans_rice: 110,
+        hardtack: 90,
+        dried_fruit: 55,
+        coffee: 24,
+        sugar: 45,
+        salt_soda: 18,
+        water_barrels: 5,
+        buffalo_chips: 26,
+        oxen: 8,
+        wheels: 6,
+        axles: 5,
+        tongues: 3,
+        ammo: 300,
+        rifles: 5,
+        med_kits: 11,
+      },
+      stockCap: {
+        flour: 520,
+        bacon: 180,
+        beans_rice: 150,
+        hardtack: 130,
+        dried_fruit: 80,
+        coffee: 36,
+        sugar: 64,
+        salt_soda: 26,
+        water_barrels: 8,
+        buffalo_chips: 36,
+        oxen: 11,
+        wheels: 8,
+        axles: 7,
+        tongues: 5,
+        ammo: 400,
+        rifles: 7,
+        med_kits: 15,
+      },
+      restockPerDay: {
+        flour: 22,
+        bacon: 8,
+        beans_rice: 7,
+        hardtack: 6,
+        dried_fruit: 4,
+        coffee: 2.2,
+        sugar: 3,
+        salt_soda: 1,
+        water_barrels: 0.7,
+        buffalo_chips: 6,
+        oxen: 0.3,
+        wheels: 0.45,
+        axles: 0.4,
+        tongues: 0.22,
+        ammo: 18,
+        rifles: 0.2,
+        med_kits: 0.6,
+      },
+      flavorNotes: ["Buffalo chips piled high after hunts; wood stays dear.", "Army scouts pay silver for spare cartridges."],
+    },
+    fort_bridger_wy: {
+      label: "Bridger trading post",
+      catalog: [
+        "flour",
+        "bacon",
+        "beans_rice",
+        "hardtack",
+        "dried_fruit",
+        "coffee",
+        "sugar",
+        "salt_soda",
+        "water_barrels",
+        "firewood",
+        "buffalo_chips",
+        "oxen",
+        "wheels",
+        "axles",
+        "tongues",
+        "ammo",
+        "rifles",
+        "med_kits",
+      ],
+      baseStock: {
+        flour: 320,
+        bacon: 120,
+        beans_rice: 110,
+        hardtack: 90,
+        dried_fruit: 60,
+        coffee: 24,
+        sugar: 44,
+        salt_soda: 18,
+        water_barrels: 5,
+        firewood: 36,
+        buffalo_chips: 20,
+        oxen: 7,
+        wheels: 7,
+        axles: 6,
+        tongues: 4,
+        ammo: 280,
+        rifles: 5,
+        med_kits: 12,
+      },
+      stockCap: {
+        flour: 460,
+        bacon: 170,
+        beans_rice: 150,
+        hardtack: 130,
+        dried_fruit: 90,
+        coffee: 36,
+        sugar: 64,
+        salt_soda: 26,
+        water_barrels: 8,
+        firewood: 52,
+        buffalo_chips: 30,
+        oxen: 10,
+        wheels: 10,
+        axles: 8,
+        tongues: 6,
+        ammo: 380,
+        rifles: 7,
+        med_kits: 16,
+      },
+      restockPerDay: {
+        flour: 18,
+        bacon: 7,
+        beans_rice: 6,
+        hardtack: 6,
+        dried_fruit: 4,
+        coffee: 2,
+        sugar: 2.8,
+        salt_soda: 1,
+        water_barrels: 0.6,
+        firewood: 7,
+        buffalo_chips: 4,
+        oxen: 0.28,
+        wheels: 0.6,
+        axles: 0.5,
+        tongues: 0.25,
+        ammo: 16,
+        rifles: 0.18,
+        med_kits: 0.6,
+      },
+      flavorNotes: ["Mountain passes chew up wheels; bring silver for spares.", "Meat’s fine but coffee rides dear over South Pass."],
+    },
+    fort_hall_id: {
+      label: "Snake River post",
+      catalog: [
+        "flour",
+        "bacon",
+        "beans_rice",
+        "hardtack",
+        "dried_fruit",
+        "coffee",
+        "sugar",
+        "salt_soda",
+        "water_barrels",
+        "firewood",
+        "oxen",
+        "wheels",
+        "axles",
+        "tongues",
+        "ammo",
+        "rifles",
+        "med_kits",
+      ],
+      baseStock: {
+        flour: 300,
+        bacon: 110,
+        beans_rice: 100,
+        hardtack: 80,
+        dried_fruit: 50,
+        coffee: 20,
+        sugar: 40,
+        salt_soda: 16,
+        water_barrels: 5,
+        firewood: 32,
+        oxen: 6,
+        wheels: 6,
+        axles: 5,
+        tongues: 3,
+        ammo: 260,
+        rifles: 4,
+        med_kits: 10,
+      },
+      stockCap: {
+        flour: 420,
+        bacon: 150,
+        beans_rice: 140,
+        hardtack: 120,
+        dried_fruit: 76,
+        coffee: 30,
+        sugar: 58,
+        salt_soda: 24,
+        water_barrels: 8,
+        firewood: 46,
+        oxen: 9,
+        wheels: 9,
+        axles: 7,
+        tongues: 5,
+        ammo: 360,
+        rifles: 6,
+        med_kits: 14,
+      },
+      restockPerDay: {
+        flour: 16,
+        bacon: 6,
+        beans_rice: 6,
+        hardtack: 5,
+        dried_fruit: 3,
+        coffee: 1.8,
+        sugar: 2.6,
+        salt_soda: 0.9,
+        water_barrels: 0.6,
+        firewood: 6,
+        oxen: 0.22,
+        wheels: 0.45,
+        axles: 0.4,
+        tongues: 0.2,
+        ammo: 14,
+        rifles: 0.16,
+        med_kits: 0.55,
+      },
+      flavorNotes: ["River water barrels fetch coin after dust storms.", "Spare wheels lean against the stockade, not for long."],
+    },
+    fort_boise_id: {
+      label: "Boise River sutler",
+      catalog: [
+        "flour",
+        "bacon",
+        "beans_rice",
+        "hardtack",
+        "dried_fruit",
+        "coffee",
+        "sugar",
+        "salt_soda",
+        "water_barrels",
+        "firewood",
+        "oxen",
+        "wheels",
+        "axles",
+        "tongues",
+        "ammo",
+        "rifles",
+        "med_kits",
+      ],
+      baseStock: {
+        flour: 280,
+        bacon: 100,
+        beans_rice: 100,
+        hardtack: 82,
+        dried_fruit: 48,
+        coffee: 18,
+        sugar: 36,
+        salt_soda: 16,
+        water_barrels: 5,
+        firewood: 34,
+        oxen: 6,
+        wheels: 6,
+        axles: 5,
+        tongues: 3,
+        ammo: 240,
+        rifles: 4,
+        med_kits: 10,
+      },
+      stockCap: {
+        flour: 400,
+        bacon: 140,
+        beans_rice: 136,
+        hardtack: 118,
+        dried_fruit: 72,
+        coffee: 28,
+        sugar: 54,
+        salt_soda: 24,
+        water_barrels: 8,
+        firewood: 48,
+        oxen: 9,
+        wheels: 9,
+        axles: 7,
+        tongues: 5,
+        ammo: 330,
+        rifles: 6,
+        med_kits: 14,
+      },
+      restockPerDay: {
+        flour: 15,
+        bacon: 6,
+        beans_rice: 6,
+        hardtack: 5,
+        dried_fruit: 3,
+        coffee: 1.5,
+        sugar: 2.4,
+        salt_soda: 0.9,
+        water_barrels: 0.6,
+        firewood: 6,
+        oxen: 0.22,
+        wheels: 0.45,
+        axles: 0.4,
+        tongues: 0.2,
+        ammo: 12,
+        rifles: 0.14,
+        med_kits: 0.5,
+      },
+      flavorNotes: ["Coffee grows scarce this far west.", "Boise metalwork is thin; mind your axles."],
+    },
+    fort_walla_walla_wa: {
+      label: "Walla Walla post",
+      catalog: [
+        "flour",
+        "bacon",
+        "beans_rice",
+        "hardtack",
+        "dried_fruit",
+        "coffee",
+        "sugar",
+        "salt_soda",
+        "water_barrels",
+        "firewood",
+        "oxen",
+        "wheels",
+        "axles",
+        "tongues",
+        "ammo",
+        "rifles",
+        "med_kits",
+      ],
+      baseStock: {
+        flour: 360,
+        bacon: 120,
+        beans_rice: 110,
+        hardtack: 90,
+        dried_fruit: 52,
+        coffee: 18,
+        sugar: 38,
+        salt_soda: 16,
+        water_barrels: 6,
+        firewood: 40,
+        oxen: 6,
+        wheels: 7,
+        axles: 6,
+        tongues: 4,
+        ammo: 240,
+        rifles: 4,
+        med_kits: 12,
+      },
+      stockCap: {
+        flour: 520,
+        bacon: 170,
+        beans_rice: 150,
+        hardtack: 130,
+        dried_fruit: 78,
+        coffee: 28,
+        sugar: 56,
+        salt_soda: 24,
+        water_barrels: 10,
+        firewood: 60,
+        oxen: 9,
+        wheels: 10,
+        axles: 9,
+        tongues: 6,
+        ammo: 330,
+        rifles: 6,
+        med_kits: 16,
+      },
+      restockPerDay: {
+        flour: 18,
+        bacon: 7,
+        beans_rice: 6,
+        hardtack: 6,
+        dried_fruit: 3,
+        coffee: 1.4,
+        sugar: 2.4,
+        salt_soda: 0.9,
+        water_barrels: 0.8,
+        firewood: 7,
+        oxen: 0.2,
+        wheels: 0.55,
+        axles: 0.5,
+        tongues: 0.24,
+        ammo: 12,
+        rifles: 0.14,
+        med_kits: 0.5,
+      },
+      flavorNotes: ["Riverboats bid up sugar and coffee.", "Blacksmith hammers run long hours patching wagon gear."],
+    },
+    fort_vancouver_wa: {
+      label: "Columbia depot",
+      catalog: [
+        "flour",
+        "bacon",
+        "beans_rice",
+        "hardtack",
+        "dried_fruit",
+        "coffee",
+        "sugar",
+        "salt_soda",
+        "water_barrels",
+        "firewood",
+        "oxen",
+        "wheels",
+        "axles",
+        "tongues",
+        "ammo",
+        "rifles",
+        "med_kits",
+      ],
+      baseStock: {
+        flour: 420,
+        bacon: 150,
+        beans_rice: 130,
+        hardtack: 100,
+        dried_fruit: 60,
+        coffee: 22,
+        sugar: 50,
+        salt_soda: 18,
+        water_barrels: 8,
+        firewood: 42,
+        oxen: 7,
+        wheels: 8,
+        axles: 7,
+        tongues: 4,
+        ammo: 280,
+        rifles: 5,
+        med_kits: 14,
+      },
+      stockCap: {
+        flour: 600,
+        bacon: 210,
+        beans_rice: 180,
+        hardtack: 150,
+        dried_fruit: 90,
+        coffee: 34,
+        sugar: 72,
+        salt_soda: 26,
+        water_barrels: 12,
+        firewood: 62,
+        oxen: 10,
+        wheels: 11,
+        axles: 10,
+        tongues: 6,
+        ammo: 380,
+        rifles: 7,
+        med_kits: 20,
+      },
+      restockPerDay: {
+        flour: 22,
+        bacon: 9,
+        beans_rice: 8,
+        hardtack: 7,
+        dried_fruit: 4,
+        coffee: 2,
+        sugar: 3.2,
+        salt_soda: 1,
+        water_barrels: 1,
+        firewood: 8,
+        oxen: 0.22,
+        wheels: 0.6,
+        axles: 0.55,
+        tongues: 0.25,
+        ammo: 16,
+        rifles: 0.2,
+        med_kits: 0.7,
+      },
+      flavorNotes: ["River ships bring staples, but ships sail west first.", "Doctors ride in with garrison paydays—arrive midweek."],
+    },
+  };
+
+  function getFortTradeDef(poiId) {
+    return (poiId && FORT_TRADE_DEFS[poiId]) || DEFAULT_FORT_TRADE_DEF;
+  }
+
+  function getDaySerial(date) {
+    const d = date instanceof Date ? date : new Date(date || new Date());
+    return Math.floor(d.getTime() / 86400000);
+  }
+
+  function ensureTradeVendorsState() {
+    const ss = ensureStoryState();
+    if (!ss.tradeVendors) ss.tradeVendors = {};
+    return ss.tradeVendors;
+  }
+
+  function ensureVendorForPoi(poiId) {
+    const vendors = ensureTradeVendorsState();
+    const key = poiId || "frontier";
+    if (!vendors[key]) {
+      const def = getFortTradeDef(key);
+      const rngSeed = hashToInt((gameState.partyId || "party") + ":" + key + ":vendor");
+      const rng = mulberry32(rngSeed);
+      const stocks = {};
+      (def.catalog || []).forEach(function (id) {
+        const base = (def.baseStock && def.baseStock[id]) || 0;
+        const cap = getVendorStockCap(def, id, base);
+        const start = Math.round(base * (0.75 + rng() * 0.5));
+        stocks[id] = clamp(start, 0, cap);
+      });
+      vendors[key] = {
+        stocks: stocks,
+        lastRestockDay: getDaySerial(gameState.date || new Date()),
+        seed: rngSeed,
+      };
+    }
+    const vendorState = vendors[key];
+    if (!vendorState.stocks) vendorState.stocks = {};
+    if (vendorState.lastRestockDay == null)
+      vendorState.lastRestockDay = getDaySerial(gameState.date || new Date());
+    if (typeof vendorState.seed !== "number")
+      vendorState.seed = hashToInt((gameState.partyId || "party") + ":" + key + ":vendor");
+    return vendorState;
+  }
+
+  function restockVendorForPoi(poiId, tradeDef) {
+    const def = tradeDef || getFortTradeDef(poiId);
+    const vendorState = ensureVendorForPoi(poiId);
+    const today = getDaySerial(gameState.date || new Date());
+    const lastDay = typeof vendorState.lastRestockDay === "number" ? vendorState.lastRestockDay : today;
+    const daysPassed = Math.max(0, today - lastDay);
+    const restock = def.restockPerDay || {};
+    const base = def.baseStock || {};
+    const stocks = vendorState.stocks || {};
+    if (daysPassed > 0) {
+      (def.catalog || []).forEach(function (id) {
+        const perDay = restock[id] != null ? restock[id] : 0;
+        const cap = getVendorStockCap(def, id, base[id]);
+        const next = clamp(Math.round((stocks[id] || 0) + perDay * daysPassed), 0, cap);
+        stocks[id] = next;
+      });
+    }
+    vendorState.lastRestockDay = today;
+    vendorState.stocks = stocks;
+    return vendorState;
+  }
+
+  function getVendorStockCap(tradeDef, itemId, baseVal) {
+    const def = tradeDef || DEFAULT_FORT_TRADE_DEF;
+    const base = baseVal != null ? baseVal : (def.baseStock && def.baseStock[itemId]) || 0;
+    const cap = def.stockCap && def.stockCap[itemId];
+    if (typeof cap === "number") return cap;
+    const defaultCap = Math.max(4, Math.round((base || 4) * 2));
+    return defaultCap;
   }
 
   function ensureMythicCurioState() {
@@ -18584,13 +19341,99 @@
     return gameState.ui.trade;
   }
 
+  function resolveTradeContext() {
+    const tradeUi = ensureTradeUiState();
+    let fort = null;
+    if (tradeUi.poiId) {
+      fort = OT_POIS.find(function (p) {
+        return p && p.id === tradeUi.poiId;
+      });
+    }
+    if (!fort) fort = getNearbyFortPOI();
+    if (fort && tradeUi.poiId !== fort.id) {
+      tradeUi.poiId = fort.id;
+    }
+    const poiId = (fort && fort.id) || tradeUi.poiId || "frontier";
+    const tradeDef = getFortTradeDef(poiId);
+    const vendorState = restockVendorForPoi(poiId, tradeDef);
+    return { tradeUi: tradeUi, fort: fort, poiId: poiId, tradeDef: tradeDef, vendorState: vendorState };
+  }
+
+  function computeTradePricing(item, tradeDef, vendorState, terms) {
+    const baseStockVal = (tradeDef.baseStock && tradeDef.baseStock[item.id]) || 0;
+    const vendorStock = (vendorState.stocks && vendorState.stocks[item.id]) || 0;
+    const scarcity01 = 1 - clamp(vendorStock / Math.max(1, baseStockVal || 1), 0, 1);
+    const scarcityBuyMult = clamp(1 + 0.35 * scarcity01, 1, 1.35);
+    const demand01 = clamp((baseStockVal - vendorStock) / Math.max(1, baseStockVal || 1), 0, 1);
+    const demandSellMult = clamp(1 + 0.2 * demand01, 0.85, 1.2);
+    const unitBuy = roundToCents(item.cost * terms.costMult * scarcityBuyMult);
+    let unitSell = roundToCents(item.cost * 0.6 * terms.gainMult * demandSellMult);
+    const maxSell = roundToCents(unitBuy * 0.9);
+    if (unitSell > maxSell) unitSell = maxSell;
+    const cap = getVendorStockCap(tradeDef, item.id, baseStockVal);
+    return {
+      unitBuy: unitBuy,
+      unitSell: unitSell,
+      scarcityBuyMult: scarcityBuyMult,
+      demandSellMult: demandSellMult,
+      vendorStock: vendorStock,
+      baseStock: baseStockVal,
+      cap: cap,
+    };
+  }
+
+  function generateLedgerNotes(tradeDef, vendorState) {
+    const base = tradeDef.baseStock || {};
+    const stock = vendorState.stocks || {};
+    const scarcity = function (id, fraction) {
+      const b = base[id] || 0;
+      if (b <= 0) return false;
+      return (stock[id] || 0) < b * fraction;
+    };
+    const overstock = function (id, fraction) {
+      const b = base[id] || 0;
+      if (b <= 0) return false;
+      return (stock[id] || 0) > b * fraction;
+    };
+    const notes = [];
+    if (scarcity("coffee", 0.35)) notes.push("Coffee's gone dear. Folks pay in silence for a pound.");
+    if (scarcity("ammo", 0.5) || scarcity("rifles", 0.5))
+      notes.push("Powder is rationed—ask polite, buy light.");
+    if (scarcity("wheels", 0.5) || scarcity("axles", 0.5) || scarcity("tongues", 0.5))
+      notes.push("Spare iron's thin. Repairs take favors.");
+    if (overstock("flour", 1.2)) notes.push("Flour stacks high. The sutler pays less for it.");
+
+    const today = getDaySerial(gameState.date || new Date());
+    const staticNotes = tradeDef.flavorNotes || [];
+    if (staticNotes.length) {
+      const rng = mulberry32(
+        hashToInt(String(vendorState.seed || 0) + ":notes:" + today + ":" + (tradeDef.label || "sutler"))
+      );
+      const picks = staticNotes.slice().sort(function () {
+        return rng() - 0.5;
+      });
+      picks.slice(0, 2).forEach(function (line) {
+        if (notes.length < 4) notes.push(line);
+      });
+    }
+
+    const minNotes = 2;
+    while (notes.length < minNotes && notes.length < 4) {
+      notes.push("Quiet day in the ledger—no new chatter.");
+    }
+
+    return notes.slice(0, 4);
+  }
+
   function recordTradeLedgerEntry(entry) {
     const ss = ensureStoryState();
+    const tradeUi = ensureTradeUiState();
     const fort = getNearbyFortPOI();
     const payload = {
       ts: gameState.date instanceof Date ? new Date(gameState.date) : new Date(),
       location: entry.location || (fort && fort.name) || gameState.locationName,
       vendor: entry.vendor || "forts",
+      vendorPoi: entry.vendorPoi || (fort && fort.id) || tradeUi.poiId || null,
       action: entry.action,
       itemId: entry.itemId,
       itemName: entry.itemName,
@@ -18607,7 +19450,25 @@
     }
   }
 
-  function renderTradeLedger() {
+  function renderTradeLedger(notes) {
+    if (dom.tradeLedgerNotes) {
+      dom.tradeLedgerNotes.innerHTML = "";
+      const list = Array.isArray(notes) ? notes.slice(0, 4) : [];
+      if (!list.length) {
+        const line = document.createElement("div");
+        line.className = "ot-trade-ledger-note ot-text-muted";
+        line.textContent = "No notes logged.";
+        dom.tradeLedgerNotes.appendChild(line);
+      } else {
+        list.forEach(function (lineText) {
+          const line = document.createElement("div");
+          line.className = "ot-trade-ledger-note";
+          line.textContent = lineText;
+          dom.tradeLedgerNotes.appendChild(line);
+        });
+      }
+    }
+
     if (!dom.tradeLedgerBody) return;
     const entries = (ensureStoryState().tradeLedger || []).slice(-10).reverse();
     if (!entries.length) {
@@ -18635,29 +19496,23 @@
   function renderTradeModal() {
     if (!dom.tradeModal || !dom.tradeBody) return;
     if (dom.tradeMsg) dom.tradeMsg.textContent = "";
-    const tradeUi = ensureTradeUiState();
-    const fort =
-      (tradeUi.poiId &&
-        OT_POIS.find(function (p) {
-          return p && p.id === tradeUi.poiId;
-        })) ||
-      getNearbyFortPOI();
-    if (fort && tradeUi.poiId !== fort.id) {
-      tradeUi.poiId = fort.id;
-    }
+    const ctx = resolveTradeContext();
+    const tradeUi = ctx.tradeUi;
+    const fort = ctx.fort;
+    const tradeDef = ctx.tradeDef;
+    const vendorState = ctx.vendorState;
     const termsInfo = getFortTradeTerms();
     const terms = termsInfo.terms;
     const tier = termsInfo.tier;
 
     if (dom.tradeTitle) dom.tradeTitle.textContent = "Trading Post";
-    if (dom.tradeSub)
-      dom.tradeSub.textContent =
-        (fort ? fort.name : "Frontier post") +
-        " · " +
-        formatDateTime(gameState.date) +
-        " · " +
-        terms.label +
-        " terms";
+    if (dom.tradeSub) {
+      const subParts = [fort ? fort.name : "Frontier post"];
+      if (tradeDef && tradeDef.label) subParts.push(tradeDef.label);
+      subParts.push(formatDateTime(gameState.date));
+      subParts.push(terms.label + " terms");
+      dom.tradeSub.textContent = subParts.join(" · ");
+    }
 
     const totalWeight = computeTotalWeight();
     const draft = computeDraftPower();
@@ -18689,25 +19544,30 @@
       );
     }
 
-    const catalog = SUPPLY_ITEMS.filter(function (item) {
-      return item && item.cost > 0 && item.readOnly !== true;
-    }).sort(function (a, b) {
-      if (a.category === b.category) return a.name.localeCompare(b.name);
-      return a.category.localeCompare(b.category);
-    });
+    const catalog = (tradeDef.catalog || [])
+      .map(function (id) {
+        return SUPPLY_ITEMS.find(function (item) {
+          return item && item.id === id;
+        });
+      })
+      .filter(function (item) {
+        return item && item.cost > 0 && item.readOnly !== true;
+      })
+      .sort(function (a, b) {
+        if (a.category === b.category) return a.name.localeCompare(b.name);
+        return a.category.localeCompare(b.category);
+      });
 
     dom.tradeBody.innerHTML = "";
     const money = gameState.money || 0;
+
+    const ledgerNotes = generateLedgerNotes(tradeDef, vendorState);
 
     catalog.forEach(function (item) {
       const tr = document.createElement("tr");
       const owned = gameState.supplies[item.id] || 0;
       const ownedLabel = owned % 1 === 0 ? owned : owned.toFixed(1);
-      const unitBuy = roundToCents(item.cost * terms.costMult);
-      const baseSell = item.cost * 0.6;
-      let unitSell = roundToCents(baseSell * terms.gainMult);
-      const maxSell = roundToCents(unitBuy * 0.9);
-      if (unitSell > maxSell) unitSell = maxSell;
+      const pricing = computeTradePricing(item, tradeDef, vendorState, terms);
 
       const tdName = document.createElement("td");
       tdName.textContent = item.name;
@@ -18717,12 +19577,19 @@
       tdOwned.textContent = ownedLabel;
       tr.appendChild(tdOwned);
 
+      const tdStock = document.createElement("td");
+      const stockLabel = pricing.vendorStock % 1 === 0 ? pricing.vendorStock : pricing.vendorStock.toFixed(1);
+      tdStock.textContent = stockLabel;
+      tr.appendChild(tdStock);
+
       const tdBuy = document.createElement("td");
-      tdBuy.textContent = unitBuy > 0 ? formatMoney(unitBuy) : "—";
+      tdBuy.textContent = pricing.unitBuy > 0 ? formatMoney(pricing.unitBuy) : "—";
+      tdBuy.title = `Rep x${terms.costMult.toFixed(2)} · Scarcity x${pricing.scarcityBuyMult.toFixed(2)}`;
       tr.appendChild(tdBuy);
 
       const tdSell = document.createElement("td");
-      tdSell.textContent = unitSell > 0 ? formatMoney(unitSell) : "—";
+      tdSell.textContent = pricing.unitSell > 0 ? formatMoney(pricing.unitSell) : "—";
+      tdSell.title = `Rep x${terms.gainMult.toFixed(2)} · Demand x${pricing.demandSellMult.toFixed(2)}`;
       tr.appendChild(tdSell);
 
       const tdAction = document.createElement("td");
@@ -18739,36 +19606,36 @@
         addBtn(
           "Buy 1",
           function () {
-            tradeBuy(item.id, 1, unitBuy);
+            tradeBuy(item.id, 1, pricing.unitBuy);
           },
-          money < unitBuy
+          money < pricing.unitBuy || pricing.vendorStock < 1
         );
         addBtn(
           "Buy 5",
           function () {
-            tradeBuy(item.id, 5, unitBuy);
+            tradeBuy(item.id, 5, pricing.unitBuy);
           },
-          money < unitBuy * 5
+          money < pricing.unitBuy * 5 || pricing.vendorStock < 5
         );
       } else {
         addBtn(
           "Sell 1",
           function () {
-            tradeSell(item.id, 1, unitSell);
+            tradeSell(item.id, 1, pricing.unitSell);
           },
           owned <= 0
         );
         addBtn(
           "Sell 5",
           function () {
-            tradeSell(item.id, 5, unitSell);
+            tradeSell(item.id, 5, pricing.unitSell);
           },
           owned <= 0
         );
         addBtn(
           "Sell all",
           function () {
-            tradeSell(item.id, owned, unitSell);
+            tradeSell(item.id, owned, pricing.unitSell);
           },
           owned <= 0
         );
@@ -18777,7 +19644,7 @@
       dom.tradeBody.appendChild(tr);
     });
 
-    renderTradeLedger();
+    renderTradeLedger(ledgerNotes);
   }
 
   function openTradeModal() {
@@ -18802,25 +19669,40 @@
   }
 
   function tradeBuy(itemId, qty, cachedUnitBuy) {
-    const tradeUi = ensureTradeUiState();
+    const ctx = resolveTradeContext();
+    const tradeUi = ctx.tradeUi;
+    const tradeDef = ctx.tradeDef;
+    const vendorState = ctx.vendorState;
     const item = findSupplyDef(itemId);
     if (!item || qty <= 0) return;
-    const unitBuy = cachedUnitBuy || roundToCents(item.cost * getFortTradeTerms().terms.costMult);
-    const totalCost = roundToCents(unitBuy * qty);
+    const useQty = Math.max(1, qty);
+    const terms = getFortTradeTerms().terms;
+    const pricing = computeTradePricing(item, tradeDef, vendorState, terms);
+    const unitBuy = cachedUnitBuy || pricing.unitBuy;
+    const vendorStock = pricing.vendorStock;
+    if (vendorStock < useQty) {
+      if (dom.tradeMsg)
+        dom.tradeMsg.textContent =
+          "Sutler is out of stock (only " + Math.max(0, Math.floor(vendorStock)) + " left).";
+      return;
+    }
+    const totalCost = roundToCents(unitBuy * useQty);
     if ((gameState.money || 0) < totalCost) {
       if (dom.tradeMsg) dom.tradeMsg.textContent = "Not enough funds.";
       return;
     }
     gameState.money = Math.max(0, (gameState.money || 0) - totalCost);
-    gameState.supplies[itemId] = (gameState.supplies[itemId] || 0) + qty;
+    vendorState.stocks[itemId] = clamp(vendorStock - useQty, 0, pricing.cap);
+    gameState.supplies[itemId] = (gameState.supplies[itemId] || 0) + useQty;
     recordTradeLedgerEntry({
       action: "buy",
       itemId: itemId,
       itemName: item.name,
-      qty: qty,
+      qty: useQty,
       unitPrice: unitBuy,
       total: totalCost,
       vendor: tradeUi.vendorKey,
+      vendorPoi: ctx.poiId,
     });
     saveGame();
     renderAll();
@@ -18828,27 +19710,43 @@
   }
 
   function tradeSell(itemId, qty, cachedUnitSell) {
-    const tradeUi = ensureTradeUiState();
+    const ctx = resolveTradeContext();
+    const tradeUi = ctx.tradeUi;
+    const tradeDef = ctx.tradeDef;
+    const vendorState = ctx.vendorState;
     const item = findSupplyDef(itemId);
     if (!item || qty <= 0) return;
     const owned = gameState.supplies[itemId] || 0;
-    const useQty = Math.min(Math.max(1, qty), owned);
-    if (useQty <= 0) {
+    const requested = Math.min(Math.max(1, qty), owned);
+    if (requested <= 0) {
       if (dom.tradeMsg) dom.tradeMsg.textContent = "No stock to sell.";
       return;
     }
     const termsInfo = getFortTradeTerms();
     const terms = termsInfo.terms;
-    const unitBuy = roundToCents(item.cost * terms.costMult);
+    const pricing = computeTradePricing(item, tradeDef, vendorState, terms);
+    const unitSellCap = roundToCents(pricing.unitBuy * 0.9);
     let unitSell =
       cachedUnitSell != null
-        ? cachedUnitSell
-        : roundToCents(item.cost * 0.6 * terms.gainMult);
-    const maxSell = roundToCents(unitBuy * 0.9);
-    if (unitSell > maxSell) unitSell = maxSell;
+        ? Math.min(cachedUnitSell, unitSellCap)
+        : pricing.unitSell;
+    const availableSpace = Math.max(0, pricing.cap - pricing.vendorStock);
+    if (availableSpace <= 0) {
+      if (dom.tradeMsg) dom.tradeMsg.textContent = "They won't take any more of that right now.";
+      return;
+    }
+    const useQty = Math.min(requested, availableSpace);
+    if (useQty <= 0) {
+      if (dom.tradeMsg) dom.tradeMsg.textContent = "They won't take any more of that right now.";
+      return;
+    }
+    if (requested > availableSpace && dom.tradeMsg)
+      dom.tradeMsg.textContent =
+        "They won't take any more of that right now (space for " + Math.floor(availableSpace) + ").";
     const total = roundToCents(unitSell * useQty);
     gameState.money = (gameState.money || 0) + total;
     gameState.supplies[itemId] = owned - useQty;
+    vendorState.stocks[itemId] = clamp(pricing.vendorStock + useQty, 0, pricing.cap);
     recordTradeLedgerEntry({
       action: "sell",
       itemId: itemId,
@@ -18857,6 +19755,7 @@
       unitPrice: unitSell,
       total: total,
       vendor: tradeUi.vendorKey,
+      vendorPoi: ctx.poiId,
     });
     saveGame();
     renderAll();
@@ -21587,3 +22486,13 @@
   init();
 })();
 </script>
+<!-- Validation checklist (Fort ledger scarcity pass):
+- Start a new run; no console errors.
+- Enter travel phase and approach a fort; “Trading Post” button appears; modal opens/closes cleanly.
+- Buy/sell works; vendor stock decreases/increases; buy buttons disable when stock is insufficient.
+- Prices shift reasonably with scarcity (never negative/NaN; multipliers clamped).
+- Wait/advance 2–3 days and reopen trade; stock restocks toward caps (no duplication explosions).
+- Save + reload mid-run; trade modal still works; vendor inventories persist; no crashes.
+- Trail log remains clean (no spam per transaction); trade history shows in the trade ledger panel.
+- Mythic OFF: nothing new leaks into Men in Gray behaviors (this pass should not add mythic triggers at all).
+-->
