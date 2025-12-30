@@ -199,6 +199,17 @@ UI / Explorer View
 - Add touch/mobile-friendly movement controls (D-pad or swipe) for the explorer camera.
 - Animate weather and fog layers over the explorer viewport to mirror current conditions.
 
+Deferred from Seed + Bone Valley pass
+- Bullsnake seed event: travel/grassland trigger with calm weather; needs per-event cooldown flag and choice between letting it pass or driving it off with minor morale effects.
+- Lightning-split tree seed: stormy travel trigger; require flag to avoid repeats; options to shelter for warmth vs. gather charred wood with small injury risk.
+- Lost ring seed plus follow-up: camp trigger when chores are rushed; flag the missing ring, allow later discovery/return with morale or trade outcomes.
+- Broken axle at dusk seed: rough trail/cargo-heavy trigger near sundown; options to camp and fix vs. push on, setting risk flags for later axle failure.
+- Rival forts politics chain (2 stages): fort-town trigger with faction reputation check; needs flags for which fort is slighted, follow-up trade/aid price adjustments.
+- Camp thief 3-stage arc: initial theft in low-guard camps, mid investigation choice, closing confrontation with morale/reputation consequences.
+- Whiteout cache + optional mythic marker: blizzard-region travel trigger with mythic gating; flags for cache location, later retrieval event, optional mythic hint.
+- Remaining Tier-B setpieces (B-01/B-03/B-04/B-05): define triggers per region/mileage, add chain flags and cooldowns, map outcomes to money/safety/morale hooks.
+- Wagon tongue crack follow-through: if patched instead of repaired, schedule later axle/tongue failure check; if reinforced, provide small mitigation flag for wagon breakdown cascades.
+
 Procedural Characters / Social / Mythic Chains (this update)
 ✅ Implemented
 - Hidden trait intel layer with suspicion → hint → reveal flow, including UI badges and once-per-trait stat application updates.
