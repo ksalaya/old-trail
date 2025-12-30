@@ -2978,6 +2978,243 @@
       tags: ["mythic", "light"],
     },
     {
+      id: "seed_b02_open_eye_leaflet",
+      kind: "breather",
+      condition: function (ctx) {
+        return ctx.block === "evening" && hoursSinceFlag("seed_b02_open_eye_leaflet_time") >= 72;
+      },
+      weight: function () {
+        return 3;
+      },
+      run: async function (ctx) {
+        const selection = await presentEncounter({
+          id: "seed_b02_open_eye_leaflet",
+          title: "Leaflet with an open eye",
+          subtitle: ctx.location,
+          body: [
+            "Among your papers is a folded leaflet, inked with an eye that seems to watch even in the twilight.",
+          ],
+          tags: ["camp", "cult"],
+          options: [
+            { id: "read", label: "Read it", tone: "neutral", hint: "Murmured slogans stir the camp." },
+            { id: "burn", label: "Burn it", tone: "danger", hint: "Char it and move on." },
+            { id: "pocket", label: "Pocket it", tone: "warm", hint: "Keep it for later." },
+          ],
+          defaultId: "read",
+        });
+        const nowHour = getCurrentTrailHour(gameState);
+        setEventFlag("seed_b02_open_eye_leaflet_time", nowHour);
+        let logText = "You tuck the strange leaflet away and return to the firelight.";
+        if (selection === "read") {
+          getAllPeople().forEach(function (p) {
+            adjustPersonStat(p, "morale", 2);
+          });
+          setEventFlag("open_eye_seen", true);
+          if (ctx.storyState.mythicEnabled !== false) {
+            ctx.storyState.mythicRumor = clamp((ctx.storyState.mythicRumor || 0) + 1, 0, 100);
+          }
+          logText = "You pass the leaflet around; the stylized eye and fervent words linger in everyone's mind.";
+        } else if (selection === "burn") {
+          adjustFactionRep("open_eye", -4, null, ctx);
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) - 1, 0, 100);
+          const target = choice(ctx.people || getAllPeople());
+          if (target) {
+            addThought(target, {
+              id: "open_eye_burn",
+              label: "Burned an odd leaflet",
+              value: -2,
+              hoursLeft: 10,
+              source: "camp",
+            });
+          }
+          logText = "You feed the leaflet to the coals. A few uneasy looks follow the curling inked eye.";
+        } else if (selection === "pocket") {
+          setEventFlag("open_eye_leaflet_kept", true);
+          logText = "You slip the leaflet into a pouch, inked eye hidden for now.";
+        }
+        addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("seed", "cult", "Found an Open Eye leaflet", { choice: selection });
+      },
+    },
+    {
+      id: "seed_b03_men_in_gray_sighting",
+      kind: "minor",
+      condition: function (ctx) {
+        return (
+          ctx.storyState.mythicEnabled !== false &&
+          ctx.mode === "camp" &&
+          ctx.block === "night" &&
+          hoursSinceFlag("seed_b03_men_in_gray_sighting_time") >= 168
+        );
+      },
+      weight: function () {
+        return 2;
+      },
+      run: async function (ctx) {
+        const selection = await presentEncounter({
+          id: "seed_b03_men_in_gray_sighting",
+          title: "Men in gray linger",
+          subtitle: ctx.location,
+          body: [
+            "Figures in gray coats stand just beyond the lantern light, hats low, too quiet for travelers.",
+          ],
+          tags: ["camp", "mythic"],
+          options: [
+            { id: "hail", label: "Hail them", tone: "neutral", hint: "Spend a little water; maybe gain coin." },
+            { id: "hide", label: "Stay quiet", tone: "warm", hint: "Lower the camp's tension." },
+            { id: "drive", label: "Drive them off", tone: "danger", hint: "Costs ammo; could spark trouble." },
+          ],
+          defaultId: "hail",
+        });
+        const nowHour = getCurrentTrailHour(gameState);
+        setEventFlag("seed_b03_men_in_gray_sighting_time", nowHour);
+        let logText = "You keep the lamps low until the gray coats melt back into the night.";
+        if (selection === "hail") {
+          gameState.supplies.water = Math.max(0, (gameState.supplies.water || 0) - 1);
+          gameState.money = (gameState.money || 0) + 4;
+          adjustFactionRep("men_in_gray", 6, null, ctx);
+          ctx.storyState.mythicRumor = clamp((ctx.storyState.mythicRumor || 0) + 2, 0, 100);
+          setEventFlag("men_in_gray_contact", true);
+          logText = "You offer a dipper of water. Silver coins change hands and the gray coats nod once before vanishing.";
+        } else if (selection === "hide") {
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) - 2, 0, 100);
+          setEventFlag("men_in_gray_footprints", true);
+          logText = "You douse lanterns and wait. Dawn reveals neat bootprints circling the wagons.";
+        } else if (selection === "drive") {
+          gameState.supplies.ammo = Math.max(0, (gameState.supplies.ammo || 0) - 1);
+          adjustFactionRep("men_in_gray", -8, null, ctx);
+          if (Math.random() < 0.25) {
+            const target = choice(ctx.people || getAllPeople());
+            if (target) {
+              target.condition = clamp((target.condition || 50) - 6, 0, 100);
+              addAffliction(target, "sprain", { severity: 1 });
+            }
+          }
+          logText = "Shots crack into the dark. The watchers scatter, and unease lingers over camp.";
+        }
+        addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("seed", "mythic", "Saw Men in Gray at camp", { choice: selection });
+      },
+    },
+    {
+      id: "seed_b04_mirror_wagon",
+      kind: "breather",
+      condition: function (ctx) {
+        return (
+          ctx.mode === "travel" &&
+          ctx.block === "noon" &&
+          (ctx.weather.tempC || 0) >= 22 &&
+          !ctx.weather.storm &&
+          hoursSinceFlag("seed_b04_mirror_wagon_time") >= 96
+        );
+      },
+      weight: function () {
+        return 2;
+      },
+      run: async function (ctx) {
+        const selection = await presentEncounter({
+          id: "seed_b04_mirror_wagon",
+          title: "Wagon in the heat shimmer",
+          subtitle: ctx.location,
+          body: [
+            "Heat makes the air dance. A wagon ahead looks exactly like yours until it turns where no track exists.",
+          ],
+          tags: ["travel", "omen"],
+          options: [
+            { id: "chase", label: "Chase it", tone: "danger", hint: "Costs energy; outcome uncertain." },
+            { id: "signal", label: "Signal with a lantern", tone: "warm", hint: "Boost spirits; maybe spread a rumor." },
+            { id: "ignore", label: "Ignore it", tone: "neutral", hint: "Stay the course." },
+          ],
+          defaultId: "signal",
+        });
+        const nowHour = getCurrentTrailHour(gameState);
+        setEventFlag("seed_b04_mirror_wagon_time", nowHour);
+        let logText = "You keep to the ruts, the mirage wagon fading in the shimmer.";
+        if (selection === "chase") {
+          (ctx.people || getAllPeople()).forEach(function (p) {
+            p.energy = clamp((p.energy || 50) - 3, 0, 110);
+          });
+          if (Math.random() < 0.5) {
+            gameState.supplies.flour = (gameState.supplies.flour || 0) + 3;
+            gameState.supplies.coffee = (gameState.supplies.coffee || 0) + 1;
+            logText = "You push the team hard and find only a small cache—flour and coffee tucked beside the trail.";
+          } else {
+            gameState.supplies.firewood = Math.max(0, (gameState.supplies.firewood || 0) - 1);
+            ctx.storyState.tension = clamp((ctx.storyState.tension || 0) + 1, 0, 100);
+            logText = "The chase yields nothing. A dropped bundle of wood and frayed nerves are all you carry back.";
+          }
+        } else if (selection === "signal") {
+          getAllPeople().forEach(function (p) {
+            adjustPersonStat(p, "morale", 1);
+          });
+          if (ctx.storyState.mythicEnabled !== false) {
+            ctx.storyState.mythicRumor = clamp((ctx.storyState.mythicRumor || 0) + 1, 0, 100);
+          }
+          setEventFlag("mirror_wagon_signal", true);
+          logText = "You wave a lantern in the wavering heat. Spirits lift even as the twin wagon slips away.";
+        } else if (selection === "ignore") {
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) - 3, 0, 100);
+          const leader = gameState.leader || (ctx.people && ctx.people[0]);
+          if (leader) {
+            addThought(leader, {
+              id: "mirror_wagon_focus",
+              label: "Kept moving",
+              value: 3,
+              hoursLeft: 10,
+              source: "travel",
+            });
+          }
+          logText = "You keep everyone steady, letting the heat mirage drift aside as miles tick by.";
+        }
+        addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("seed", "omen", "Chased a mirror wagon mirage", { choice: selection });
+      },
+    },
+    {
+      id: "seed_b05_milepost_twisted",
+      kind: "minor",
+      condition: function (ctx) {
+        return ctx.mode === "travel" && ctx.block === "morning" && hoursSinceFlag("seed_b05_milepost_twisted_time") >= 120;
+      },
+      weight: function () {
+        return 2;
+      },
+      run: async function (ctx) {
+        const selection = await presentEncounter({
+          id: "seed_b05_milepost_twisted",
+          title: "Twisted milepost",
+          subtitle: ctx.location,
+          body: [
+            "A carved milepost stands at a fork, twisted to point the wrong way. Fresh gouges hide the original marks.",
+          ],
+          tags: ["travel", "route"],
+          options: [
+            { id: "fix", label: "Set it right", tone: "warm", hint: "Slight reputation gain; ease tension." },
+            { id: "leave", label: "Leave it be", tone: "neutral", hint: "Move on." },
+            { id: "twist", label: "Twist it further", tone: "danger", hint: "Risk reputation; gain a dollar." },
+          ],
+          defaultId: "fix",
+        });
+        const nowHour = getCurrentTrailHour(gameState);
+        setEventFlag("seed_b05_milepost_twisted_time", nowHour);
+        let logText = "You mark the crooked post and keep the team steady as you choose your path.";
+        if (selection === "fix") {
+          adjustReputation(1, "Set a milepost right");
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) - 1, 0, 100);
+          logText = "You straighten the milepost and scrape clean the carving so others won’t be misled.";
+        } else if (selection === "leave") {
+          logText = "You study the twisted milepost, make your own choice, and move on without touching it.";
+        } else if (selection === "twist") {
+          adjustReputation(-2, "Left a false sign");
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) + 2, 0, 100);
+          gameState.money = Math.max(0, (gameState.money || 0) + 1);
+          logText = "You carve a new false trail and pocket a tossed coin from a passing wagon amused by the prank.";
+        }
+        addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("seed", "route", "Found a twisted milepost", { choice: selection });
+      },
+    },
+    {
       id: "home_marker",
       name: "Home Marker",
       shortDesc: "A carved mile post that hums when storms roll in.",
@@ -13785,6 +14022,144 @@
         ctx.people.forEach(function (p) {
           p.energy = clamp(p.energy - 6, 0, 100);
           p.morale = clamp(p.morale - 6, 0, 100);
+        });
+      },
+    },
+    {
+      id: "setpiece_open_eye_revival",
+      kind: "major",
+      condition: function (ctx) {
+        const step = getEventFlag("open_eye_revival_step") || 0;
+        const miles = gameState.milesTraveled || 0;
+        const mileOk = miles >= 400 && miles <= 1600;
+        const regionOk =
+          ctx.regionKey === "central_plains" ||
+          ctx.regionKey === "high_plains" ||
+          ctx.regionKey === "snake_plain";
+        const cooldownOk = hoursSinceFlag("open_eye_revival_last") >= 240;
+        return step === 0 && mileOk && ctx.block === "evening" && !ctx.weather.storm && regionOk && cooldownOk;
+      },
+      weight: function () {
+        return 2;
+      },
+      run: async function (ctx) {
+        const selection = await presentEncounter({
+          id: "setpiece_open_eye_revival",
+          title: "Open Eye Revival",
+          subtitle: ctx.location,
+          body: [
+            "A ring of wagons glows ahead. Voices rise in a low hymn while a banner with an inked eye sways in the dusk breeze.",
+          ],
+          tags: ["camp", "cult"],
+          options: [
+            { id: "stop", label: "Stop and warm by their fires", tone: "warm", hint: "Rest with the revival." },
+            { id: "donate", label: "Donate and move on", tone: "neutral", hint: "Spend a little; gain medicine." },
+            { id: "avoid", label: "Avoid the circle", tone: "danger", hint: "Keep distance." },
+          ],
+          defaultId: "stop",
+        });
+        const nowHour = getCurrentTrailHour(gameState);
+        let logText = "You skirt the revival, keeping your fires low as their songs fade behind you.";
+        if (selection === "stop") {
+          ctx.storyState.eventFlags = ctx.storyState.eventFlags || {};
+          ctx.storyState.eventFlags.forcedCampHours = Math.max(
+            2,
+            ctx.storyState.eventFlags.forcedCampHours || 0
+          );
+          getAllPeople().forEach(function (p) {
+            adjustPersonStat(p, "morale", 2);
+          });
+          adjustFactionRep("open_eye", 5, null, ctx);
+          setEventFlag("open_eye_seen", true);
+          if (ctx.storyState.mythicEnabled !== false) {
+            ctx.storyState.mythicRumor = clamp((ctx.storyState.mythicRumor || 0) + 1, 0, 100);
+          }
+          logText = "You join the circle for a night. Hymns and hot broth leave the party calmer before turning in.";
+        } else if (selection === "donate") {
+          ctx.storyState.eventFlags = ctx.storyState.eventFlags || {};
+          ctx.storyState.eventFlags.forcedCampHours = Math.max(
+            2,
+            ctx.storyState.eventFlags.forcedCampHours || 0
+          );
+          gameState.money = Math.max(0, (gameState.money || 0) - 6);
+          gameState.supplies.medicine = (gameState.supplies.medicine || 0) + 1;
+          adjustFactionRep("open_eye", 10, null, ctx);
+          setEventFlag("open_eye_seen", true);
+          logText = "You leave a donation and receive a wrapped bundle of herbs and tonics before moving on.";
+        } else if (selection === "avoid") {
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) + 3, 0, 100);
+          adjustFactionRep("open_eye", -5, null, ctx);
+          logText = "You steer wide of the revival. Curious eyes follow until the hymns are lost to distance.";
+        }
+        setEventFlag("open_eye_revival_choice", selection);
+        advanceChain("open_eye_revival", 1);
+        setEventFlag("open_eye_revival_last", nowHour);
+        addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("setpiece", "open_eye_revival", "Encountered Open Eye Revival", { choice: selection });
+      },
+    },
+    {
+      id: "setpiece_open_eye_revival_followup",
+      kind: "minor",
+      condition: function () {
+        const step = getEventFlag("open_eye_revival_step");
+        const waited = hoursSinceFlag("open_eye_revival_time");
+        return step === 1 && waited >= 48 && waited <= 240;
+      },
+      weight: function () {
+        return 4;
+      },
+      run: async function (ctx) {
+        const initial = getEventFlag("open_eye_revival_choice");
+        const selection = await presentEncounter({
+          id: "setpiece_open_eye_revival_followup",
+          title: "Open Eye runner",
+          subtitle: ctx.location,
+          body: [
+            "A runner from the Open Eye catches up, parched and carrying a sealed crate bound for the next fort.",
+          ],
+          tags: ["cult", "favor"],
+          options: [
+            { id: "help", label: "Share water and help", tone: "warm", hint: "Aid the courier." },
+            { id: "refuse", label: "Refuse politely", tone: "neutral", hint: "Hold your supplies." },
+            { id: "threaten", label: "Run them off", tone: "danger", hint: "Risk harm; strain reputation." },
+          ],
+          defaultId: "help",
+        });
+        let logText = "You send the runner on their way, keeping to your own path.";
+        if (selection === "help") {
+          if ((gameState.supplies.water || 0) >= 1) {
+            gameState.supplies.water = Math.max(0, (gameState.supplies.water || 0) - 1);
+          } else if ((gameState.supplies.flour || 0) >= 2) {
+            gameState.supplies.flour = Math.max(0, (gameState.supplies.flour || 0) - 2);
+          }
+          adjustFactionRep("open_eye", 5, null, ctx);
+          adjustReputation(1, "Helped the Open Eye");
+          logText = "You pass over water and a little flour. The runner thanks you and hurries toward the fort.";
+        } else if (selection === "refuse") {
+          adjustFactionRep("open_eye", -4, null, ctx);
+          if (Math.random() < 0.35) {
+            gameState.supplies.meal_simple = Math.max(0, (gameState.supplies.meal_simple || 0) - 2);
+            ctx.storyState.tension = clamp((ctx.storyState.tension || 0) + 1, 0, 100);
+            logText = "You turn the runner away. Later, two meals are missing and faint tracks lead off the road.";
+          } else {
+            logText = "You refuse the favor. The runner bows stiffly and jogs toward the horizon.";
+          }
+        } else if (selection === "threaten") {
+          gameState.supplies.ammo = Math.max(0, (gameState.supplies.ammo || 0) - 1);
+          adjustFactionRep("open_eye", -10, null, ctx);
+          adjustReputation(-2, "Threatened the Open Eye");
+          if (Math.random() < 0.3) {
+            const target = choice(ctx.people || getAllPeople());
+            if (target) target.condition = clamp((target.condition || 50) - 5, 0, 100);
+          }
+          logText = "You level a rifle and send the runner packing. They vanish between sagebrush with the crate.";
+        }
+        advanceChain("open_eye_revival", 2);
+        addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("setpiece", "open_eye_revival", "Open Eye follow-up", {
+          initial: initial,
+          choice: selection,
         });
       },
     },
