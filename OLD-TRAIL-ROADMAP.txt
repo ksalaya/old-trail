@@ -199,6 +199,12 @@ UI / Explorer View
 - Add touch/mobile-friendly movement controls (D-pad or swipe) for the explorer camera.
 - Animate weather and fog layers over the explorer viewport to mirror current conditions.
 
+Deferred from Procedural Characters / Social / Mythic Chains
+- Add a reveal system for hidden traits/quirks that surface via specific events or milestones, including UI hints when a secret is suspected.
+- Extend relationship arcs into romance/kinship and formal rivalries with escalating incident chains and reconciliations.
+- Build deeper mythic encounter arcs (multi-step tall tales, rare items/boons with upkeep costs) and optional inventory slots for mythic curios.
+- Introduce faction/reputation ties to traveling NPC caravans or forts that respond to social webs and mythic rumors.
+
 Map v2 follow-ups
 - Fill in full POI coordinates and trail edges for the Lander Road, California Trail junction, and Applegate cutoff so the new branch scaffolding can render correct paths once tile data is available (current stubs stop at junction + rejoin nodes).
 - Add mountain pass landmarks and decision prompts tied to those branches once underlying hex tiles are painted for the passes.
