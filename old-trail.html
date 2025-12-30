@@ -793,6 +793,17 @@
   font-size: 12px;
 }
 
+.ot-manifest-suspect {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: rgba(255, 210, 139, 0.08);
+  color: #f5d28b;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
 .ot-manifest-role {
   font-size: 10px;
   text-transform: uppercase;
@@ -2326,6 +2337,9 @@
   "use strict";
 
   // STORYTELLER + MEDICAL + CAMP batch: romance/feud arcs, water quality, doctoring, camp mishaps (2024-05-07)
+  // PLAN (2024-07-04): Added hidden trait intel + suspicion/reveal helpers, trait draft weighting, new trait/backstory packs,
+  // early faction/curio scaffolding, and romance/rivalry hooks. Deferring full mythic chains, most new event arcs, and
+  // broader faction price hooks to roadmap to avoid destabilizing the storyteller pacing this pass.
 
   /* ========= CONSTANTS & DATA ============================================= */
 
@@ -2613,6 +2627,24 @@
     { id: "city_apprentice", label: "City apprentice", origin: "Boston workshop", summary: "Quick learner, soft hands, keen on maps and notes.", skillBias: { travel: 1, craft: 1 } },
     { id: "wagon_cook", label: "Wagon cook", origin: "Trail mess for freighters", summary: "Knows how to stretch beans and coffee, keeps fires tidy.", skillBias: { cooking: 2, woodcutting: 1 } },
     { id: "ranch_hand", label: "Ranch hand", origin: "Texas cattle range", summary: "Rides long days, can rope strays, gutsy around danger.", skillBias: { guard: 1, travel: 1, hunting: 1 } },
+    { id: "riverboat_gambler", label: "Riverboat gambler", origin: "Missouri card tables", summary: "Knows odds, tells lies smooth, and keeps a knife close.", skillBias: { travel: 1, guard: 1, craft: 1 } },
+    { id: "frontier_midwife", label: "Frontier midwife", origin: "Cabins and sickrooms", summary: "Calm in panic, steady with poultices and splints.", skillBias: { doctoring: 2, cooking: 1 } },
+    { id: "blacksmith_helper", label: "Blacksmith helper", origin: "Forge behind a feed store", summary: "Strong arms and an eye for metal fatigue.", skillBias: { repair: 2, woodcutting: 1 } },
+    { id: "scribe_clerk", label: "Scribe clerk", origin: "County records office", summary: "Neat handwriting, sharp memory, and suspicious eyes.", skillBias: { craft: 2, travel: 1 } },
+    { id: "stage_driver", label: "Stage driver", origin: "Dusty coach lines", summary: "Fast hands on reins, faster choices under pressure.", skillBias: { travel: 2, guard: 1 } },
+    { id: "fur_buyer", label: "Fur buyer", origin: "Trading counters & camps", summary: "Can smell value and trouble from a mile off.", skillBias: { foraging: 1, hunting: 1, craft: 1 } },
+    { id: "sawmill_hand", label: "Sawmill hand", origin: "River sawmill", summary: "Knows grain, knots, and how to split a beam true.", skillBias: { woodcutting: 2, repair: 1 } },
+    { id: "wagon_scout", label: "Wagon scout", origin: "Cutoffs and creekbeds", summary: "Finds safe ground and better lines through bad country.", skillBias: { travel: 2, foraging: 1 } },
+    { id: "camp_chaplain", label: "Camp chaplain", origin: "Camp meetings", summary: "Keeps spirits up, reads people better than maps.", skillBias: { doctoring: 1, cooking: 1, guard: 1 } },
+    { id: "border_ranger", label: "Border ranger", origin: "Thin-law frontier", summary: "Knows warning signs and how to hold a perimeter.", skillBias: { guard: 2, travel: 1, hunting: 1 } },
+    { id: "herb_gatherer", label: "Herb gatherer", origin: "Creeks and meadows", summary: "Finds useful plants and keeps notes on what works.", skillBias: { foraging: 2, doctoring: 1 } },
+    { id: "kitchen_servant", label: "Kitchen servant", origin: "Big house kitchens", summary: "Knows timing, heat, and how to stretch a pantry.", skillBias: { cooking: 2, craft: 1 } },
+    { id: "barrel_maker", label: "Barrel maker", origin: "Cooper’s shop", summary: "Hoops, staves, and the patience to keep water in wood.", skillBias: { craft: 2, repair: 1 } },
+    { id: "bookish_student", label: "Bookish student", origin: "Half-finished schooling", summary: "Smart on paper, learning fast on the dirt road.", skillBias: { craft: 2, doctoring: 1 } },
+    { id: "shore_fisher", label: "Shore fisher", origin: "River shallows", summary: "Knows water moods and where food hides.", skillBias: { foraging: 1, hunting: 1, travel: 1 } },
+    { id: "comet_witness", label: "Comet witness", origin: "Night sky over the prairie", summary: "Swears a falling star changed something inside them.", skillBias: { travel: 1, guard: 1, craft: 1 } },
+    { id: "lost_surveyor", label: "Lost surveyor", origin: "Lines that don’t match maps", summary: "Carries a strange instrument and refuses to explain it.", skillBias: { travel: 2, craft: 1 } },
+    { id: "graveyard_caretaker", label: "Graveyard caretaker", origin: "Churchyard hillside", summary: "Too calm around death; talks to the dark like it answers.", skillBias: { doctoring: 1, guard: 1, craft: 1 } },
   ];
 
   const TRAIT_DEFS = [
@@ -2639,6 +2671,317 @@
     { id: "sour", label: "Sour", summary: "Quick to grumble", moraleBias: -2, opinionBias: -2 },
     { id: "wilderness_lore", label: "Wilderness lore", summary: "Reads wind and water", skillMods: { foraging: 1, travel: 1 } },
     { id: "mythic_mark", label: "Myth-marked", summary: "Carries a strange brand, whispers follow", rare: true, moraleBias: -1, socialBonus: -1 },
+    { id: "industrious", label: "Industrious", summary: "Keeps moving even when tired", skillMods: { woodcutting: 1, repair: 1 }, moraleBias: 1 },
+    { id: "meticulous", label: "Meticulous", summary: "Measures twice, cuts once", skillMods: { repair: 1, craft: 1 }, moraleBias: 0 },
+    { id: "improviser", label: "Improviser", summary: "Makes do with scraps", skillMods: { repair: 1, cooking: 1 }, moraleBias: 0 },
+    { id: "bungler", label: "Bungler", summary: "Good intentions, clumsy hands", moraleBias: -1, taskPenalty: 1, opinionBias: -1 },
+    { id: "packrat", label: "Packrat", summary: "Hates throwing anything away", moraleBias: 0, socialBonus: -1 },
+    { id: "minimalist", label: "Minimalist", summary: "Travels light and proud", moraleBias: 1, socialBonus: 0 },
+    { id: "firekeeper", label: "Firekeeper", summary: "Always coaxes a flame", skillMods: { cooking: 1, woodcutting: 1 }, moraleBias: 0 },
+    { id: "water_saver", label: "Water saver", summary: "Treats every drop as gold", skillMods: { travel: 1 }, moraleBias: 0 },
+    { id: "gear_oiler", label: "Gear oiler", summary: "Quietly maintains moving parts", skillMods: { repair: 2 }, moraleBias: 0 },
+    { id: "tidy_camp", label: "Tidy camp", summary: "Cleans as they go", moraleBias: 1, socialBonus: 1 },
+    { id: "slovenly", label: "Slovenly", summary: "Leaves messes for later", moraleBias: -1, socialBonus: -1 },
+    { id: "quartermaster", label: "Quartermaster", summary: "Counts, bundles, labels", skillMods: { craft: 1 }, socialBonus: 1 },
+    { id: "wasteful", label: "Wasteful", summary: "Uses more than needed", moraleBias: -1, opinionBias: -1 },
+    { id: "frugal", label: "Frugal", summary: "Pinches pennies and portions", moraleBias: 0, opinionBias: 1 },
+    { id: "surefooted", label: "Surefooted", summary: "Keeps balance on bad ground", skillMods: { travel: 1 }, moraleBias: 0 },
+    { id: "trailwise", label: "Trailwise", summary: "Reads ruts, weather, and men", skillMods: { travel: 2 }, moraleBias: 0 },
+    { id: "navigator", label: "Navigator", summary: "Lives by landmarks and bearings", skillMods: { travel: 1, craft: 1 }, moraleBias: 0 },
+    { id: "wanderer", label: "Wanderer", summary: "Feels alive on the move", moraleBias: 1, socialBonus: 0 },
+    { id: "homesick", label: "Homesick", summary: "Longs for home comforts", moraleBias: -2, socialBonus: 0 },
+    { id: "mud_larked", label: "Mud-larked", summary: "Shrugs off filth and rain", moraleBias: 1, skillMods: { travel: 1 } },
+    { id: "vertigo", label: "Vertigo", summary: "Heights turn the stomach", moraleBias: -1, taskPenalty: 1 },
+    { id: "riverhand", label: "Riverhand", summary: "Confident around crossings", skillMods: { travel: 1 }, moraleBias: 0 },
+    { id: "river_shy", label: "River-shy", summary: "Cold water spooks them", moraleBias: -1, opinionBias: -1 },
+    { id: "ox_whisperer", label: "Ox whisperer", summary: "Calms teams with a word", skillMods: { travel: 1 }, moraleBias: 0 },
+    { id: "tracker", label: "Tracker", summary: "Sees sign others miss", skillMods: { hunting: 2 }, moraleBias: 0 },
+    { id: "patient_shot", label: "Patient shot", summary: "Waits for the right moment", skillMods: { hunting: 1 }, moraleBias: 0 },
+    { id: "butcher", label: "Butcher", summary: "Dresses meat clean and fast", skillMods: { cooking: 1, hunting: 1 }, moraleBias: 0 },
+    { id: "forager", label: "Forager", summary: "Finds greens where none should grow", skillMods: { foraging: 2 }, moraleBias: 0 },
+    { id: "berry_sense", label: "Berry sense", summary: "Knows what won’t kill you", skillMods: { foraging: 1 }, moraleBias: 0 },
+    { id: "picky_forager", label: "Picky forager", summary: "Refuses bitter finds", moraleBias: -1, opinionBias: 0 },
+    { id: "loud_step", label: "Loud step", summary: "Scares game without meaning to", moraleBias: -1, taskPenalty: 1 },
+    { id: "bread_blesser", label: "Bread bless-er", summary: "Can make flour taste like hope", skillMods: { cooking: 2 }, moraleBias: 1 },
+    { id: "coffee_devotee", label: "Coffee devotee", summary: "Needs a cup to function", moraleBias: -1, socialBonus: 0 },
+    { id: "stew_master", label: "Stew master", summary: "Turns scraps into supper", skillMods: { cooking: 1 }, moraleBias: 0 },
+    { id: "salt_fiend", label: "Salt fiend", summary: "Over-salts everything", moraleBias: -1, opinionBias: -1 },
+    { id: "camp_host", label: "Camp host", summary: "Makes meals feel communal", skillMods: { cooking: 1 }, socialBonus: 2, moraleBias: 1 },
+    { id: "herbalist", label: "Herbalist", summary: "Knows plants and poultices", skillMods: { doctoring: 1, foraging: 1 }, moraleBias: 0 },
+    { id: "midwife", label: "Midwife", summary: "Steady hands, steady words", skillMods: { doctoring: 2 }, socialBonus: 1 },
+    { id: "squeamish", label: "Squeamish", summary: "Blood turns the stomach", moraleBias: -1, opinionBias: 0 },
+    { id: "iron_stomach", label: "Iron stomach", summary: "Eats what others won’t", moraleBias: 1 },
+    { id: "delicate_stomach", label: "Delicate stomach", summary: "Bad food hits hard", moraleBias: -1 },
+    { id: "hypochondriac", label: "Hypochondriac", summary: "Sure every ache is fatal", moraleBias: -2, socialBonus: -1 },
+    { id: "stiff_joints", label: "Stiff joints", summary: "Morning pain slows them", moraleBias: -1, taskPenalty: 1 },
+    { id: "quick_healer", label: "Quick healer", summary: "Bounces back faster than most", moraleBias: 1 },
+    { id: "frail", label: "Frail", summary: "Gets hurt easy", moraleBias: -1 },
+    { id: "germ_wary", label: "Germ-wary", summary: "Insists on boiling water", moraleBias: 0, opinionBias: 1 },
+    { id: "stoic", label: "Stoic", summary: "Doesn’t show fear", moraleBias: 2, socialBonus: 0 },
+    { id: "melancholy", label: "Melancholy", summary: "Carries a quiet sadness", moraleBias: -2, socialBonus: 0 },
+    { id: "anxious", label: "Anxious", summary: "Sees danger in every shadow", moraleBias: -1, guardBonus: 1 },
+    { id: "hotheaded", label: "Hotheaded", summary: "Temper runs fast", moraleBias: -1, opinionBias: -2 },
+    { id: "patient", label: "Patient", summary: "Waits without complaint", moraleBias: 1, socialBonus: 1 },
+    { id: "stubborn", label: "Stubborn", summary: "Hates being told what to do", moraleBias: 0, opinionBias: -1 },
+    { id: "easygoing", label: "Easygoing", summary: "Rolls with setbacks", moraleBias: 2, socialBonus: 1 },
+    { id: "grim", label: "Grim", summary: "Sees only the hard truth", moraleBias: -1, socialBonus: -1 },
+    { id: "prankster", label: "Prankster", summary: "Finds mischief in boredom", socialBonus: 1, opinionBias: -1 },
+    { id: "peacemaker", label: "Peacemaker", summary: "Talks people down", socialBonus: 2, moraleBias: 0 },
+    { id: "gossip", label: "Gossip", summary: "Words travel faster than wagons", socialBonus: 1, opinionBias: -2 },
+    { id: "loner", label: "Loner", summary: "Needs space from the group", socialBonus: -2, moraleBias: 0 },
+    { id: "charismatic", label: "Charismatic", summary: "People listen when they speak", socialBonus: 2, moraleBias: 0 },
+    { id: "blunt", label: "Blunt", summary: "Says it plain, even when it hurts", socialBonus: 0, opinionBias: -1 },
+    { id: "polite", label: "Polite", summary: "Keeps manners under strain", socialBonus: 1, moraleBias: 0 },
+    { id: "jealous", label: "Jealous", summary: "Keeps score of attention", opinionBias: -2, socialBonus: 0 },
+    { id: "loyal", label: "Loyal", summary: "Sticks close in hard hours", socialBonus: 1, moraleBias: 1 },
+    { id: "vengeful", label: "Vengeful", summary: "Never forgets a slight", opinionBias: -2, moraleBias: 0 },
+    { id: "generous", label: "Generous", summary: "Shares without being asked", socialBonus: 2, moraleBias: 0 },
+    { id: "miserly", label: "Miserly", summary: "Hates spending supplies", opinionBias: -1, moraleBias: 0 },
+    { id: "romantic", label: "Romantic", summary: "Dreams of love at the fire", moraleBias: 1, socialBonus: 1 },
+    { id: "chaperone", label: "Chaperone", summary: "Keeps propriety in camp", socialBonus: 0, opinionBias: 1 },
+    { id: "night_watch", label: "Night watch", summary: "Wakes at every sound", skillMods: { guard: 2 }, moraleBias: 0 },
+    { id: "sleepy_watch", label: "Sleepy watch", summary: "Nods off at the worst time", guardPenalty: 1, moraleBias: -1 },
+    { id: "sharp_temper", label: "Sharp temper", summary: "Quick to threaten strangers", guardBonus: 1, opinionBias: -1 },
+    { id: "soft_spoken", label: "Soft-spoken", summary: "De-escalates by instinct", guardBonus: 1, socialBonus: 1 },
+    { id: "skittish", label: "Skittish", summary: "Startles easily", guardBonus: 1, moraleBias: -1 },
+    { id: "fearless_fool", label: "Fearless fool", summary: "Bravery without caution", guardBonus: 1, moraleBias: -1 },
+    { id: "haggler", label: "Haggler", summary: "Squeezes better terms", socialBonus: 1, moraleBias: 0 },
+    { id: "silver_tongue", label: "Silver tongue", summary: "Talks doors open", socialBonus: 2, moraleBias: 0 },
+    { id: "gullible", label: "Gullible", summary: "Falls for tall promises", socialBonus: 0, opinionBias: -1 },
+    { id: "gambler", label: "Gambler", summary: "Can’t resist a wager", moraleBias: -1, socialBonus: 1 },
+    { id: "lucky", label: "Lucky", summary: "Things break in someone else’s hands", moraleBias: 1, rare: true },
+    { id: "jinxed", label: "Jinxed", summary: "Bad timing follows", moraleBias: -1, rare: true },
+    { id: "klepto", label: "Light-fingered", summary: "Things go missing around them", moraleBias: -1, opinionBias: -2, rare: true },
+    { id: "runaway", label: "Runaway", summary: "Fears being found", moraleBias: -1, socialBonus: 0, rare: true },
+    { id: "wanted", label: "Wanted poster", summary: "A price on their head", moraleBias: -2, socialBonus: -1, rare: true },
+    { id: "liar", label: "Liar", summary: "Stories don’t match the facts", opinionBias: -2, socialBonus: 1 },
+    { id: "truthbound", label: "Truthbound", summary: "Refuses to lie", moraleBias: 1, socialBonus: 1 },
+    { id: "secretive", label: "Secretive", summary: "Keeps to themselves", socialBonus: -1, moraleBias: 0 },
+    { id: "bossy", label: "Bossy", summary: "Orders people around", opinionBias: -2, moraleBias: 0 },
+    { id: "superstitious", label: "Superstitious", summary: "Sees omens in small things", moraleBias: 0, socialBonus: 0 },
+    { id: "ritualist", label: "Ritualist", summary: "Insists on little routines", moraleBias: 1, socialBonus: 0 },
+    { id: "iconoclast", label: "Iconoclast", summary: "Mocks sacred talk", moraleBias: 0, opinionBias: -1 },
+    { id: "pilgrim", label: "Pilgrim", summary: "Believes the trail is a test", moraleBias: 1, socialBonus: 1 },
+    { id: "night_owl", label: "Night owl", summary: "Wakes late, thrives at night", moraleBias: 0, guardBonus: 1 },
+    { id: "early_riser", label: "Early riser", summary: "Up before dawn", moraleBias: 1, skillMods: { travel: 1 } },
+    { id: "insomniac", label: "Insomniac", summary: "Sleeps in scraps", moraleBias: -1, guardBonus: 1 },
+    { id: "sleepwalker", label: "Sleepwalker", summary: "Wanders at night", moraleBias: -1, rare: true },
+    { id: "snorer", label: "Snorer", summary: "Keeps others awake", socialBonus: -1, moraleBias: -1 },
+    { id: "cold_tough", label: "Cold-tough", summary: "Handles frost better than most", moraleBias: 1 },
+    { id: "cold_sickly", label: "Cold-sickly", summary: "Shivers into misery", moraleBias: -1 },
+    { id: "heat_hardy", label: "Heat-hardy", summary: "Works through blazing days", moraleBias: 1 },
+    { id: "heat_faint", label: "Heat-faint", summary: "Sun knocks them flat", moraleBias: -1 },
+    { id: "storm_singer", label: "Storm singer", summary: "Sings through thunder", socialBonus: 1, moraleBias: 1 },
+    { id: "stock_hand", label: "Stock hand", summary: "Knows feed and footing", skillMods: { travel: 1, woodcutting: 1 }, moraleBias: 0 },
+    { id: "animal_wary", label: "Animal-wary", summary: "Doesn’t trust big beasts", moraleBias: -1 },
+    { id: "mule_skinner", label: "Mule-skinner", summary: "Hard on animals, fast miles", skillMods: { travel: 2 }, moraleBias: -1, opinionBias: -1 },
+    { id: "journaler", label: "Journaler", summary: "Writes everything down", moraleBias: 1, socialBonus: 0 },
+    { id: "map_maker", label: "Map-maker", summary: "Sketches routes and rivers", skillMods: { travel: 1, craft: 1 }, moraleBias: 0 },
+    { id: "tinkering_mind", label: "Tinkering mind", summary: "Can’t stop improving things", skillMods: { repair: 1, craft: 1 }, moraleBias: 0 },
+    { id: "omen_reader", label: "Omen-reader", summary: "Reads signs in birds and smoke", rare: true, moraleBias: 0, socialBonus: 1 },
+    { id: "dream_touched", label: "Dream-touched", summary: "Wakes with warnings they can’t explain", rare: true, moraleBias: -1, socialBonus: 0 },
+    { id: "ghost_hearer", label: "Ghost-hearer", summary: "Hears names in the wind", rare: true, moraleBias: -2, socialBonus: -1 },
+    { id: "starbound", label: "Starbound", summary: "Feels watched by distant lights", rare: true, moraleBias: 0, socialBonus: 0 },
+    { id: "thin_place", label: "Thin-place sense", summary: "Knows when ground feels wrong", rare: true, skillMods: { travel: 1 }, moraleBias: -1 },
+    { id: "warded", label: "Warded", summary: "Carries a charm that ‘works’", rare: true, moraleBias: 1, mythicGuard: true },
+    { id: "whisper_sick", label: "Whisper-sick", summary: "Voices rise when camp goes quiet", rare: true, moraleBias: -2, socialBonus: -1 },
+    { id: "lantern_glow", label: "Lantern-glow", summary: "Strange light clings to them", rare: true, moraleBias: -1, socialBonus: -1 },
+    { id: "time_lost", label: "Time-lost", summary: "Swears they’ve lived this mile before", rare: true, moraleBias: 0, socialBonus: 0 },
+    { id: "name_itch", label: "Name-itch", summary: "Hates being called by full name", rare: true, moraleBias: -1, opinionBias: -1 },
+    { id: "rationalist", label: "Rationalist", summary: "Demands proof, hates superstition", moraleBias: 0, mythicGuard: true, opinionBias: -1 },
+    { id: "story_breaker", label: "Story-breaker", summary: "Ruins a good ghost tale", moraleBias: 0, mythicGuard: true, socialBonus: -1 },
+    { id: "panhandler", label: "Pan-handler", summary: "Always ‘just checking’ the cookware", moraleBias: 0, opinionBias: -1 },
+    { id: "boot_swapper", label: "Boot-swapper", summary: "Mischief with gear", moraleBias: 0, socialBonus: 1, opinionBias: -1, rare: true },
+    { id: "doom_sayer", label: "Doom-sayer", summary: "Predicts disaster daily", moraleBias: -1, socialBonus: -1 },
+    { id: "tall_order", label: "Tall order", summary: "Always wants ‘one more thing’", moraleBias: -1, opinionBias: -1 },
+    { id: "camp_poet", label: "Camp poet", summary: "Turns misery into verse", moraleBias: 1, socialBonus: 1 },
+    { id: "harmonica_hand", label: "Harmonica hand", summary: "Music softens hard nights", moraleBias: 1, socialBonus: 1 },
+  ];
+
+  const TRAIT_BUCKET_WEIGHTS_V1 = { common: 70, uncommon: 23, rare: 6, mythic: 1 };
+
+  const TRAIT_BUCKETS_V1 = {
+    common: [
+      "steady",
+      "merciful",
+      "pious",
+      "wry",
+      "tireless",
+      "skeptical",
+      "caretaker",
+      "sharp_eyed",
+      "camp_medic",
+      "organizer",
+      "wilderness_lore",
+      "industrious",
+      "meticulous",
+      "improviser",
+      "firekeeper",
+      "water_saver",
+      "gear_oiler",
+      "tidy_camp",
+      "quartermaster",
+      "frugal",
+      "minimalist",
+      "surefooted",
+      "trailwise",
+      "navigator",
+      "wanderer",
+      "riverhand",
+      "ox_whisperer",
+      "mud_larked",
+      "tracker",
+      "patient_shot",
+      "butcher",
+      "forager",
+      "berry_sense",
+      "bread_blesser",
+      "stew_master",
+      "camp_host",
+      "harmonica_hand",
+      "camp_poet",
+      "herbalist",
+      "midwife",
+      "iron_stomach",
+      "quick_healer",
+      "germ_wary",
+      "stoic",
+      "patient",
+      "easygoing",
+      "peacemaker",
+      "charismatic",
+      "polite",
+      "loyal",
+      "generous",
+      "truthbound",
+      "ritualist",
+      "pilgrim",
+      "night_watch",
+      "early_riser",
+      "cold_tough",
+      "heat_hardy",
+      "storm_singer",
+      "stock_hand",
+      "journaler",
+      "map_maker",
+      "tinkering_mind",
+    ],
+    uncommon: [
+      "cheerful",
+      "argumentative",
+      "hard",
+      "cowardly",
+      "reckless",
+      "fussy_cook",
+      "trail_teller",
+      "brave",
+      "lazy",
+      "sour",
+      "bungler",
+      "packrat",
+      "slovenly",
+      "wasteful",
+      "panhandler",
+      "tall_order",
+      "homesick",
+      "vertigo",
+      "river_shy",
+      "loud_step",
+      "picky_forager",
+      "animal_wary",
+      "mule_skinner",
+      "coffee_devotee",
+      "salt_fiend",
+      "squeamish",
+      "delicate_stomach",
+      "hypochondriac",
+      "stiff_joints",
+      "frail",
+      "melancholy",
+      "anxious",
+      "stubborn",
+      "grim",
+      "prankster",
+      "gossip",
+      "loner",
+      "blunt",
+      "jealous",
+      "miserly",
+      "romantic",
+      "chaperone",
+      "vengeful",
+      "secretive",
+      "bossy",
+      "sleepy_watch",
+      "sharp_temper",
+      "soft_spoken",
+      "skittish",
+      "night_owl",
+      "insomniac",
+      "snorer",
+      "superstitious",
+      "iconoclast",
+      "haggler",
+      "silver_tongue",
+      "gullible",
+      "gambler",
+      "liar",
+    ],
+    rare: [
+      "tall_tale",
+      "mythic_mark",
+      "lucky",
+      "jinxed",
+      "klepto",
+      "runaway",
+      "wanted",
+      "fearless_fool",
+      "hotheaded",
+      "sleepwalker",
+      "boot_swapper",
+      "doom_sayer",
+    ],
+    mythic: [
+      "omen_reader",
+      "dream_touched",
+      "ghost_hearer",
+      "starbound",
+      "thin_place",
+      "warded",
+      "whisper_sick",
+      "lantern_glow",
+      "time_lost",
+      "name_itch",
+      "rationalist",
+      "story_breaker",
+    ],
+  };
+
+  const CURIO_DEFS = [
+    {
+      id: "wisp_lantern",
+      name: "Wisp Lantern",
+      shortDesc: "A glass lamp that burns with no fuel, guiding steps at night.",
+      boon: { guardBonus: 1, morale: 2 },
+      upkeep: { kind: "wood", cost: 1, periodHours: 24 },
+      tags: ["mythic", "light"],
+    },
+    {
+      id: "home_marker",
+      name: "Home Marker",
+      shortDesc: "A carved mile post that hums when storms roll in.",
+      boon: { travel: 1, warmth: 2 },
+      upkeep: { kind: "time", cost: 1, periodHours: 48 },
+      tags: ["mythic", "wayfinding"],
+    },
+    {
+      id: "gray_token",
+      name: "Gray Token",
+      shortDesc: "An odd coin that rumors say wards off unseen eyes.",
+      boon: { mythicGuard: true, morale: 1 },
+      upkeep: { kind: "morale", cost: 2, periodHours: 36 },
+      tags: ["mythic", "omen"],
+    },
   ];
 
   const ROUTE_MILESTONES = [
@@ -4336,6 +4679,9 @@
         lastSocialDay: null,
         lastCrisisLogHour: null,
         spoilage: { batches: [], nextBatchId: 1, migratedLegacy: false },
+        mythicCurios: { owned: [], slots: [null, null], upkeepState: {} },
+        factionRep: { caravans: 0, forts: 0, men_in_gray: 0 },
+        mythicRumor: 0,
       };
     }
     const ss = gameState.storyState;
@@ -4372,6 +4718,16 @@
     if (!Array.isArray(ss.spoilage.batches)) ss.spoilage.batches = [];
     if (typeof ss.spoilage.nextBatchId !== "number") ss.spoilage.nextBatchId = 1;
     if (typeof ss.spoilage.migratedLegacy !== "boolean") ss.spoilage.migratedLegacy = false;
+    if (!ss.mythicCurios)
+      ss.mythicCurios = { owned: [], slots: [null, null], upkeepState: {} };
+    if (!Array.isArray(ss.mythicCurios.owned)) ss.mythicCurios.owned = [];
+    if (!Array.isArray(ss.mythicCurios.slots)) ss.mythicCurios.slots = [null, null];
+    if (!ss.mythicCurios.upkeepState) ss.mythicCurios.upkeepState = {};
+    if (!ss.factionRep) ss.factionRep = { caravans: 0, forts: 0, men_in_gray: 0 };
+    if (typeof ss.factionRep.caravans !== "number") ss.factionRep.caravans = 0;
+    if (typeof ss.factionRep.forts !== "number") ss.factionRep.forts = 0;
+    if (typeof ss.factionRep.men_in_gray !== "number") ss.factionRep.men_in_gray = 0;
+    if (typeof ss.mythicRumor !== "number") ss.mythicRumor = 0;
     return ss;
   }
 
@@ -4559,10 +4915,33 @@
     });
   }
 
+  function getAllTraitIds(person, opts) {
+    const includeHidden = (opts && opts.includeHidden) || false;
+    const visible = (person && person.traits) || [];
+    const hidden = includeHidden && person && person.hiddenTraits ? person.hiddenTraits : [];
+    return visible.concat(hidden || []);
+  }
+
+  function hasTrait(person, traitId, opts) {
+    if (!person || !traitId) return false;
+    const pool = getAllTraitIds(person, opts);
+    return pool.indexOf(traitId) >= 0;
+  }
+
+  function ensureAppliedTraitState(person) {
+    if (!person.appliedTraitIds) {
+      const alreadyApplied = person._traitApplied ? getAllTraitIds(person, { includeHidden: true }) : [];
+      person.appliedTraitIds = alreadyApplied.slice();
+    }
+    return person.appliedTraitIds;
+  }
+
   function applyTraitStats(person) {
-    if (!person || person._traitApplied) return;
-    const traits = person.traits || [];
+    if (!person) return;
+    const applied = ensureAppliedTraitState(person);
+    const traits = getAllTraitIds(person, { includeHidden: true });
     traits.forEach(function (tid) {
+      if (applied.indexOf(tid) >= 0) return;
       const def = getTraitDef(tid);
       if (!def) return;
       Object.keys(def.skillMods || {}).forEach(function (k) {
@@ -4573,8 +4952,78 @@
       }
       if (def.guardBonus) person.skills.guard = clamp((person.skills.guard || 0) + def.guardBonus, 0, 6);
       if (def.guardPenalty) person.skills.guard = clamp((person.skills.guard || 0) - def.guardPenalty, 0, 6);
+      applied.push(tid);
     });
     person._traitApplied = true;
+  }
+
+  function suspectSecret(personId, amount, hintText, ctx) {
+    const p = getAllPeople().find(function (per) {
+      return per && per.id === personId;
+    });
+    if (!p || !Array.isArray(p.hiddenTraits) || !p.hiddenTraits.length) return;
+    ensurePersonStoryFields(p);
+    const before = p.secret.suspicion || 0;
+    p.secret.suspicion = clamp(before + (amount || 0), 0, 100);
+    const crossed = before < 35 && p.secret.suspicion >= 35;
+    if (crossed && !p.secret.hinted) {
+      p.secret.hinted = true;
+      const text = hintText || `${p.name} keeps glancing over their shoulder as if hiding something.`;
+      addLog(text, { tone: "social", characters: [p.id], location: ctx && ctx.location });
+      recordStoryBeat("social", "secret_hint", text, { personId: p.id });
+    }
+  }
+
+  function revealHiddenTrait(personId, opts) {
+    const p = getAllPeople().find(function (per) {
+      return per && per.id === personId;
+    });
+    if (!p) return null;
+    ensurePersonStoryFields(p);
+    const hidden = p.hiddenTraits || [];
+    if (!hidden.length && !(opts && opts.force && opts.traitId)) return null;
+    let tid = opts && opts.traitId ? opts.traitId : null;
+    if (!tid) tid = hidden[Math.floor(Math.random() * hidden.length)];
+    if (!tid) return null;
+    p.hiddenTraits = hidden.filter(function (t) {
+      return t !== tid;
+    });
+    if (p.traits.indexOf(tid) < 0) p.traits.push(tid);
+    applyTraitStats(p);
+    if (p.secret && p.secret.revealed.indexOf(tid) < 0) {
+      p.secret.revealed.push(tid);
+    }
+    const def = getTraitDef(tid);
+    const text =
+      p.name +
+      " finally admits to being " +
+      (def ? def.label.toLowerCase() : tid) +
+      (opts && opts.reason ? " — " + opts.reason : "");
+    addLog(text, { tone: "event", characters: [p.id], location: opts && opts.ctx && opts.ctx.location });
+    recordStoryBeat("social", "secret_revealed", text, { personId: p.id, traitId: tid });
+    return tid;
+  }
+
+  function maybeSecretDrift(ctx) {
+    const ss = ensureStoryState();
+    if (!ss.eventFlags) ss.eventFlags = {};
+    const hourStamp = Math.floor(gameState.date.getTime() / (60 * 60 * 1000));
+    if (ss.eventFlags.lastSecretHour === hourStamp) return;
+    ss.eventFlags.lastSecretHour = hourStamp;
+    const candidates = getAllPeople().filter(function (p) {
+      return p && p.alive && p.hiddenTraits && p.hiddenTraits.length > (p.secret && p.secret.revealed ? p.secret.revealed.length : 0);
+    });
+    if (!candidates.length) return;
+    const hour = gameState.date.getHours();
+    const campWindow = gameState.mode === "camp" || (hour >= 19 || hour <= 6);
+    const chance = campWindow ? 0.28 : 0.12;
+    if (Math.random() < chance) {
+      const p = choice(candidates);
+      suspectSecret(p.id, campWindow ? 8 : 4, null, ctx);
+      if (p.secret && p.secret.suspicion >= 75 && Math.random() < 0.35) {
+        revealHiddenTrait(p.id, { reason: "trust breaks during a tense night", ctx: ctx });
+      }
+    }
   }
 
   function ensurePersonStoryFields(person) {
@@ -4599,13 +5048,17 @@
     if (!person.backstoryLabel) person.backstoryLabel = "";
     if (!person.backstorySummary) person.backstorySummary = "";
     if (!Array.isArray(person.hiddenTraits)) person.hiddenTraits = [];
+    if (!person.secret)
+      person.secret = { suspicion: 0, hinted: false, revealed: [] };
+    if (!Array.isArray(person.secret.revealed)) person.secret.revealed = [];
     if (typeof person.morale !== "number") person.morale = 60;
     if (typeof person.lastBreakHour !== "number") person.lastBreakHour = 0;
     if (!person.activeBreak) person.activeBreak = null;
     if (!person.taskHistory)
       person.taskHistory = { recent: [], totals: {} };
     if (!Array.isArray(person.cascadeHistory)) person.cascadeHistory = [];
-    if (!person._traitApplied) applyTraitStats(person);
+    ensureAppliedTraitState(person);
+    applyTraitStats(person);
     return person;
   }
 
@@ -6050,10 +6503,18 @@
 
   function ensurePartyDraftState() {
     if (!gameState.partyDraft)
-      gameState.partyDraft = { seed: Math.floor(Math.random() * 999999), people: {}, locks: {}, rerolls: {} };
+      gameState.partyDraft = {
+        seed: Math.floor(Math.random() * 999999),
+        people: {},
+        locks: {},
+        rerolls: {},
+        mythicTraitUsed: false,
+      };
     if (!gameState.partyDraft.people) gameState.partyDraft.people = {};
     if (!gameState.partyDraft.locks) gameState.partyDraft.locks = {};
     if (!gameState.partyDraft.rerolls) gameState.partyDraft.rerolls = {};
+    if (typeof gameState.partyDraft.mythicTraitUsed !== "boolean")
+      gameState.partyDraft.mythicTraitUsed = false;
     if (typeof gameState.partyDraft.seed !== "number") {
       gameState.partyDraft.seed = Math.floor(Math.random() * 999999);
     }
@@ -6076,14 +6537,66 @@
     return BACKSTORY_DEFS[Math.floor(rng() * BACKSTORY_DEFS.length)] || BACKSTORY_DEFS[0];
   }
 
+  function bucketForTrait(id) {
+    if (!id) return "common";
+    if (TRAIT_BUCKETS_V1.rare.indexOf(id) >= 0) return "rare";
+    if (TRAIT_BUCKETS_V1.uncommon.indexOf(id) >= 0) return "uncommon";
+    if (TRAIT_BUCKETS_V1.mythic.indexOf(id) >= 0) return "mythic";
+    return "common";
+  }
+
+  function rollTraitBucket(rng, allowMythic) {
+    const weights = Object.assign({}, TRAIT_BUCKET_WEIGHTS_V1);
+    if (!allowMythic) weights.mythic = 0;
+    const total = Object.keys(weights).reduce(function (sum, key) {
+      return sum + (weights[key] || 0);
+    }, 0);
+    let pick = rng() * total;
+    let chosen = "common";
+    ["common", "uncommon", "rare", "mythic"].forEach(function (bucket) {
+      if (pick < (weights[bucket] || 0) && chosen === "common") {
+        chosen = bucket;
+      }
+      pick -= weights[bucket] || 0;
+    });
+    return chosen;
+  }
+
+  function pickTraitFromBucket(bucket, rng, picked, allowMythic) {
+    const pool = TRAIT_BUCKETS_V1[bucket] || [];
+    const candidates = pool.filter(function (id) {
+      if (picked.indexOf(id) >= 0) return false;
+      const def = getTraitDef(id);
+      if (!def) return false;
+      if (bucket === "mythic" && !allowMythic) return false;
+      return true;
+    });
+    if (!candidates.length) return null;
+    return candidates[Math.floor(rng() * candidates.length)];
+  }
+
   function pickTraits(rng, count, existing) {
     const picked = existing ? existing.slice() : [];
+    const draft = ensurePartyDraftState();
+    let rareCount = picked.filter(function (id) {
+      return bucketForTrait(id) === "rare";
+    }).length;
+    let mythicCount = picked.filter(function (id) {
+      return bucketForTrait(id) === "mythic";
+    }).length;
     while (picked.length < count) {
-      const candidate = TRAIT_DEFS[Math.floor(rng() * TRAIT_DEFS.length)];
-      if (!candidate) break;
-      if (candidate.rare && rng() < 0.75) continue;
-      if (picked.indexOf(candidate.id) >= 0) continue;
-      picked.push(candidate.id);
+      const allowMythic = !!gameState.mythicEnabled && mythicCount < 1 && !draft.mythicTraitUsed;
+      const bucket = rollTraitBucket(rng, allowMythic);
+      if (bucket === "rare" && rareCount >= 1) continue;
+      if (bucket === "mythic" && (!allowMythic || mythicCount >= 1)) continue;
+      const id = pickTraitFromBucket(bucket, rng, picked, allowMythic);
+      if (!id) continue;
+      picked.push(id);
+      if (bucket === "rare") rareCount += 1;
+      if (bucket === "mythic") {
+        mythicCount += 1;
+        draft.mythicTraitUsed = true;
+      }
     }
     return picked;
   }
@@ -7012,6 +7525,72 @@
     if (!gameState.reputationFlags || typeof gameState.reputationFlags !== "object") {
       gameState.reputationFlags = {};
     }
+    const ss = ensureStoryState();
+    if (!ss.factionRep) ss.factionRep = { caravans: 0, forts: 0, men_in_gray: 0 };
+  }
+
+  function adjustFactionRep(factionId, delta, reason, ctx) {
+    const ss = ensureStoryState();
+    if (!ss.factionRep) ss.factionRep = { caravans: 0, forts: 0, men_in_gray: 0 };
+    if (typeof ss.factionRep[factionId] !== "number") ss.factionRep[factionId] = 0;
+    ss.factionRep[factionId] = clamp(ss.factionRep[factionId] + delta, -100, 100);
+    if (reason) {
+      addLog(reason, { tone: delta >= 0 ? "event" : "warning", location: ctx && ctx.location });
+    }
+    return ss.factionRep[factionId];
+  }
+
+  function getFactionRepTier(factionId) {
+    const ss = ensureStoryState();
+    const val = clamp((ss.factionRep && ss.factionRep[factionId]) || 0, -100, 100);
+    if (val >= 50) return { id: "ally", label: "Ally", value: val };
+    if (val >= 15) return { id: "trusted", label: "Trusted", value: val };
+    if (val > -15) return { id: "neutral", label: "Neutral", value: val };
+    if (val > -45) return { id: "wary", label: "Wary", value: val };
+    return { id: "hostile", label: "Hostile", value: val };
+  }
+
+  function ensureMythicCurioState() {
+    const ss = ensureStoryState();
+    if (!ss.mythicCurios)
+      ss.mythicCurios = { owned: [], slots: [null, null], upkeepState: {} };
+    return ss.mythicCurios;
+  }
+
+  function getCurioDef(id) {
+    return CURIO_DEFS.find(function (c) {
+      return c.id === id;
+    });
+  }
+
+  function gainMythicCurio(id, reason) {
+    if (!gameState.mythicEnabled) return;
+    const curio = getCurioDef(id);
+    if (!curio) return;
+    const state = ensureMythicCurioState();
+    if (state.owned.indexOf(id) < 0) state.owned.push(id);
+    addLog("Gained mythic curio: " + curio.name + (reason ? " — " + reason : ""), { tone: "event" });
+    recordStoryBeat("mythic", "curio_gained", curio.name, { curioId: id });
+  }
+
+  function equipMythicCurio(id, slot) {
+    if (!gameState.mythicEnabled) return;
+    const curio = getCurioDef(id);
+    const state = ensureMythicCurioState();
+    if (!curio || state.owned.indexOf(id) < 0) return;
+    const idx = Math.max(0, Math.min(1, slot || 0));
+    state.slots[idx] = id;
+    addLog(curio.name + " is readied.", { tone: "event" });
+  }
+
+  function unequipMythicCurio(slot) {
+    const state = ensureMythicCurioState();
+    const idx = Math.max(0, Math.min(1, slot || 0));
+    const id = state.slots[idx];
+    if (!id) return;
+    const curio = getCurioDef(id);
+    state.slots[idx] = null;
+    addLog((curio ? curio.name : "Curio") + " stowed.", { tone: "event" });
   }
 
   function getReputationTier() {
@@ -9547,6 +10126,7 @@
     maybeRunDailySocialMoments();
     updateSpoilageForHour();
     showCompanionThoughtForHour();
+    maybeSecretDrift(context);
     await eventDirectorTick();
 
     if (gameState.milesTraveled >= gameState.targetMiles) {
@@ -13388,6 +13968,18 @@
       const name = document.createElement("div");
       name.className = "ot-manifest-name";
       name.textContent = p.name;
+      if (
+        p.hiddenTraits &&
+        p.hiddenTraits.length &&
+        p.secret &&
+        p.secret.suspicion >= 35 &&
+        (!p.secret.revealed || p.secret.revealed.length < p.hiddenTraits.length)
+      ) {
+        const badge = document.createElement("span");
+        badge.className = "ot-manifest-suspect";
+        badge.textContent = "? secret";
+        name.appendChild(badge);
+      }
       left.appendChild(name);
       const role = document.createElement("div");
       role.className = "ot-manifest-role";
@@ -15780,6 +16372,18 @@
       .join(" ") || "No quirks noted.";
     dom.companionDetail.appendChild(traitsRow);
 
+    if (
+      person.hiddenTraits &&
+      person.hiddenTraits.length &&
+      (!person.secret || person.secret.revealed.length < person.hiddenTraits.length)
+    ) {
+      const hint = document.createElement("div");
+      hint.className = "ot-panel-body-sm ot-text-muted";
+      const suspicion = (person.secret && person.secret.suspicion) || 0;
+      hint.textContent = suspicion >= 35 ? "Secret suspected" : "Keeps a few things close";
+      dom.companionDetail.appendChild(hint);
+    }
+
     const affs = activeAfflictions(person);
     if (affs.length) {
       const affDiv = document.createElement("div");
@@ -16115,6 +16719,73 @@
     tdWUse.appendChild(wBtn);
     trW.appendChild(tdWUse);
     dom.inventoryBody.appendChild(trW);
+
+    if (gameState.mythicEnabled) {
+      const curioState = ensureMythicCurioState();
+      const head = document.createElement("tr");
+      const headCell = document.createElement("td");
+      headCell.colSpan = 3;
+      headCell.textContent = "Mythic curios";
+      headCell.className = "ot-text-muted";
+      head.appendChild(headCell);
+      dom.inventoryBody.appendChild(head);
+
+      curioState.slots.forEach(function (cid, idx) {
+        const row = document.createElement("tr");
+        const cName = document.createElement("td");
+        cName.textContent = "Slot " + (idx + 1);
+        row.appendChild(cName);
+        const cVal = document.createElement("td");
+        const def = cid ? getCurioDef(cid) : null;
+        cVal.textContent = def ? def.name + " — " + (def.shortDesc || "") : "Empty";
+        row.appendChild(cVal);
+        const cBtn = document.createElement("td");
+        if (cid) {
+          const btn = document.createElement("button");
+          btn.className = "ot-inv-btn";
+          btn.textContent = "Stow";
+          btn.addEventListener("click", function () {
+            unequipMythicCurio(idx);
+            renderInventoryModal();
+          });
+          cBtn.appendChild(btn);
+        }
+        row.appendChild(cBtn);
+        dom.inventoryBody.appendChild(row);
+      });
+
+      const ownedRow = document.createElement("tr");
+      const ownedLabel = document.createElement("td");
+      ownedLabel.textContent = "Owned";
+      ownedRow.appendChild(ownedLabel);
+      const ownedList = document.createElement("td");
+      ownedList.colSpan = 2;
+      if (!curioState.owned.length) {
+        ownedList.textContent = "No curios found.";
+      } else {
+        ownedList.innerHTML = curioState.owned
+          .map(function (cid) {
+            const def = getCurioDef(cid);
+            const slotted = curioState.slots.indexOf(cid) >= 0;
+            const btn = slotted
+              ? ""
+              : `<button class="ot-inv-btn" data-equip="${cid}">Equip</button>`;
+            return `<div>${def ? def.name : cid} ${btn}</div>`;
+          })
+          .join("");
+      }
+      ownedRow.appendChild(ownedList);
+      dom.inventoryBody.appendChild(ownedRow);
+
+      Array.from(dom.inventoryBody.querySelectorAll("[data-equip]")).forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          const id = btn.getAttribute("data-equip");
+          const openSlot = curioState.slots.indexOf(null) >= 0 ? curioState.slots.indexOf(null) : 0;
+          equipMythicCurio(id, openSlot);
+          renderInventoryModal();
+        });
+      });
+    }
   }
 
   function renderOnTrailHeader() {
