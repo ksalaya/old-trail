@@ -2026,6 +2026,13 @@
                 Neutral
               </span>
             </div>
+            <div>
+              Factions:
+              <span id="ot-faction-forts" class="ot-rep-chip ot-rep-chip-neutral">Forts</span>
+              <span id="ot-faction-caravans" class="ot-rep-chip ot-rep-chip-neutral">Caravans</span>
+              <span id="ot-faction-open-eye" class="ot-rep-chip ot-rep-chip-neutral">Open Eye</span>
+              <span id="ot-faction-men-in-gray" class="ot-rep-chip ot-rep-chip-neutral">Men in Gray</span>
+            </div>
           </div>
         </div>
 
@@ -2978,10 +2985,33 @@
       tags: ["mythic", "light"],
     },
     {
+      id: "home_marker",
+      name: "Home Marker",
+      shortDesc: "A carved mile post that hums when storms roll in.",
+      boon: { travel: 1, warmth: 2 },
+      upkeep: { kind: "time", cost: 1, periodHours: 48 },
+      tags: ["mythic", "wayfinding"],
+    },
+    {
+      id: "gray_token",
+      name: "Gray Token",
+      shortDesc: "An odd coin that rumors say wards off unseen eyes.",
+      boon: { mythicGuard: true, morale: 1 },
+      upkeep: { kind: "morale", cost: 2, periodHours: 36 },
+      tags: ["mythic", "omen"],
+    },
+  ];
+
+  const DREAMWEST_B_SEEDS = [
+    {
       id: "seed_b02_open_eye_leaflet",
       kind: "breather",
       condition: function (ctx) {
-        return ctx.block === "evening" && hoursSinceFlag("seed_b02_open_eye_leaflet_time") >= 72;
+        return (
+          ctx.block === "evening" &&
+          hoursSinceFlag("seed_b02_open_eye_leaflet_time") >= 72 &&
+          hoursSinceFlag("seed_b_global_time") >= 36
+        );
       },
       weight: function () {
         return 3;
@@ -3003,6 +3033,7 @@
           defaultId: "read",
         });
         const nowHour = getCurrentTrailHour(gameState);
+        setEventFlag("seed_b_global_time", nowHour);
         setEventFlag("seed_b02_open_eye_leaflet_time", nowHour);
         let logText = "You tuck the strange leaflet away and return to the firelight.";
         if (selection === "read") {
@@ -3044,7 +3075,8 @@
           ctx.storyState.mythicEnabled !== false &&
           ctx.mode === "camp" &&
           ctx.block === "night" &&
-          hoursSinceFlag("seed_b03_men_in_gray_sighting_time") >= 168
+          hoursSinceFlag("seed_b03_men_in_gray_sighting_time") >= 168 &&
+          hoursSinceFlag("seed_b_global_time") >= 36
         );
       },
       weight: function () {
@@ -3067,15 +3099,20 @@
           defaultId: "hail",
         });
         const nowHour = getCurrentTrailHour(gameState);
+        setEventFlag("seed_b_global_time", nowHour);
         setEventFlag("seed_b03_men_in_gray_sighting_time", nowHour);
         let logText = "You keep the lamps low until the gray coats melt back into the night.";
         if (selection === "hail") {
-          gameState.supplies.water = Math.max(0, (gameState.supplies.water || 0) - 1);
-          gameState.money = (gameState.money || 0) + 4;
+          const terms = getTradeTermsForFaction("men_in_gray");
+          const waterCost = Math.max(1, Math.round(1 * terms.costMult));
+          const payout = Math.max(3, Math.round(4 * terms.gainMult));
+          gameState.supplies.water = Math.max(0, (gameState.supplies.water || 0) - waterCost);
+          gameState.money = (gameState.money || 0) + payout;
           adjustFactionRep("men_in_gray", 6, null, ctx);
           ctx.storyState.mythicRumor = clamp((ctx.storyState.mythicRumor || 0) + 2, 0, 100);
           setEventFlag("men_in_gray_contact", true);
-          logText = "You offer a dipper of water. Silver coins change hands and the gray coats nod once before vanishing.";
+          logText =
+            "You offer a dipper of water. Silver coins change hands and the gray coats nod once before vanishing.";
         } else if (selection === "hide") {
           ctx.storyState.tension = clamp((ctx.storyState.tension || 0) - 2, 0, 100);
           setEventFlag("men_in_gray_footprints", true);
@@ -3105,7 +3142,8 @@
           ctx.block === "noon" &&
           (ctx.weather.tempC || 0) >= 22 &&
           !ctx.weather.storm &&
-          hoursSinceFlag("seed_b04_mirror_wagon_time") >= 96
+          hoursSinceFlag("seed_b04_mirror_wagon_time") >= 96 &&
+          hoursSinceFlag("seed_b_global_time") >= 36
         );
       },
       weight: function () {
@@ -3128,6 +3166,7 @@
           defaultId: "signal",
         });
         const nowHour = getCurrentTrailHour(gameState);
+        setEventFlag("seed_b_global_time", nowHour);
         setEventFlag("seed_b04_mirror_wagon_time", nowHour);
         let logText = "You keep to the ruts, the mirage wagon fading in the shimmer.";
         if (selection === "chase") {
@@ -3174,7 +3213,12 @@
       id: "seed_b05_milepost_twisted",
       kind: "minor",
       condition: function (ctx) {
-        return ctx.mode === "travel" && ctx.block === "morning" && hoursSinceFlag("seed_b05_milepost_twisted_time") >= 120;
+        return (
+          ctx.mode === "travel" &&
+          ctx.block === "morning" &&
+          hoursSinceFlag("seed_b05_milepost_twisted_time") >= 120 &&
+          hoursSinceFlag("seed_b_global_time") >= 36
+        );
       },
       weight: function () {
         return 2;
@@ -3196,6 +3240,7 @@
           defaultId: "fix",
         });
         const nowHour = getCurrentTrailHour(gameState);
+        setEventFlag("seed_b_global_time", nowHour);
         setEventFlag("seed_b05_milepost_twisted_time", nowHour);
         let logText = "You mark the crooked post and keep the team steady as you choose your path.";
         if (selection === "fix") {
@@ -3215,20 +3260,300 @@
       },
     },
     {
-      id: "home_marker",
-      name: "Home Marker",
-      shortDesc: "A carved mile post that hums when storms roll in.",
-      boon: { travel: 1, warmth: 2 },
-      upkeep: { kind: "time", cost: 1, periodHours: 48 },
-      tags: ["mythic", "wayfinding"],
+      id: "seed_b06_open_eye_peddler",
+      kind: "breather",
+      condition: function (ctx) {
+        const seenEye = getEventFlag("open_eye_seen") || getEventFlag("open_eye_leaflet_kept");
+        const blockOk = (ctx.mode === "travel" && ctx.block === "morning") || (ctx.mode === "camp" && ctx.block === "evening");
+        return (
+          seenEye &&
+          blockOk &&
+          hoursSinceFlag("seed_b06_open_eye_peddler_time") >= 96 &&
+          hoursSinceFlag("seed_b_global_time") >= 36
+        );
+      },
+      weight: function () {
+        return 2;
+      },
+      run: async function (ctx) {
+        const lineByRegion = {
+          plains: "Their wagon smells of ink and sage; prairie grass whispers underfoot.",
+          central_plains: "Bundles sway as wind combs the tallgrass beside the trail.",
+          high_plains: "Dust and sky swallow the horizon; the charm's ink feels fresh against the dry air.",
+          mountains: "Pines creak nearby as the peddler sets out their cloth-wrapped bundle.",
+          snake_plain: "Alkali streaks the wagon wheels; the charm's eye is ringed in white salt.",
+          blue_mountains: "A chill breeze carries woodsmoke; the peddler speaks softly of safe passes.",
+          columbia: "Mist from distant falls beads on the inked charm dangling at their throat.",
+        };
+        const regionLine = lineByRegion[ctx.regionKey] || lineByRegion.plains;
+        const terms = getTradeTermsForFaction("open_eye");
+        const moneyCost = Math.max(2, Math.round(5 * terms.costMult));
+        const flourCost = Math.max(1, Math.round(3 * terms.costMult));
+        const medicineGain = Math.max(1, Math.round(1 * terms.gainMult));
+        const selection = await presentEncounter({
+          id: "seed_b06_open_eye_peddler",
+          title: "Peddler with an inked eye charm",
+          subtitle: ctx.location,
+          body: [
+            "A soft-spoken peddler wheels close, a small charm painted with an open eye at their throat.",
+            regionLine,
+            "They offer a bundled 'blessing' of herbs and cord, asking only what you can spare.",
+          ],
+          tags: ["cult", "trade"],
+          options: [
+            {
+              id: "trade",
+              label: `Trade for the bundle ($${moneyCost} or ${flourCost} flour)`,
+              tone: "warm",
+              hint: `${terms.label} terms: +medicine or eased spirits.`,
+            },
+            {
+              id: "listen",
+              label: "Listen, then move on",
+              tone: "neutral",
+              hint: "A moment of calm; let tension ebb.",
+            },
+            {
+              id: "drive",
+              label: "Drive them off",
+              tone: "danger",
+              hint: "Costs supplies; reputation will suffer.",
+            },
+          ],
+          defaultId: "trade",
+        });
+        const nowHour = getCurrentTrailHour(gameState);
+        setEventFlag("seed_b_global_time", nowHour);
+        setEventFlag("seed_b06_open_eye_peddler_time", nowHour);
+        let logText = "The ink-eyed peddler wheels away, wagon creaking back into the dust.";
+        if (selection === "trade") {
+          let paid = false;
+          if ((gameState.money || 0) >= moneyCost) {
+            gameState.money = Math.max(0, (gameState.money || 0) - moneyCost);
+            paid = true;
+          } else if ((gameState.supplies.flour || 0) >= flourCost) {
+            gameState.supplies.flour = Math.max(0, (gameState.supplies.flour || 0) - flourCost);
+            paid = true;
+          }
+          if (paid) {
+            gameState.supplies.medicine = (gameState.supplies.medicine || 0) + medicineGain;
+            adjustFactionRep("open_eye", 4, null, ctx);
+            const target = choice(ctx.people || getAllPeople());
+            if (target) {
+              addThought(target, {
+                id: "open_eye_bundle",
+                label: "Carried a blessing bundle",
+                value: 2,
+                hoursLeft: 10,
+                source: "cult",
+              });
+            }
+            logText = "You swap a few staples for the bundle; the charm watcher nods and wishes safe miles.";
+          } else {
+            logText = "Short on coin and flour, you pass on the offer and the peddler shrugs into the ruts.";
+          }
+        } else if (selection === "listen") {
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) - 1, 0, 100);
+          const target = choice(ctx.people || getAllPeople());
+          if (target) {
+            addThought(target, {
+              id: "open_eye_sermon",
+              label: "Heard the open eye's words",
+              value: 1,
+              hoursLeft: 8,
+              source: "cult",
+            });
+          }
+          logText = "You listen to their soft assurances, then move on with nerves a shade steadier.";
+        } else if (selection === "drive") {
+          gameState.supplies.ammo = Math.max(0, (gameState.supplies.ammo || 0) - 1);
+          adjustFactionRep("open_eye", -6, null, ctx);
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) + 2, 0, 100);
+          const target = choice(ctx.people || getAllPeople());
+          if (target) {
+            addThought(target, {
+              id: "open_eye_runoff",
+              label: "Chased off a peddler",
+              value: -2,
+              hoursLeft: 6,
+              source: "guard",
+            });
+          }
+          logText = "You snap at the peddler and send them packing, their charm flashing once as they go.";
+        }
+        addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("seed", "cult", "Met an ink-eyed peddler", { choice: selection });
+      },
     },
     {
-      id: "gray_token",
-      name: "Gray Token",
-      shortDesc: "An odd coin that rumors say wards off unseen eyes.",
-      boon: { mythicGuard: true, morale: 1 },
-      upkeep: { kind: "morale", cost: 2, periodHours: 36 },
-      tags: ["mythic", "omen"],
+      id: "seed_b07_men_in_gray_offer",
+      kind: "minor",
+      condition: function (ctx) {
+        return (
+          ctx.storyState.mythicEnabled !== false &&
+          ctx.mode === "camp" &&
+          ctx.block === "night" &&
+          hoursSinceFlag("seed_b07_men_in_gray_offer_time") >= 168 &&
+          hoursSinceFlag("seed_b_global_time") >= 36
+        );
+      },
+      weight: function () {
+        return 2;
+      },
+      run: async function (ctx) {
+        const terms = getTradeTermsForFaction("men_in_gray");
+        const price = Math.max(2, Math.round(5 * terms.costMult));
+        const waterAsk = Math.max(1, Math.round(2 * terms.costMult));
+        const payout = Math.max(4, Math.round(9 * terms.gainMult));
+        const selection = await presentEncounter({
+          id: "seed_b07_men_in_gray_offer",
+          title: "Men in Gray make an offer",
+          subtitle: ctx.location,
+          body: [
+            "Gray-coated figures appear at the edge of camp with a wrapped token, offering quiet protection for a price.",
+          ],
+          tags: ["camp", "mythic", "trade"],
+          options: [
+            {
+              id: "accept",
+              label: `Accept the offer ($${price} or ${waterAsk} water)`,
+              tone: "neutral",
+              hint: `${terms.label} terms; reward scales with standing.`,
+            },
+            {
+              id: "silent",
+              label: "Stay silent",
+              tone: "warm",
+              hint: "Lower tension; they leave faint tracks.",
+            },
+            {
+              id: "refuse",
+              label: "Refuse harshly",
+              tone: "danger",
+              hint: "Spend ammo; risk injury and sour relations.",
+            },
+          ],
+          defaultId: "accept",
+        });
+        const nowHour = getCurrentTrailHour(gameState);
+        setEventFlag("seed_b_global_time", nowHour);
+        setEventFlag("seed_b07_men_in_gray_offer_time", nowHour);
+        let logText = "The gray coats slip away without another word.";
+        if (selection === "accept") {
+          let paid = false;
+          if ((gameState.money || 0) >= price) {
+            gameState.money = Math.max(0, (gameState.money || 0) - price);
+            paid = true;
+          } else if ((gameState.supplies.water || 0) >= waterAsk) {
+            gameState.supplies.water = Math.max(0, (gameState.supplies.water || 0) - waterAsk);
+            paid = true;
+          }
+          if (paid) {
+            gameState.money = (gameState.money || 0) + payout;
+            adjustFactionRep("men_in_gray", 4, null, ctx);
+            setEventFlag("men_in_gray_token", true);
+            const target = choice(ctx.people || getAllPeople());
+            if (target) {
+              addThought(target, {
+                id: "gray_token_whisper",
+                label: "Accepted gray token",
+                value: 2,
+                hoursLeft: 12,
+                source: "mythic",
+              });
+            }
+            logText = "Coins and water change hands; the gray coats leave a token that feels heavier than metal.";
+          } else {
+            logText = "Unable to meet their price, you watch them fade back into the dark without a deal.";
+          }
+        } else if (selection === "silent") {
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) - 1, 0, 100);
+          setEventFlag("men_in_gray_footprints", true);
+          logText = "You wait them out. By dawn only crisp bootprints remain around camp.";
+        } else if (selection === "refuse") {
+          gameState.supplies.ammo = Math.max(0, (gameState.supplies.ammo || 0) - 1);
+          adjustFactionRep("men_in_gray", -7, null, ctx);
+          if (Math.random() < 0.35) {
+            const target = choice(ctx.people || getAllPeople());
+            if (target) {
+              target.condition = clamp((target.condition || 50) - 5, 0, 100);
+              addAffliction(target, "bruise", { severity: 1 });
+            }
+          }
+          logText = "You bark them off with a warning shot; shadows scatter and unease lingers.";
+        }
+        addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("seed", "mythic", "Men in Gray made an offer", { choice: selection });
+      },
+    },
+    {
+      id: "seed_b08_paper_sun_dusk",
+      kind: "breather",
+      condition: function (ctx) {
+        return (
+          ctx.mode === "travel" &&
+          (ctx.block === "noon" || ctx.block === "evening") &&
+          hoursSinceFlag("seed_b08_paper_sun_dusk_time") >= 84 &&
+          hoursSinceFlag("seed_b_global_time") >= 36
+        );
+      },
+      weight: function () {
+        return 2;
+      },
+      run: async function (ctx) {
+        const lineByRegion = {
+          mountains: "Peaks look cut from paper, the sun a punched-out disk hovering over the pass.",
+          snake_plain: "Heat makes the sage shimmer until the sun seems pasted on a white sky.",
+          columbia: "Mist from the gorge turns light into layered sheets, the wagon's shadow doubled on the water.",
+        };
+        const regionLine = lineByRegion[ctx.regionKey] ||
+          "Wagon shadows stretch thin and strange, as if another team walks beside you.";
+        const selection = await presentEncounter({
+          id: "seed_b08_paper_sun_dusk",
+          title: "Paper sun at dusk",
+          subtitle: ctx.location,
+          body: [
+            "The sky feels wrong for a moment—a paper-thin sun and an echo of your wagon rolling just out of sight.",
+            regionLine,
+          ],
+          tags: ["travel", "omen"],
+          options: [
+            { id: "write", label: "Write it down", tone: "neutral", hint: "A thought for the journal; tension eases." },
+            { id: "share", label: "Share it at the fire", tone: "warm", hint: "Lift morale for a bit." },
+            { id: "shake", label: "Shake it off", tone: "neutral", hint: "Focus ahead; steady the team." },
+          ],
+          defaultId: "share",
+        });
+        const nowHour = getCurrentTrailHour(gameState);
+        setEventFlag("seed_b_global_time", nowHour);
+        setEventFlag("seed_b08_paper_sun_dusk_time", nowHour);
+        let logText = "The odd light passes and the wagon creaks on.";
+        if (selection === "write") {
+          const leader = getActiveLeader();
+          if (leader) {
+            addThought(leader, {
+              id: "paper_sun_note",
+              label: "Noted the paper sun",
+              value: 2,
+              hoursLeft: 12,
+              source: "journal",
+            });
+          }
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) - 1, 0, 100);
+          logText = "You jot the paper-sun moment into your journal, easing nerves a notch.";
+        } else if (selection === "share") {
+          (ctx.people || getAllPeople()).forEach(function (p) {
+            adjustPersonStat(p, "morale", 1);
+          });
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) - 1, 0, 100);
+          logText = "You share the tale at the fire; laughter and wonder chase off the strange chill.";
+        } else if (selection === "shake") {
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) - 2, 0, 100);
+          logText = "You shake the image loose and focus on the trail ahead.";
+        }
+        addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("seed", "omen", "Saw a paper-thin sun", { choice: selection });
+      },
     },
   ];
 
@@ -4929,7 +5254,7 @@
         lastCrisisLogHour: null,
         spoilage: { batches: [], nextBatchId: 1, migratedLegacy: false },
         mythicCurios: { owned: [], slots: [null, null], upkeepState: {} },
-        factionRep: { caravans: 0, forts: 0, men_in_gray: 0 },
+        factionRep: { caravans: 0, forts: 0, open_eye: 0, men_in_gray: 0 },
         mythicRumor: 0,
       };
     }
@@ -4972,9 +5297,10 @@
     if (!Array.isArray(ss.mythicCurios.owned)) ss.mythicCurios.owned = [];
     if (!Array.isArray(ss.mythicCurios.slots)) ss.mythicCurios.slots = [null, null];
     if (!ss.mythicCurios.upkeepState) ss.mythicCurios.upkeepState = {};
-    if (!ss.factionRep) ss.factionRep = { caravans: 0, forts: 0, men_in_gray: 0 };
+    if (!ss.factionRep) ss.factionRep = { caravans: 0, forts: 0, open_eye: 0, men_in_gray: 0 };
     if (typeof ss.factionRep.caravans !== "number") ss.factionRep.caravans = 0;
     if (typeof ss.factionRep.forts !== "number") ss.factionRep.forts = 0;
+    if (typeof ss.factionRep.open_eye !== "number") ss.factionRep.open_eye = 0;
     if (typeof ss.factionRep.men_in_gray !== "number") ss.factionRep.men_in_gray = 0;
     if (typeof ss.mythicRumor !== "number") ss.mythicRumor = 0;
     return ss;
@@ -6567,6 +6893,12 @@
     dom.weatherSummary = document.getElementById("ot-weather-summary");
     dom.weatherNote = document.getElementById("ot-weather-note");
     dom.reputationChip = document.getElementById("ot-reputation-chip");
+    dom.factionChips = {
+      forts: document.getElementById("ot-faction-forts"),
+      caravans: document.getElementById("ot-faction-caravans"),
+      open_eye: document.getElementById("ot-faction-open-eye"),
+      men_in_gray: document.getElementById("ot-faction-men-in-gray"),
+    };
     dom.leaderStatus = document.getElementById("ot-leader-status");
     dom.partyManifest = document.getElementById("ot-party-manifest");
     dom.hourTasks = document.getElementById("ot-hour-tasks");
@@ -7838,12 +8170,16 @@
       gameState.reputationFlags = {};
     }
     const ss = ensureStoryState();
-    if (!ss.factionRep) ss.factionRep = { caravans: 0, forts: 0, men_in_gray: 0 };
+    if (!ss.factionRep) ss.factionRep = { caravans: 0, forts: 0, open_eye: 0, men_in_gray: 0 };
+    if (typeof ss.factionRep.caravans !== "number") ss.factionRep.caravans = 0;
+    if (typeof ss.factionRep.forts !== "number") ss.factionRep.forts = 0;
+    if (typeof ss.factionRep.open_eye !== "number") ss.factionRep.open_eye = 0;
+    if (typeof ss.factionRep.men_in_gray !== "number") ss.factionRep.men_in_gray = 0;
   }
 
   function adjustFactionRep(factionId, delta, reason, ctx) {
     const ss = ensureStoryState();
-    if (!ss.factionRep) ss.factionRep = { caravans: 0, forts: 0, men_in_gray: 0 };
+    if (!ss.factionRep) ss.factionRep = { caravans: 0, forts: 0, open_eye: 0, men_in_gray: 0 };
     if (typeof ss.factionRep[factionId] !== "number") ss.factionRep[factionId] = 0;
     ss.factionRep[factionId] = clamp(ss.factionRep[factionId] + delta, -100, 100);
     if (reason) {
@@ -7860,6 +8196,29 @@
     if (val > -15) return { id: "neutral", label: "Neutral", value: val };
     if (val > -45) return { id: "wary", label: "Wary", value: val };
     return { id: "hostile", label: "Hostile", value: val };
+  }
+
+  function getTradeTermsForFaction(factionId) {
+    const tier = getFactionRepTier(factionId);
+    let costMult = 1;
+    let gainMult = 1;
+    if (tier.id === "ally") {
+      costMult = 0.85;
+      gainMult = 1.15;
+    } else if (tier.id === "trusted") {
+      costMult = 0.92;
+      gainMult = 1.08;
+    } else if (tier.id === "neutral") {
+      costMult = 1;
+      gainMult = 1;
+    } else if (tier.id === "wary") {
+      costMult = 1.08;
+      gainMult = 0.92;
+    } else {
+      costMult = 1.18;
+      gainMult = 0.82;
+    }
+    return { costMult: costMult, gainMult: gainMult, label: tier.label, tier: tier };
   }
 
   function ensureMythicCurioState() {
@@ -11547,29 +11906,55 @@
           tags: ["trade", "social"],
           options: [
             { id: "greet", label: "Exchange pleasantries", tone: "warm", hint: "Small morale lift." },
-            { id: "trade", label: "Trade staples", tone: "neutral", hint: "Swap coffee or flour." },
+            {
+              id: "trade",
+              label: "Trade staples",
+              tone: "neutral",
+              hint: "Swap coffee or flour; terms hinge on caravan regard.",
+            },
             { id: "travel", label: "Travel together for a day", tone: "warm", hint: "Safer for a bit; slower pace." },
             { id: "threaten", label: "Rattle them for goods", tone: "danger", hint: "Risky, reputation hit." },
           ],
           defaultId: "greet",
         });
+        const tradeTerms = getTradeTermsForFaction("caravans");
+        let flourCost = Math.max(2, Math.round(4 * tradeTerms.costMult));
+        let coffeeGain = Math.max(1, Math.round(1 * tradeTerms.gainMult));
+        if (tradeTerms.tier.id === "ally") {
+          flourCost = Math.max(2, flourCost - 1);
+          coffeeGain += 1;
+        } else if (tradeTerms.tier.id === "wary" || tradeTerms.tier.id === "hostile") {
+          flourCost += 1;
+          coffeeGain = Math.max(1, coffeeGain - 1);
+        }
         if (choice === "greet") {
           getAllPeople().forEach(function (p) {
             adjustPersonStat(p, "morale", 1);
           });
+          adjustFactionRep("caravans", 1, null, ctx);
           addLog("Shared jokes and trail gossip lighten the morning march.", { tone: "morale" });
         } else if (choice === "trade") {
-          gameState.supplies.coffee = (gameState.supplies.coffee || 0) + 1;
-          gameState.supplies.flour = Math.max(0, (gameState.supplies.flour || 0) - 4);
-          addLog("You trade flour for coffee and a coil of rope.", { tone: "event" });
-          adjustReputation(1, "Fair caravan trade");
+          if ((gameState.supplies.flour || 0) >= flourCost) {
+            gameState.supplies.coffee = (gameState.supplies.coffee || 0) + coffeeGain;
+            gameState.supplies.flour = Math.max(0, (gameState.supplies.flour || 0) - flourCost);
+            adjustFactionRep("caravans", 2, null, ctx);
+            addLog(
+              `You trade ${flourCost} flour for ${coffeeGain} coffee under watchful eyes.`,
+              { tone: "event" }
+            );
+            adjustReputation(1, "Fair caravan trade");
+          } else {
+            addLog("Lacking flour to spare, the trade falls through with polite nods.", { tone: "info" });
+          }
         } else if (choice === "travel") {
           ctx.storyState.eventFlags.caravan_travel_tag = ctx.dayTag;
           ctx.storyState.eventFlags.caravan_guard_bonus = 3;
           gameState.lastHourMiles = Math.max(0, (gameState.lastHourMiles || 0) - 0.3);
+          adjustFactionRep("caravans", 1, null, ctx);
           addLog("You fall in with the caravan for the day, sharing watch and stories.", { tone: "morale" });
         } else {
           gameState.money = (gameState.money || 0) + 3;
+          adjustFactionRep("caravans", -5, null, ctx);
           adjustReputation(-6, "You shook down a caravan", { flag: "knownThief" });
           addLog("You rattle the caravan for a few coins. Eyes stay cold as they pull away.", { tone: "warning" });
           ctx.storyState.tension = clamp(ctx.storyState.tension + 5, 0, 100);
@@ -12232,6 +12617,106 @@
             { tone: "warning", location: ctx.location }
           );
         }
+      },
+    },
+    {
+      id: "fort_sutler_quick_trade",
+      kind: "breather",
+      condition: function (ctx) {
+        const atFort = (ctx.location || "").toLowerCase().indexOf("fort") >= 0;
+        return atFort && ctx.mode !== "travel" && hoursSinceFlag("fort_sutler_time") >= 120;
+      },
+      weight: function () {
+        return 4;
+      },
+      run: async function (ctx) {
+        const terms = getTradeTermsForFaction("forts");
+        const ammoGain = Math.max(1, Math.round(3 * terms.gainMult));
+        const ammoCost = Math.max(3, Math.round(7 * terms.costMult));
+        const medGain = Math.max(1, Math.round(1 * terms.gainMult));
+        const medCost = Math.max(4, Math.round(10 * terms.costMult));
+        const sellPayout = Math.max(3, Math.round(6 * terms.gainMult));
+        const hasAxle = (gameState.supplies.axle || 0) > 0;
+        const hasWheel = (gameState.supplies.wheel || 0) > 0;
+        const hasFlour = (gameState.supplies.flour || 0) >= 5;
+        const selection = await presentEncounter({
+          id: "fort_sutler_quick_trade",
+          title: "Sutler's counter",
+          subtitle: ctx.location,
+          body: [
+            "A sutler at the fort's gate offers quick trades before the wagon rolls on.",
+          ],
+          tags: ["trade", "fort"],
+          options: [
+            {
+              id: "buy_ammo",
+              label: `Buy ammo (${ammoGain} rounds for $${ammoCost})`,
+              tone: "neutral",
+              hint: `${terms.label} terms apply.`,
+            },
+            {
+              id: "buy_med",
+              label: `Buy medicine (${medGain} dose for $${medCost})`,
+              tone: "neutral",
+              hint: `${terms.label} terms apply.`,
+            },
+            {
+              id: "sell_parts",
+              label: hasAxle || hasWheel || hasFlour
+                ? "Sell a spare (axle/wheel or 5 flour)"
+                : "No surplus to sell",
+              tone: hasAxle || hasWheel || hasFlour ? "warm" : "neutral",
+              hint: hasAxle || hasWheel || hasFlour
+                ? `Earn $${sellPayout} on ${terms.label} terms.`
+                : "You lack parts or flour to spare.",
+            },
+            { id: "pass", label: "Decline", tone: "neutral", hint: "Move along." },
+          ],
+          defaultId: "buy_ammo",
+        });
+        const nowHour = getCurrentTrailHour(gameState);
+        setEventFlag("fort_sutler_time", nowHour);
+        let logText = "You nod to the sutler and keep moving.";
+        if (selection === "buy_ammo") {
+          if ((gameState.money || 0) >= ammoCost) {
+            gameState.money = Math.max(0, (gameState.money || 0) - ammoCost);
+            gameState.supplies.ammo = (gameState.supplies.ammo || 0) + ammoGain;
+            adjustFactionRep("forts", 2, null, ctx);
+            logText = `You pay $${ammoCost} for cartridges and tuck ${ammoGain} into the chest.`;
+          } else {
+            logText = "Short on cash, you leave the cartridges behind.";
+          }
+        } else if (selection === "buy_med") {
+          if ((gameState.money || 0) >= medCost) {
+            gameState.money = Math.max(0, (gameState.money || 0) - medCost);
+            gameState.supplies.medicine = (gameState.supplies.medicine || 0) + medGain;
+            adjustFactionRep("forts", 2, null, ctx);
+            logText = `The sutler slips over ${medGain} dose of tonic for $${medCost}.`;
+          } else {
+            logText = "You count your coins twice and decide to save them.";
+          }
+        } else if (selection === "sell_parts") {
+          if (hasAxle) {
+            gameState.supplies.axle = Math.max(0, (gameState.supplies.axle || 0) - 1);
+            gameState.money = (gameState.money || 0) + sellPayout;
+            adjustFactionRep("forts", 1, null, ctx);
+            logText = `You part with a spare axle and take $${sellPayout} in return.`;
+          } else if (hasWheel) {
+            gameState.supplies.wheel = Math.max(0, (gameState.supplies.wheel || 0) - 1);
+            gameState.money = (gameState.money || 0) + sellPayout;
+            adjustFactionRep("forts", 1, null, ctx);
+            logText = `You sell a wheel to the sutler and pocket $${sellPayout}.`;
+          } else if (hasFlour) {
+            gameState.supplies.flour = Math.max(0, (gameState.supplies.flour || 0) - 5);
+            gameState.money = (gameState.money || 0) + Math.max(2, Math.round(sellPayout * 0.6));
+            adjustFactionRep("forts", 1, null, ctx);
+            logText = "You swap a small sack of flour for travel money.";
+          } else {
+            logText = "With nothing spare, you wave off the offer.";
+          }
+        }
+        addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("trade", "fort", "Quick sutler trade", { choice: selection });
       },
     },
     {
@@ -14426,6 +14911,7 @@
         setEventFlag("mythic_wanderer_choice", null);
       },
     },
+    ...DREAMWEST_B_SEEDS,
   ];
 
   function weightedPick(items) {
@@ -17690,6 +18176,39 @@
     dom.reputationChip.title = `${tier.desc} (Score ${Math.round(gameState.reputation || 0)})`;
   }
 
+  function renderFactionStandings() {
+    ensureReputationState();
+    const chips = dom.factionChips || {};
+    const classForTier = function (tierId) {
+      if (tierId === "ally" || tierId === "trusted") return "ot-rep-chip-virtuous";
+      if (tierId === "wary" || tierId === "hostile") return "ot-rep-chip-notorious";
+      return "ot-rep-chip-neutral";
+    };
+    const hints = {
+      forts: "Better sutler terms",
+      caravans: "Better caravan trades",
+      open_eye: "Watchful blessings or ire",
+      men_in_gray: "Quiet dealings",
+    };
+    const applyChip = function (key, label) {
+      const el = chips[key];
+      if (!el) return;
+      const tier = getFactionRepTier(key);
+      el.className = "ot-rep-chip " + classForTier(tier.id);
+      el.textContent = label + ": " + tier.label;
+      el.title = `${tier.label} (${Math.round(tier.value)}) · ${hints[key] || "Trade terms"}`;
+    };
+
+    applyChip("forts", "Forts");
+    applyChip("caravans", "Caravans");
+    applyChip("open_eye", "Open Eye");
+    const mythicOn = ensureStoryState().mythicEnabled !== false;
+    if (chips.men_in_gray) {
+      chips.men_in_gray.style.display = mythicOn ? "inline-flex" : "none";
+      if (mythicOn) applyChip("men_in_gray", "Men in Gray");
+    }
+  }
+
   function renderAfflictionAlerts() {
     const container = dom.afflictionAlerts;
     if (!container) return;
@@ -17864,6 +18383,7 @@
       renderStorytellerDescription(gameState.storytellerPresetId || "classic");
       renderOnTrailHeader();
       renderReputation();
+      renderFactionStandings();
       renderLeaderStatus();
       renderPartyManifest();
       renderHourTasks();
