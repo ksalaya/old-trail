@@ -199,6 +199,18 @@ UI / Explorer View
 - Add touch/mobile-friendly movement controls (D-pad or swipe) for the explorer camera.
 - Animate weather and fog layers over the explorer viewport to mirror current conditions.
 
+Procedural Characters / Social / Mythic Chains (this update)
+✅ Implemented
+- Hidden trait intel layer with suspicion → hint → reveal flow, including UI badges and once-per-trait stat application updates.
+- Trait/backstory pack appended with weighted draft buckets and mythic gating.
+- Mythic curio scaffolding (definitions, ownership, slots, and inventory UI) and basic faction reputation placeholders.
+
+⏳ Deferred
+- Event chains from spec (EX-01, EX-05, EX-06, EX-07, EX-08, EX-09, EX-10) and SHOULD sets (H-01, H-02, H-04, H-05, H-07, S-01, S-05, S-06, S-08, M-01, M-02, M-05, M-08) need staged implementation with storyteller hooks.
+- Mythic curio upkeep resolution, mythic rumor meter behaviors, and faction price/aid hooks tied to caravans/forts.
+- Social arcs for romance vows/heartbreak and rival mediation/duels beyond scaffolding.
+- Rapid-fire seed events and Big Setpieces (Tier B) remain to be designed and slotted.
+
 Deferred from Procedural Characters / Social / Mythic Chains
 - Add a reveal system for hidden traits/quirks that surface via specific events or milestones, including UI hints when a secret is suspected.
 - Extend relationship arcs into romance/kinship and formal rivalries with escalating incident chains and reconciliations.
