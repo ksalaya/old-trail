@@ -155,6 +155,100 @@
   box-shadow: 0 0 0 1px rgba(245, 210, 139, 0.4);
 }
 
+.ot-draft-row {
+  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 8px;
+  border-radius: 10px;
+}
+
+.ot-draft-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #cfc8b6;
+}
+
+.ot-draft-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.ot-mini-btn {
+  font-size: 11px;
+  border: 1px solid rgba(245, 210, 139, 0.5);
+  background: rgba(247, 207, 127, 0.12);
+  color: #f6f3ea;
+  padding: 4px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.ot-mini-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.ot-draft-lock {
+  color: #f5d28b;
+}
+
+.ot-draft-info {
+  font-size: 11px;
+  color: #dcd6c7;
+  line-height: 1.5;
+}
+
+.ot-draft-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.ot-draft-tag {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 10px;
+  color: #f6f3ea;
+}
+
+.ot-social-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.ot-social-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  font-size: 11px;
+}
+
+.ot-social-label {
+  font-weight: bold;
+  margin-bottom: 4px;
+  color: #f5d28b;
+}
+
+.ot-social-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #dcd6c7;
+}
+
 .ot-narrator-row {
   display: flex;
   justify-content: space-between;
@@ -1606,11 +1700,21 @@
           <div class="ot-panel-body">
             <div class="ot-field">
               <div class="ot-label">Leader name</div>
-              <input
-                id="ot-leader-name"
-                class="ot-input"
-                placeholder="e.g., Amelia Knight"
-              />
+              <div class="ot-draft-row" data-slot="leader">
+                <div class="ot-draft-header">
+                  <span>Leader</span>
+                  <div class="ot-draft-controls">
+                    <button class="ot-mini-btn" data-action="lock">Lock</button>
+                    <button class="ot-mini-btn" data-action="reroll">Reroll</button>
+                  </div>
+                </div>
+                <input
+                  id="ot-leader-name"
+                  class="ot-input"
+                  placeholder="e.g., Amelia Knight"
+                />
+                <div class="ot-draft-info" id="ot-draft-info-leader"></div>
+              </div>
             </div>
 
             <div class="ot-field">
@@ -1666,37 +1770,24 @@
             </div>
 
             <div class="ot-field">
+              <div class="ot-label">Mythic encounters</div>
+              <select id="ot-mythic-toggle" class="ot-select">
+                <option value="on">On – rare tall tales may cross your path</option>
+                <option value="off">Off – keep to grounded happenings</option>
+              </select>
+              <div class="ot-panel-body-sm ot-text-muted" style="margin-top: 4px;">
+                Tall-tale encounters are rare, branchy, and can be toggled off for a strictly grounded trek.
+              </div>
+            </div>
+
+            <div class="ot-field">
               <div class="ot-label">Companions (up to 4)</div>
-              <input
-                id="ot-companion-0"
-                class="ot-input"
-                placeholder="Companion 1"
-                style="margin-bottom: 4px;"
-              />
-            <input
-                id="ot-companion-1"
-                class="ot-input"
-                placeholder="Companion 2"
-                style="margin-bottom: 4px;"
-              />
-              <input
-                id="ot-companion-2"
-                class="ot-input"
-                placeholder="Companion 3"
-                style="margin-bottom: 4px;"
-              />
-              <input
-                id="ot-companion-3"
-                class="ot-input"
-                placeholder="Companion 4"
-              />
-              <div
-                class="ot-panel-body-sm ot-text-muted"
-                style="margin-top: 4px;"
-              >
-                Each person brings different strengths. You'll delegate cooking,
-                hunting, scouting, and camp work hour by hour—or let them follow
-                their own roles automatically.
+              <div id="ot-draft-rows"></div>
+              <div class="ot-draft-controls" style="margin-top: 6px;">
+                <button id="ot-btn-generate-party" class="ot-btn-gold" style="flex:1;">Generate party</button>
+                <div class="ot-panel-body-sm ot-text-muted" style="flex:1;">
+                  Reroll individuals, lock favorites, or type over names. Traits and backstories carry into play.
+                </div>
               </div>
             </div>
 
@@ -1957,7 +2048,10 @@
         </div>
 
         <div class="ot-panel">
-          <div class="ot-panel-header">Party manifest</div>
+          <div class="ot-panel-header">
+            Party manifest
+            <button id="ot-btn-open-social" class="ot-link-button" type="button">Social web</button>
+          </div>
           <div class="ot-panel-body" id="ot-party-manifest"></div>
         </div>
 
@@ -2216,6 +2310,15 @@
       </div>
     </div>
   </div>
+
+  <!-- SOCIAL WEB MODAL -->
+  <div id="ot-social-modal" class="ot-modal">
+    <div class="ot-modal-backdrop"></div>
+    <div class="ot-modal-content">
+      <div class="ot-modal-title">Social web</div>
+      <div id="ot-social-body" class="ot-panel-body"></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -2455,6 +2558,88 @@
     alkali_water:
       "https://www.kylesalaya.com/uploads/9/3/7/0/93707764/alkali-water_orig.png",
   };
+
+  const PARTY_NAME_SETS = {
+    first: [
+      "Amelia",
+      "Caleb",
+      "Naomi",
+      "Elias",
+      "Clara",
+      "Hiram",
+      "Miles",
+      "Lydia",
+      "Rosalind",
+      "Silas",
+      "Josephine",
+      "Gideon",
+      "Abigail",
+      "Jonah",
+      "Sabine",
+      "Owen",
+    ],
+    last: [
+      "Knight",
+      "Barton",
+      "Rivers",
+      "Hawkins",
+      "Mercer",
+      "Dunlap",
+      "Trout",
+      "McKeen",
+      "Sutter",
+      "Cole",
+      "Blevins",
+      "Harlan",
+      "Whitman",
+      "Pruitt",
+      "Glass",
+      "Addison",
+    ],
+  };
+
+  const BACKSTORY_DEFS = [
+    { id: "prairie_farmer", label: "Prairie farmer", origin: "Illinois prairie homestead", summary: "Knows livestock and the rhythm of seasons.", skillBias: { cooking: 1, woodcutting: 1, travel: 1 } },
+    { id: "millwright", label: "Millwright", origin: "Ohio riverside mill", summary: "Built wheels and rigged pulleys; careful with repairs.", skillBias: { repair: 2, craft: 1 } },
+    { id: "river_trader", label: "River trader", origin: "Missouri riverboat decks", summary: "Bargains hard, sleeps light, scans for opportunity.", skillBias: { guard: 1, travel: 1, hunting: 1 } },
+    { id: "schoolteacher", label: "Schoolteacher", origin: "New England schoolhouse", summary: "Patient, observant, keeps notes on miles and supplies.", skillBias: { doctoring: 1, cooking: 1 } },
+    { id: "army_teamster", label: "Army teamster", origin: "Frontier post freighter", summary: "Handled oxen, mud, and bad weather on short rations.", skillBias: { travel: 2, guard: 1 } },
+    { id: "apprentice_doc", label: "Apprentice doctor", origin: "Country infirmary", summary: "Knows poultices and when to boil water twice.", skillBias: { doctoring: 2 } },
+    { id: "buffalo_hunter", label: "Buffalo hunter", origin: "High plains camp", summary: "Comfortable stalking game and dressing meat fast.", skillBias: { hunting: 2, woodcutting: 1 } },
+    { id: "wheelwright", label: "Wheelwright", origin: "Shop beside a dusty road", summary: "Fixes spokes, felloes, and leather lashings.", skillBias: { repair: 2, craft: 1 } },
+    { id: "itinerant_preacher", label: "Circuit preacher", origin: "Crossroads camp-meetings", summary: "Knows people, keeps tempers from boiling over.", skillBias: { cooking: 1, doctoring: 1 } },
+    { id: "mountain_trapper", label: "Mountain trapper", origin: "Cabin near the Tetons", summary: "Reads weather, moves quiet, distrusts crowds.", skillBias: { hunting: 1, guard: 1, travel: 1 } },
+    { id: "blacksmith", label: "Blacksmith", origin: "Forge beside the livery", summary: "Strong arms, steady hands, knows iron and yokes.", skillBias: { repair: 1, craft: 2 } },
+    { id: "city_apprentice", label: "City apprentice", origin: "Boston workshop", summary: "Quick learner, soft hands, keen on maps and notes.", skillBias: { travel: 1, craft: 1 } },
+    { id: "wagon_cook", label: "Wagon cook", origin: "Trail mess for freighters", summary: "Knows how to stretch beans and coffee, keeps fires tidy.", skillBias: { cooking: 2, woodcutting: 1 } },
+    { id: "ranch_hand", label: "Ranch hand", origin: "Texas cattle range", summary: "Rides long days, can rope strays, gutsy around danger.", skillBias: { guard: 1, travel: 1, hunting: 1 } },
+  ];
+
+  const TRAIT_DEFS = [
+    { id: "steady", label: "Steady", summary: "Calm under strain", skillMods: { guard: 1 }, moraleBias: 2 },
+    { id: "cheerful", label: "Cheerful", summary: "Finds light in hardship", moraleBias: 3, socialBonus: 1 },
+    { id: "argumentative", label: "Argumentative", summary: "Picks at others' ideas", opinionBias: -4 },
+    { id: "merciful", label: "Merciful", summary: "Hesitates to punish", socialBonus: 1 },
+    { id: "hard", label: "Hard-nosed", summary: "Pushes others to keep moving", moraleBias: -1, skillMods: { travel: 1 } },
+    { id: "cowardly", label: "Timid", summary: "Avoids danger", guardPenalty: 1, opinionBias: -2 },
+    { id: "pious", label: "Pious", summary: "Keeps faith close", moraleBias: 1, socialBonus: 1 },
+    { id: "wry", label: "Wry", summary: "Dry humor cuts tension", socialBonus: 2 },
+    { id: "reckless", label: "Reckless", summary: "Acts before thinking", skillMods: { travel: 1, hunting: 1 }, moraleBias: -1 },
+    { id: "tireless", label: "Tireless", summary: "Keeps working after others rest", skillMods: { travel: 1, woodcutting: 1 } },
+    { id: "fussy_cook", label: "Fussy cook", summary: "Hates bland meals", skillMods: { cooking: 1 }, moraleBias: -1 },
+    { id: "trail_teller", label: "Trail storyteller", summary: "Spins yarns at the fire", socialBonus: 2 },
+    { id: "skeptical", label: "Skeptical", summary: "Doubts tall tales", moraleBias: 0, mythicGuard: true },
+    { id: "brave", label: "Brave", summary: "Faces down risk", guardBonus: 1, moraleBias: 1 },
+    { id: "caretaker", label: "Caretaker", summary: "Checks on others", skillMods: { doctoring: 1, cooking: 1 }, socialBonus: 1 },
+    { id: "lazy", label: "Lazy", summary: "Drags feet on chores", moraleBias: -2, taskPenalty: 1 },
+    { id: "sharp_eyed", label: "Sharp-eyed", summary: "Spots trouble", skillMods: { guard: 1, hunting: 1 } },
+    { id: "tall_tale", label: "Touched by tall tales", summary: "Claims to have seen strange lights", moraleBias: 1, rare: true },
+    { id: "camp_medic", label: "Camp medic", summary: "Comfortable with splints", skillMods: { doctoring: 2 } },
+    { id: "organizer", label: "Organizer", summary: "Loves tidy plans", socialBonus: 1, skillMods: { craft: 1 } },
+    { id: "sour", label: "Sour", summary: "Quick to grumble", moraleBias: -2, opinionBias: -2 },
+    { id: "wilderness_lore", label: "Wilderness lore", summary: "Reads wind and water", skillMods: { foraging: 1, travel: 1 } },
+    { id: "mythic_mark", label: "Myth-marked", summary: "Carries a strange brand, whispers follow", rare: true, moraleBias: -1, socialBonus: -1 },
+  ];
 
   const ROUTE_MILESTONES = [
     { mile: 0, name: "Independence", region: "plains" },
@@ -3737,6 +3922,8 @@
     seasonStart: "late_april",
     startProfileId: "late_april",
     startProfile: null,
+    mythicEnabled: true,
+    partyDraft: null,
     startingPoint: "independence",
     startDayOfYear: null,
     highRiverRisk: false,
@@ -4140,11 +4327,14 @@
         lastRiskSnapshot: {},
         recentEvents: [],
         presetId: gameState.storytellerPresetId || "classic",
+        mythicEnabled: gameState.mythicEnabled !== false,
         presetSwapsTotal: 0,
         presetSwapsThisWeek: 0,
         lastPresetSwapDayKey: null,
         lastHourCampTasks: {},
         lastHourTaskFailures: {},
+        lastSocialDay: null,
+        lastCrisisLogHour: null,
         spoilage: { batches: [], nextBatchId: 1, migratedLegacy: false },
       };
     }
@@ -4169,11 +4359,15 @@
     if (!ss.lastRiskSnapshot) ss.lastRiskSnapshot = {};
     if (!Array.isArray(ss.recentEvents)) ss.recentEvents = [];
     if (!ss.presetId) ss.presetId = gameState.storytellerPresetId || "classic";
+    if (typeof ss.mythicEnabled !== "boolean") ss.mythicEnabled = gameState.mythicEnabled !== false;
+    gameState.mythicEnabled = ss.mythicEnabled !== false;
     if (typeof ss.presetSwapsTotal !== "number") ss.presetSwapsTotal = 0;
     if (typeof ss.presetSwapsThisWeek !== "number") ss.presetSwapsThisWeek = 0;
     if (!ss.lastPresetSwapDayKey) ss.lastPresetSwapDayKey = null;
     if (!ss.lastHourCampTasks) ss.lastHourCampTasks = {};
     if (!ss.lastHourTaskFailures) ss.lastHourTaskFailures = {};
+    if (ss.lastSocialDay == null) ss.lastSocialDay = null;
+    if (ss.lastCrisisLogHour == null) ss.lastCrisisLogHour = null;
     if (!ss.spoilage) ss.spoilage = { batches: [], nextBatchId: 1, migratedLegacy: false };
     if (!Array.isArray(ss.spoilage.batches)) ss.spoilage.batches = [];
     if (typeof ss.spoilage.nextBatchId !== "number") ss.spoilage.nextBatchId = 1;
@@ -4353,6 +4547,36 @@
     return person.afflictions;
   }
 
+  function getTraitDef(id) {
+    return TRAIT_DEFS.find(function (t) {
+      return t.id === id || t.label === id;
+    });
+  }
+
+  function getBackstoryDef(id) {
+    return BACKSTORY_DEFS.find(function (b) {
+      return b.id === id || b.label === id;
+    });
+  }
+
+  function applyTraitStats(person) {
+    if (!person || person._traitApplied) return;
+    const traits = person.traits || [];
+    traits.forEach(function (tid) {
+      const def = getTraitDef(tid);
+      if (!def) return;
+      Object.keys(def.skillMods || {}).forEach(function (k) {
+        person.skills[k] = clamp((person.skills[k] || 0) + def.skillMods[k], 0, 6);
+      });
+      if (def.moraleBias) {
+        person.morale = clamp((person.morale || 60) + def.moraleBias, 0, 100);
+      }
+      if (def.guardBonus) person.skills.guard = clamp((person.skills.guard || 0) + def.guardBonus, 0, 6);
+      if (def.guardPenalty) person.skills.guard = clamp((person.skills.guard || 0) - def.guardPenalty, 0, 6);
+    });
+    person._traitApplied = true;
+  }
+
   function ensurePersonStoryFields(person) {
     if (!person) return person;
     if (!person.id) {
@@ -4369,12 +4593,19 @@
     if (typeof person.lowMoraleHours !== "number") person.lowMoraleHours = 0;
     if (!person.relationships) person.relationships = {};
     if (!person.traits) person.traits = [];
+    if (person.age == null) person.age = 18 + Math.floor(Math.random() * 25);
+    if (!person.origin) person.origin = "Frontier settler";
+    if (!person.backstoryId) person.backstoryId = null;
+    if (!person.backstoryLabel) person.backstoryLabel = "";
+    if (!person.backstorySummary) person.backstorySummary = "";
+    if (!Array.isArray(person.hiddenTraits)) person.hiddenTraits = [];
     if (typeof person.morale !== "number") person.morale = 60;
     if (typeof person.lastBreakHour !== "number") person.lastBreakHour = 0;
     if (!person.activeBreak) person.activeBreak = null;
     if (!person.taskHistory)
       person.taskHistory = { recent: [], totals: {} };
     if (!Array.isArray(person.cascadeHistory)) person.cascadeHistory = [];
+    if (!person._traitApplied) applyTraitStats(person);
     return person;
   }
 
@@ -5311,6 +5542,32 @@
     return def ? def.taskId : jobId;
   }
 
+  function traitTaskBias(person, jobId) {
+    let bias = 0;
+    (person.traits || []).forEach(function (tid) {
+      const def = getTraitDef(tid);
+      if (!def) return;
+      if (jobId === "guard" && def.guardBonus) bias += def.guardBonus * 0.5;
+      if (jobId === "guard" && def.guardPenalty) bias -= def.guardPenalty * 0.5;
+      if (def.taskPenalty) bias -= def.taskPenalty * 0.5;
+      if (def.socialBonus && jobId === "cook") bias += 0.2;
+    });
+    return bias;
+  }
+
+  function detectCrisisNeeds() {
+    const ss = ensureStoryState();
+    const needs = [];
+    if (ss.risk.water_shortage || ss.risk.extended_water_shortage) needs.push("fetch_water");
+    if (ss.risk.starvation || ss.risk.extended_starvation) needs.push("cook");
+    if (ss.risk.cold_exposure || ss.risk.extended_cold_exposure) needs.push("gather_wood");
+    if (gameState.wagonCondition < 45) needs.push("repair");
+    if (getScheduleBlock(gameState.date) === "night" && gameState.mode === "camp" && gameState.guardLevel < 1)
+      needs.push("guard");
+    if (ss.risk.low_morale) needs.push("cook");
+    return needs;
+  }
+
   function resolveTasksForHour() {
     const people = getAllPeople();
     const resolved = [];
@@ -5411,6 +5668,50 @@
 
     ["guard", "cook", "fetch_water", "repair", "travel"].forEach(assignEssential);
 
+    const crisisJobs = detectCrisisNeeds();
+    function assignCrisis(jobId) {
+      const taskId = jobToTaskId(jobId);
+      let bestIdx = null;
+      let bestScore = -999;
+      autoIndices.forEach(function (idx) {
+        const p = people[idx];
+        if (!p) return;
+        const def = JOB_DEFS.find(function (j) {
+          return j.id === jobId;
+        });
+        const skills = p.skills || {};
+        const sVal = def && def.relatedSkill ? (skills[def.relatedSkill] || 0) : 0;
+        const prios = p.priorities || {};
+        const prioVal = typeof prios[jobId] === "number" ? prios[jobId] : 0;
+        const score = sVal + prioVal + traitTaskBias(p, jobId);
+        if (score > bestScore) {
+          bestScore = score;
+          bestIdx = idx;
+        }
+      });
+      if (bestIdx != null) {
+        resolved[bestIdx] = taskId;
+        const pos = autoIndices.indexOf(bestIdx);
+        if (pos >= 0) autoIndices.splice(pos, 1);
+        const ss = ensureStoryState();
+        const nowHour = getCurrentTrailHour(gameState);
+        if (!ss.lastCrisisLogHour || nowHour - ss.lastCrisisLogHour > 2) {
+          addLog(
+            "Auto-order: " +
+              (people[bestIdx].name || "Someone") +
+              " pivots to " +
+              jobId +
+              " to blunt a brewing risk.",
+            {
+              tone: "warning",
+            }
+          );
+          ss.lastCrisisLogHour = nowHour;
+        }
+      }
+    }
+    crisisJobs.forEach(assignCrisis);
+
     function chooseScheduledJob(person, jobListPrimary) {
       ensurePersonDelegationFields(person);
       const priorities = person.priorities || {};
@@ -5498,12 +5799,11 @@
       "ot-departure-season-desc"
     );
     dom.storytellerPreset = document.getElementById("ot-storyteller-preset");
-    dom.companionInputs = [
-      document.getElementById("ot-companion-0"),
-      document.getElementById("ot-companion-1"),
-      document.getElementById("ot-companion-2"),
-      document.getElementById("ot-companion-3"),
-    ];
+    dom.draftRows = document.getElementById("ot-draft-rows");
+    dom.draftInfo = { leader: document.getElementById("ot-draft-info-leader") };
+    dom.btnGenerateParty = document.getElementById("ot-btn-generate-party");
+    dom.mythicToggle = document.getElementById("ot-mythic-toggle");
+    buildDraftRows();
     dom.startArt = document.getElementById("ot-start-art");
     dom.btnBeginOutfit = document.getElementById("ot-btn-begin-outfit");
 
@@ -5602,6 +5902,12 @@
     dom.prioritiesBody = document.getElementById("ot-priorities-body");
     dom.prioritiesWarnings = document.getElementById("ot-priorities-warnings");
     dom.btnClosePriorities = document.getElementById("ot-btn-close-priorities");
+    dom.socialModal = document.getElementById("ot-social-modal");
+    dom.socialBackdrop = dom.socialModal
+      ? dom.socialModal.querySelector(".ot-modal-backdrop")
+      : null;
+    dom.socialBody = document.getElementById("ot-social-body");
+    dom.btnOpenSocial = document.getElementById("ot-btn-open-social");
     dom.btnEveningProperCamp = document.getElementById("ot-btn-evening-proper-camp");
     dom.btnEveningRushedCamp = document.getElementById("ot-btn-evening-rushed-camp");
     dom.campOverlay = document.getElementById("ot-camp-overlay");
@@ -5650,7 +5956,7 @@
     });
   }
 
-  function createPerson(name, isLeader, bias) {
+  function createPerson(name, isLeader, bias, draft) {
     const base = 100;
     const person = {
       name: name || (isLeader ? "Leader" : "Companion"),
@@ -5701,6 +6007,21 @@
         person.skills[k] = clamp(person.skills[k] + bias[k], 0, 5);
       });
     }
+    if (draft) {
+      if (draft.age) person.age = draft.age;
+      if (draft.origin) person.origin = draft.origin;
+      if (draft.backstoryId) person.backstoryId = draft.backstoryId;
+      if (draft.backstoryLabel) person.backstoryLabel = draft.backstoryLabel;
+      if (draft.backstorySummary) person.backstorySummary = draft.backstorySummary;
+      if (draft.traits && draft.traits.length) person.traits = draft.traits.slice();
+      if (draft.hiddenTraits) person.hiddenTraits = draft.hiddenTraits.slice();
+      if (draft.skillBias) {
+        Object.keys(draft.skillBias).forEach(function (k) {
+          person.skills[k] = clamp((person.skills[k] || 0) + draft.skillBias[k], 0, 6);
+        });
+      }
+    }
+    applyTraitStats(person);
     return person;
   }
 
@@ -5723,6 +6044,218 @@
     gameState.startDayOfYear = getDayOfYear(startDate);
     gameState.highRiverRisk = profile.riverHazard === "high";
     return startDate;
+  }
+
+  /* ========= PARTY DRAFTING ============================================= */
+
+  function ensurePartyDraftState() {
+    if (!gameState.partyDraft)
+      gameState.partyDraft = { seed: Math.floor(Math.random() * 999999), people: {}, locks: {}, rerolls: {} };
+    if (!gameState.partyDraft.people) gameState.partyDraft.people = {};
+    if (!gameState.partyDraft.locks) gameState.partyDraft.locks = {};
+    if (!gameState.partyDraft.rerolls) gameState.partyDraft.rerolls = {};
+    if (typeof gameState.partyDraft.seed !== "number") {
+      gameState.partyDraft.seed = Math.floor(Math.random() * 999999);
+    }
+    return gameState.partyDraft;
+  }
+
+  function draftRng(slot) {
+    const draft = ensurePartyDraftState();
+    const bump = draft.rerolls[slot] || 0;
+    return mulberry32(hashToInt(`${draft.seed}-${slot}-${bump}`));
+  }
+
+  function rollName(rng) {
+    const first = PARTY_NAME_SETS.first[Math.floor(rng() * PARTY_NAME_SETS.first.length)] || "Unknown";
+    const last = PARTY_NAME_SETS.last[Math.floor(rng() * PARTY_NAME_SETS.last.length)] || "Traveler";
+    return first + " " + last;
+  }
+
+  function pickBackstory(rng) {
+    return BACKSTORY_DEFS[Math.floor(rng() * BACKSTORY_DEFS.length)] || BACKSTORY_DEFS[0];
+  }
+
+  function pickTraits(rng, count, existing) {
+    const picked = existing ? existing.slice() : [];
+    while (picked.length < count) {
+      const candidate = TRAIT_DEFS[Math.floor(rng() * TRAIT_DEFS.length)];
+      if (!candidate) break;
+      if (candidate.rare && rng() < 0.75) continue;
+      if (picked.indexOf(candidate.id) >= 0) continue;
+      picked.push(candidate.id);
+    }
+    return picked;
+  }
+
+  function blendSkillBias(base, extra) {
+    const out = Object.assign({}, base || {});
+    Object.keys(extra || {}).forEach(function (k) {
+      out[k] = (out[k] || 0) + extra[k];
+    });
+    return out;
+  }
+
+  function generateDraftForSlot(slot) {
+    const draft = ensurePartyDraftState();
+    if (draft.locks[slot]) return draft.people[slot];
+    const rng = draftRng(slot);
+    const backstory = pickBackstory(rng);
+    const traits = pickTraits(rng, 3, []);
+    const skillBias = blendSkillBias(backstory.skillBias, traits.reduce(function (acc, tid) {
+      const def = getTraitDef(tid);
+      Object.keys((def && def.skillMods) || {}).forEach(function (k) {
+        acc[k] = (acc[k] || 0) + def.skillMods[k];
+      });
+      return acc;
+    }, {}));
+    draft.people[slot] = {
+      name: rollName(rng),
+      age: 18 + Math.floor(rng() * 28),
+      origin: backstory.origin,
+      backstoryId: backstory.id,
+      backstoryLabel: backstory.label,
+      backstorySummary: backstory.summary,
+      traits: traits,
+      hiddenTraits: rng() < 0.18 ? ["mythic_mark"] : [],
+      skillBias: skillBias,
+    };
+    return draft.people[slot];
+  }
+
+  function renderDraftInfo(slot) {
+    const draft = ensurePartyDraftState().people[slot];
+    const btns = dom.draftButtons && dom.draftButtons[slot];
+    if (btns && btns.lockBtn) {
+      btns.lockBtn.textContent = ensurePartyDraftState().locks[slot] ? "Locked" : "Lock";
+    }
+    if (btns && btns.rerollBtn) {
+      btns.rerollBtn.disabled = !!ensurePartyDraftState().locks[slot];
+    }
+    if (!btns || !btns.info) return;
+    if (!draft) {
+      btns.info.textContent = "";
+      return;
+    }
+    btns.info.innerHTML =
+      `<div>${draft.age} yrs · ${draft.origin}</div>` +
+      `<div>${draft.backstoryLabel}</div>` +
+      (draft.backstorySummary ? `<div class="ot-text-muted">${draft.backstorySummary}</div>` : "") +
+      `<div class="ot-draft-tags">${(draft.traits || [])
+        .map(function (t) {
+          const def = getTraitDef(t);
+          return `<span class="ot-draft-tag">${def ? def.label : t}</span>`;
+        })
+        .join("")}</div>`;
+  }
+
+  function renderAllDraftInfo() {
+    Object.keys(dom.draftButtons || {}).forEach(renderDraftInfo);
+  }
+
+  function applyDraftToInputs() {
+    const draft = ensurePartyDraftState();
+    if (!dom.leaderName || !dom.companionInputs) return;
+    const leaderDraft = draft.people.leader;
+    if (leaderDraft && !draft.locks.leader) {
+      dom.leaderName.value = leaderDraft.name;
+    }
+    dom.companionInputs.forEach(function (input, idx) {
+      const slot = "companion-" + idx;
+      const d = draft.people[slot];
+      if (input && d && !draft.locks[slot]) {
+        input.value = d.name;
+      }
+    });
+  }
+
+  function rerollDraft(slot) {
+    const draft = ensurePartyDraftState();
+    draft.rerolls[slot] = (draft.rerolls[slot] || 0) + 1;
+    generateDraftForSlot(slot);
+    applyDraftToInputs();
+    renderDraftInfo(slot);
+  }
+
+  function toggleDraftLock(slot) {
+    const draft = ensurePartyDraftState();
+    draft.locks[slot] = !draft.locks[slot];
+    renderDraftInfo(slot);
+  }
+
+  function generateFullDraft() {
+    ensurePartyDraftState();
+    ["leader", "companion-0", "companion-1", "companion-2", "companion-3"].forEach(
+      function (slot) {
+        if (!ensurePartyDraftState().locks[slot]) rerollDraft(slot);
+      }
+    );
+  }
+
+  function buildDraftRows() {
+    if (!dom.draftRows) return;
+    dom.draftButtons = dom.draftButtons || {};
+    dom.draftRows.innerHTML = "";
+    dom.companionInputs = [];
+    for (let i = 0; i < 4; i++) {
+      const slot = "companion-" + i;
+      const row = document.createElement("div");
+      row.className = "ot-draft-row";
+      row.dataset.slot = slot;
+      const header = document.createElement("div");
+      header.className = "ot-draft-header";
+      header.textContent = "Companion " + (i + 1);
+      const controls = document.createElement("div");
+      controls.className = "ot-draft-controls";
+      const lockBtn = document.createElement("button");
+      lockBtn.className = "ot-mini-btn";
+      lockBtn.textContent = "Lock";
+      lockBtn.dataset.action = "lock";
+      const rerollBtn = document.createElement("button");
+      rerollBtn.className = "ot-mini-btn";
+      rerollBtn.textContent = "Reroll";
+      rerollBtn.dataset.action = "reroll";
+      controls.appendChild(lockBtn);
+      controls.appendChild(rerollBtn);
+      header.appendChild(controls);
+      row.appendChild(header);
+      const input = document.createElement("input");
+      input.id = "ot-companion-" + i;
+      input.className = "ot-input";
+      input.placeholder = "Companion " + (i + 1);
+      row.appendChild(input);
+      const info = document.createElement("div");
+      info.id = "ot-draft-info-" + slot;
+      info.className = "ot-draft-info";
+      row.appendChild(info);
+      dom.draftRows.appendChild(row);
+      dom.companionInputs.push(input);
+      dom.draftButtons[slot] = { lockBtn: lockBtn, rerollBtn: rerollBtn, info: info };
+      lockBtn.addEventListener("click", function () {
+        toggleDraftLock(slot);
+      });
+      rerollBtn.addEventListener("click", function () {
+        rerollDraft(slot);
+      });
+    }
+    const leaderRow = document.querySelector('.ot-draft-row[data-slot="leader"]');
+    if (leaderRow) {
+      const lockBtn = leaderRow.querySelector('[data-action="lock"]');
+      const rerollBtn = leaderRow.querySelector('[data-action="reroll"]');
+      dom.draftButtons.leader = {
+        lockBtn: lockBtn,
+        rerollBtn: rerollBtn,
+        info: dom.draftInfo ? dom.draftInfo.leader : null,
+      };
+      if (lockBtn)
+        lockBtn.addEventListener("click", function () {
+          toggleDraftLock("leader");
+        });
+      if (rerollBtn)
+        rerollBtn.addEventListener("click", function () {
+          rerollDraft("leader");
+        });
+    }
   }
 
   function setRelationship(a, b, opinion, tags) {
@@ -5794,37 +6327,60 @@
   function seedTraitsAndRelationships() {
     const people = getAllPeople();
     if (!people.length) return;
-    people.forEach(ensurePersonStoryFields);
+    const draft = ensurePartyDraftState();
+    const rng = mulberry32(hashToInt(`${draft.seed || 1}-web`));
+    people.forEach(function (p) {
+      ensurePersonStoryFields(p);
+      const idx = gameState.companions.indexOf(p);
+      const slot = p.isLeader ? "leader" : idx >= 0 ? "companion-" + idx : null;
+      const d = slot ? draft.people[slot] : null;
+      if (d && d.traits && (!p.traits || !p.traits.length)) {
+        p.traits = d.traits.slice();
+      }
+      applyTraitStats(p);
+    });
+
+    people.forEach(function (p) {
+      if (p === gameState.leader) return;
+      setRelationship(p, gameState.leader, 8 + Math.floor(rng() * 12), ["leader"]);
+    });
 
     const companions = gameState.companions || [];
-    if (companions.length >= 2) {
-      setRelationship(companions[0], companions[1], 55, ["sibling"]);
-    } else if (companions.length >= 1) {
-      setRelationship(companions[0], gameState.leader, 48, ["fellow_traveler"]);
+    if (companions.length >= 2 && rng() < 0.35) {
+      const a = companions[0];
+      const b = companions[1];
+      setRelationship(a, b, 52 + Math.floor(rng() * 12), ["sibling"]);
     }
 
-    if (people[0] && people[0].traits.indexOf("Steady") < 0) {
-      people[0].traits.push("Steady");
-    }
-    if (people[1] && people[1].traits.indexOf("Cheerful") < 0) {
-      people[1].traits.push("Cheerful");
-    }
-    if (people[2] && people[2].traits.indexOf("Argumentative") < 0) {
-      people[2].traits.push("Argumentative");
-    }
-
-    const traitPool = ["Merciful", "Hard", "Cowardly", "Pious", "Wry", "Reckless"];
-    people.forEach(function (p) {
-      if (!p.traits) p.traits = [];
-      if (p.traits.length < 2) {
-        const available = traitPool.filter(function (t) {
-          return p.traits.indexOf(t) < 0;
-        });
-        if (available.length) {
-          p.traits.push(choice(available));
+    let bestFriend = null;
+    let friendScore = -99;
+    let rival = null;
+    let rivalScore = 99;
+    people.forEach(function (a, idx) {
+      for (let j = idx + 1; j < people.length; j++) {
+        const b = people[j];
+        const traitsA = a.traits || [];
+        const traitsB = b.traits || [];
+        let score = rng() * 2 - 1;
+        if (traitsA.indexOf("cheerful") >= 0 || traitsB.indexOf("cheerful") >= 0) score += 1.5;
+        if (traitsA.indexOf("argumentative") >= 0 || traitsB.indexOf("argumentative") >= 0) score -= 1.2;
+        if (traitsA.indexOf("caretaker") >= 0 && traitsB.indexOf("camp_medic") >= 0) score += 1.2;
+        if (Math.abs((a.age || 24) - (b.age || 24)) < 6) score += 0.4;
+        if (score > friendScore) {
+          friendScore = score;
+          bestFriend = { a: a, b: b };
+        }
+        if (score < rivalScore) {
+          rivalScore = score;
+          rival = { a: a, b: b };
         }
       }
     });
+    if (friendScore > 0.6 && bestFriend) {
+      setRelationship(bestFriend.a, bestFriend.b, 35 + Math.floor(rng() * 25), ["friend"]);
+    } else if (rival && rivalScore < -0.4) {
+      setRelationship(rival.a, rival.b, -25 - Math.floor(rng() * 20), ["rival"]);
+    }
   }
 
   function renderDepartureSeasonDesc() {
@@ -6082,17 +6638,33 @@
   function startNewGameFromForm() {
     const bgId = dom.backgroundSelect.value;
     const bg = BACKGROUNDS[bgId] || BACKGROUNDS.farmer;
+    const draftState = ensurePartyDraftState();
 
     const leaderName = dom.leaderName.value.trim() || "Unnamed leader";
-    const leader = createPerson(leaderName, true, bg.skillBias);
+    const leaderDraft = draftState.people.leader;
+    const leaderBias = blendSkillBias(bg.skillBias, leaderDraft && leaderDraft.skillBias);
+    const leader = createPerson(leaderName, true, leaderBias, leaderDraft);
 
     const companions = [];
-    dom.companionInputs.forEach(function (input) {
+    dom.companionInputs.forEach(function (input, idx) {
       const v = input.value.trim();
-      if (v) companions.push(createPerson(v, false, null));
+      if (v) {
+        const slot = "companion-" + idx;
+        const d = draftState.people[slot];
+        const bias = d ? blendSkillBias({}, d.skillBias) : null;
+        companions.push(createPerson(v, false, bias, d));
+      }
     });
     if (companions.length === 0) {
-      companions.push(createPerson("Unnamed companion", false, null));
+      const fallback = draftState.people["companion-0"] || generateDraftForSlot("companion-0");
+      companions.push(
+        createPerson(
+          fallback && fallback.name ? fallback.name : "Unnamed companion",
+          false,
+          fallback ? blendSkillBias({}, fallback.skillBias) : null,
+          fallback
+        )
+      );
     }
 
     gameState.leader = leader;
@@ -6110,6 +6682,8 @@
       ? dom.storytellerPreset.value
       : "classic";
     gameState.storytellerPresetId = presetId;
+    gameState.mythicEnabled = !dom.mythicToggle || dom.mythicToggle.value !== "off";
+    ensureStoryState().mythicEnabled = gameState.mythicEnabled;
 
     gameState.startingPoint = dom.departureSelect
       ? dom.departureSelect.value
@@ -6528,6 +7102,112 @@
     if (!gameState.socialHistory) gameState.socialHistory = { rescues: [] };
     if (!Array.isArray(gameState.socialHistory.rescues)) gameState.socialHistory.rescues = [];
     return gameState.socialHistory;
+  }
+
+  function relationshipLabel(rel) {
+    if (!rel) return "";
+    if (rel.tags && rel.tags.indexOf("sibling") >= 0) return "Family";
+    if (rel.tags && rel.tags.indexOf("friend") >= 0) return "Friend";
+    if (rel.tags && rel.tags.indexOf("rival") >= 0) return "Rival";
+    if (rel.tags && rel.tags.indexOf("leader") >= 0) return "Leader";
+    return rel.opinion >= 50 ? "Ally" : rel.opinion <= -25 ? "Tense" : "Neutral";
+  }
+
+  function socialInteraction(a, b, type) {
+    if (!a || !b) return;
+    const labelMap = {
+      chat: { delta: 2, thought: "Good talk" },
+      joke: { delta: 3, thought: "Shared a joke" },
+      help: { delta: 4, thought: "Helped out" },
+      argue: { delta: -4, thought: "Argument" },
+      cold: { delta: -2, thought: "Cold shoulder" },
+      apology: { delta: 2, thought: "Apology" },
+    };
+    const cfg = labelMap[type] || labelMap.chat;
+    adjustOpinion(a, b, cfg.delta, "social");
+    adjustOpinion(b, a, cfg.delta * 0.8, "social");
+    addThought(a, { id: `${type}_${b.id}`, label: cfg.thought, value: cfg.delta >= 0 ? 2 : -2, hoursLeft: 8, source: "social" });
+    addThought(b, { id: `${type}_${a.id}`, label: cfg.thought, value: cfg.delta >= 0 ? 2 : -2, hoursLeft: 8, source: "social" });
+    addLog(`${a.name} and ${b.name} ${type === "argue" ? "argued" : type === "cold" ? "kept apart" : "shared a moment"}.`, {
+      tone: cfg.delta >= 0 ? "social" : "warning",
+      characters: [a.id, b.id],
+    });
+  }
+
+  function maybeRunDailySocialMoments() {
+    const ss = ensureStoryState();
+    const dayKey = getDayKey(gameState.date);
+    const block = getScheduleBlock(gameState.date);
+    if (block !== "evening" && block !== "night") return;
+    if (gameState.mode !== "camp") return;
+    if (ss.lastSocialDay === dayKey) return;
+    ss.lastSocialDay = dayKey;
+    const people = getAllPeople().filter(function (p) {
+      return p && p.alive;
+    });
+    if (people.length < 2) return;
+    const rng = draftRng("social:" + dayKey + ":" + block);
+    const count = Math.min(2, Math.max(1, Math.floor(people.length / 2)));
+    for (let i = 0; i < count; i++) {
+      const a = people[Math.floor(rng() * people.length)];
+      const b = people[Math.floor(rng() * people.length)];
+      if (!a || !b || a.id === b.id) continue;
+      const rel = getRelationship(a, b);
+      let type = "chat";
+      if (rel.opinion < -20 && rng() < 0.5) type = "argue";
+      else if (rel.opinion > 40 && rng() < 0.5) type = "joke";
+      else if (rng() < 0.3) type = "help";
+      else if (rng() < 0.2) type = "cold";
+      else if (rel.opinion < -10 && rng() < 0.25) type = "apology";
+      socialInteraction(a, b, type);
+    }
+  }
+
+  function renderSocialWeb() {
+    if (!dom.socialBody) return;
+    const people = getAllPeople().filter(function (p) {
+      return p && p.alive;
+    });
+    const seen = {};
+    const rows = [];
+    people.forEach(function (a) {
+      Object.keys(a.relationships || {}).forEach(function (rid) {
+        const b = people.find(function (p) {
+          return p.id === rid;
+        });
+        if (!b) return;
+        const key = getPairKey(a, b);
+        if (seen[key]) return;
+        seen[key] = true;
+        const rel = a.relationships[rid];
+        rows.push({
+          a: a,
+          b: b,
+          rel: rel,
+        });
+      });
+    });
+    dom.socialBody.innerHTML = "";
+    if (!rows.length) {
+      dom.socialBody.textContent = "No bonds recorded yet.";
+      return;
+    }
+    const grid = document.createElement("div");
+    grid.className = "ot-social-grid";
+    rows.forEach(function (row) {
+      const card = document.createElement("div");
+      card.className = "ot-social-card";
+      const head = document.createElement("div");
+      head.className = "ot-social-label";
+      head.textContent = row.a.name + " ↔ " + row.b.name;
+      const meta = document.createElement("div");
+      meta.className = "ot-social-row";
+      meta.textContent = relationshipLabel(row.rel) + " · Opinion " + Math.round(row.rel.opinion || 0);
+      card.appendChild(head);
+      card.appendChild(meta);
+      grid.appendChild(card);
+    });
+    dom.socialBody.appendChild(grid);
   }
 
   function recordRescueEvent(rescuer, rescued, cause, ctx) {
@@ -8864,6 +9544,7 @@
     tickAfflictionsForHour();
     maybeTriggerIllnessForHour();
     updateNeedsAndMoodForHour();
+    maybeRunDailySocialMoments();
     updateSpoilageForHour();
     showCompanionThoughtForHour();
     await eventDirectorTick();
@@ -12143,6 +12824,169 @@
         });
       },
     },
+    {
+      id: "chain_ration_missing",
+      kind: "minor",
+      minTension: 10,
+      condition: function (ctx) {
+        const step = getEventFlag("ration_chain_step") || 0;
+        return ctx.mode === "camp" && ctx.block === "evening" && step === 0 && ctx.storyState.risk.starvation;
+      },
+      weight: function () {
+        return 5;
+      },
+      run: function (ctx) {
+        const lost = Math.min(6, gameState.supplies.meal_simple || 0);
+        if (lost > 0) gameState.supplies.meal_simple = Math.max(0, (gameState.supplies.meal_simple || 0) - lost);
+        advanceChain("ration_chain", 1);
+        addLog(
+          "A bundle of cooked rations goes missing. Voices in the dark blame hunger and careless watch.",
+          { tone: "warning", tag: "DAY " + ctx.dayTag, location: ctx.location, characters: ctx.people.slice(0, 2).map(function (p) { return p.id; }) }
+        );
+      },
+    },
+    {
+      id: "chain_ration_confront",
+      kind: "minor",
+      condition: function (ctx) {
+        return getEventFlag("ration_chain_step") === 1 && hoursSinceFlag("ration_chain_time") > 4;
+      },
+      weight: function () {
+        return 6;
+      },
+      run: async function (ctx) {
+        const people = ctx.people || [];
+        const accuser = people[0];
+        const accused = people[1] || accuser;
+        const choice = await presentEncounter({
+          id: "ration_confront",
+          title: "Missing rations",
+          subtitle: formatDateTime(gameState.date) + " · " + ctx.location,
+          body: [
+            "Supper comes up light. " +
+              accuser.name +
+              " insists someone skimmed the pot. Eyes drift toward " +
+              accused.name +
+              " and the quieter wagons.",
+          ],
+          options: [
+            { id: "search", label: "Search packs", tone: "danger", hint: "May mend or strain trust." },
+            { id: "share", label: "Share from your own stores", tone: "warm" },
+            { id: "warn", label: "Let it slide but warn everyone", tone: "neutral" },
+          ],
+          defaultId: "warn",
+        });
+        setEventFlag("ration_chain_choice", choice);
+        advanceChain("ration_chain", 2);
+        if (choice === "search") {
+          adjustOpinion(accuser, accused, -6, "accusation");
+          adjustOpinion(accused, accuser, -4, "accusation");
+          addThought(accused, { id: "searched", label: "Searched", value: -3, hoursLeft: 12, source: "social" });
+          addLog("Bags are turned out by lantern light. Tempers cool but trust frays.", { tone: "warning", characters: [accuser.id, accused.id] });
+        } else if (choice === "share") {
+          gameState.supplies.meal_simple = Math.max(0, (gameState.supplies.meal_simple || 0) - 2);
+          adjustOpinion(accused, accuser, 4, "forgiven");
+          adjustOpinion(accuser, accused, 2, "forgiven");
+          addLog(accuser.name + " offers their own portion. Grumbling eases.", { tone: "social", characters: [accuser.id, accused.id] });
+        } else {
+          addLog("You warn the camp to mind the larder. No names given, but suspicions linger.", { tone: "event" });
+        }
+      },
+    },
+    {
+      id: "chain_ration_resolution",
+      kind: "breather",
+      condition: function (ctx) {
+        return getEventFlag("ration_chain_step") === 2 && hoursSinceFlag("ration_chain_time") > 6;
+      },
+      weight: function () {
+        return 5;
+      },
+      run: function (ctx) {
+        const choice = getEventFlag("ration_chain_choice");
+        if (choice === "share") {
+          ctx.people.forEach(function (p) {
+            addThought(p, { id: "generous_meal", label: "Shared meal", value: 3, hoursLeft: 10, source: "social" });
+          });
+        } else if (choice === "search") {
+          ctx.storyState.risk.low_morale = true;
+        }
+        addLog("The missing rations become a story, not a wound. Camp talk shifts back to miles ahead.", { tone: "social", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        setEventFlag("ration_chain_step", 0);
+        setEventFlag("ration_chain_choice", null);
+      },
+    },
+    {
+      id: "mythic_wanderer_glow",
+      kind: "major",
+      minTension: 8,
+      condition: function (ctx) {
+        const step = getEventFlag("mythic_wanderer_step") || 0;
+        return (
+          (ctx.storyState.mythicEnabled !== false && gameState.mythicEnabled !== false) &&
+          ctx.mode === "travel" &&
+          ctx.block === "night" &&
+          step === 0 &&
+          Math.random() < 0.03
+        );
+      },
+      weight: function () {
+        return 1;
+      },
+      run: async function (ctx) {
+        const follower = ctx.people[0];
+        const choice = await presentEncounter({
+          id: "mythic_glow",
+          title: "Lantern on the ridge",
+          subtitle: formatDateTime(gameState.date) + " · " + ctx.location,
+          body: [
+            "A pale lantern bobs along a ridge parallel to the train. Some say wandering traveler, others say no one walks that fast.",
+          ],
+          options: [
+            { id: "follow", label: "Follow the light", tone: "danger" },
+            { id: "hail", label: "Hail it from the trail", tone: "neutral" },
+            { id: "ignore", label: "Ignore and make camp", tone: "warm" },
+          ],
+          defaultId: "ignore",
+        });
+        setEventFlag("mythic_wanderer_choice", choice);
+        advanceChain("mythic_wanderer", 1);
+        if (choice === "follow") {
+          addLog(follower.name + " leads a few up the ridge toward the strange light.", { tone: "warning", characters: [follower.id] });
+        } else if (choice === "hail") {
+          addLog("You hail the light. It pauses, then glides ahead as if beckoning.", { tone: "event" });
+        } else {
+          addLog("You shake off the tale and focus on camp chores.", { tone: "event" });
+        }
+      },
+    },
+    {
+      id: "mythic_wanderer_payoff",
+      kind: "breather",
+      condition: function (ctx) {
+        return getEventFlag("mythic_wanderer_step") === 1 && hoursSinceFlag("mythic_wanderer_time") > 3;
+      },
+      weight: function () {
+        return 2;
+      },
+      run: function (ctx) {
+        const choice = getEventFlag("mythic_wanderer_choice") || "ignore";
+        if (choice === "follow") {
+          gameState.guardLevel = (gameState.guardLevel || 0) + 1;
+          addThought(ctx.people[0], { id: "ridge_path", label: "Saw a ridge path", value: 4, hoursLeft: 18, source: "mythic" });
+          addLog("The light leads to an old hunter's track. You mark it for rough weather routes.", { tone: "event" });
+        } else if (choice === "hail") {
+          gameState.supplies.water = (gameState.supplies.water || 0) + 2;
+          addLog("A voice in the dark calls back with a warning about bad water downstream. You fill casks here instead.", { tone: "warning" });
+        } else {
+          ctx.people.forEach(function (p) {
+            addThought(p, { id: "grounded", label: "Ignored the tall tale", value: 1, hoursLeft: 6, source: "camp" });
+          });
+        }
+        setEventFlag("mythic_wanderer_step", 0);
+        setEventFlag("mythic_wanderer_choice", null);
+      },
+    },
   ];
 
   function weightedPick(items) {
@@ -12155,6 +12999,28 @@
       if (roll <= 0) return items[i];
     }
     return items[items.length - 1];
+  }
+
+  function setEventFlag(key, value) {
+    const ss = ensureStoryState();
+    if (!ss.eventFlags) ss.eventFlags = {};
+    ss.eventFlags[key] = value;
+  }
+
+  function getEventFlag(key) {
+    const ss = ensureStoryState();
+    return ss.eventFlags ? ss.eventFlags[key] : null;
+  }
+
+  function hoursSinceFlag(key) {
+    const mark = getEventFlag(key);
+    if (mark == null) return Infinity;
+    return getCurrentTrailHour(gameState) - mark;
+  }
+
+  function advanceChain(key, step) {
+    setEventFlag(key + "_step", step);
+    setEventFlag(key + "_time", getCurrentTrailHour(gameState));
   }
 
   function runHasEnded() {
@@ -14890,6 +15756,30 @@
       (skills.doctoring || 0);
     dom.companionDetail.appendChild(skillsLine);
 
+    const bio = document.createElement("div");
+    bio.className = "ot-panel-body-sm";
+    bio.style.marginTop = "6px";
+    bio.textContent = `${person.age || "?"} years · ${person.origin || "Unknown origin"}`;
+    dom.companionDetail.appendChild(bio);
+
+    const backstory = document.createElement("div");
+    backstory.className = "ot-panel-body-sm ot-text-muted";
+    backstory.textContent = person.backstoryLabel
+      ? `${person.backstoryLabel} — ${person.backstorySummary || ""}`
+      : "";
+    dom.companionDetail.appendChild(backstory);
+
+    const traitsRow = document.createElement("div");
+    traitsRow.className = "ot-panel-body-sm";
+    traitsRow.style.marginTop = "4px";
+    traitsRow.innerHTML = (person.traits || [])
+      .map(function (t) {
+        const def = getTraitDef(t);
+        return `<span class="ot-draft-tag">${def ? def.label : t}</span>`;
+      })
+      .join(" ") || "No quirks noted.";
+    dom.companionDetail.appendChild(traitsRow);
+
     const affs = activeAfflictions(person);
     if (affs.length) {
       const affDiv = document.createElement("div");
@@ -14903,6 +15793,25 @@
         .join(" · ");
       dom.companionDetail.appendChild(affDiv);
     }
+
+    const relWrap = document.createElement("div");
+    relWrap.className = "ot-panel-body-sm";
+    relWrap.style.marginTop = "6px";
+    relWrap.innerHTML = "<strong>Social</strong>";
+    const relList = document.createElement("div");
+    Object.keys(person.relationships || {}).forEach(function (rid) {
+      const rel = person.relationships[rid];
+      const other = getAllPeople().find(function (p) {
+        return p && p.id === rid;
+      });
+      if (!other) return;
+      const line = document.createElement("div");
+      line.className = "ot-panel-body-sm ot-text-muted";
+      line.textContent = `${other.name}: ${relationshipLabel(rel)} (${Math.round(rel.opinion || 0)})`;
+      relList.appendChild(line);
+    });
+    relWrap.appendChild(relList);
+    dom.companionDetail.appendChild(relWrap);
   }
 
   function renderTrailLog() {
@@ -15729,6 +16638,27 @@
     }
 
     dom.departureSelect.addEventListener("change", updateStartArt);
+    if (!ensurePartyDraftState().initialized) {
+      ensurePartyDraftState().initialized = true;
+      generateFullDraft();
+    } else {
+      applyDraftToInputs();
+      renderAllDraftInfo();
+    }
+    if (dom.btnGenerateParty) {
+      dom.btnGenerateParty.addEventListener("click", function () {
+        generateFullDraft();
+        renderAllDraftInfo();
+        saveGame();
+      });
+    }
+    if (dom.mythicToggle) {
+      dom.mythicToggle.value = gameState.mythicEnabled === false ? "off" : "on";
+      dom.mythicToggle.addEventListener("change", function () {
+        gameState.mythicEnabled = dom.mythicToggle.value !== "off";
+        ensureStoryState().mythicEnabled = gameState.mythicEnabled;
+      });
+    }
     dom.btnBeginOutfit.addEventListener("click", startNewGameFromForm);
     dom.btnAddRecommended.addEventListener("click", addRecommendedLoad);
     dom.btnBeginJourney.addEventListener("click", beginJourney);
@@ -15856,6 +16786,17 @@
     dom.btnCloseInventory.addEventListener("click", function () {
       dom.inventoryModal.classList.remove("active");
     });
+    if (dom.btnOpenSocial) {
+      dom.btnOpenSocial.addEventListener("click", function () {
+        renderSocialWeb();
+        if (dom.socialModal) dom.socialModal.classList.add("active");
+      });
+    }
+    if (dom.socialBackdrop && dom.socialModal) {
+      dom.socialBackdrop.addEventListener("click", function () {
+        dom.socialModal.classList.remove("active");
+      });
+    }
     if (dom.btnOpenMap) {
       dom.btnOpenMap.addEventListener("click", function () {
         openMapModal();
@@ -16658,9 +17599,13 @@
       }
     }
 
+    const crisis = detectCrisisNeeds();
+    if (crisis.indexOf("fetch_water") >= 0) tryAdd("fetch_and_boil_water");
+    if (crisis.indexOf("cook") >= 0) tryAdd("cook_hot_meal");
+    if (crisis.indexOf("repair") >= 0 || gameState.wagonCondition < 70)
+      tryAdd("repair_wagon_and_tackle");
     if (avgThirst < 70) tryAdd("fetch_and_boil_water");
     if (avgHunger < 70) tryAdd("cook_hot_meal");
-    if (gameState.wagonCondition < 70) tryAdd("repair_wagon_and_tackle");
     if (avgEnergy < 60) tryAdd("extra_sleep");
     tryAdd("gather_fuel");
     if (picks.length === 0) tryAdd("read_book");
