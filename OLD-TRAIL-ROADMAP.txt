@@ -336,6 +336,17 @@ Deferred from Fort Trading Ledger pass (2025-05-07):
 - Tie faction/vendor flavor and additional trade posts into the pricing model (caravans, open-eye, men-in-gray) once their POIs are enabled.
 - Add per-vendor filters/exports for the trade ledger when more vendors exist beyond forts.
 
+Deferred (Barter tab follow-ups)
+- Fort policies/tariffs and rival fort quest hooks that react to faction reputation and past ledger entries (keep aligned with existing fort politics items above).
+- Men in Gray mythic-gated vendor path with contraband consequences (retain interplay with faction reputation).
+- Caravan/peddler trade encounters that call openVendorTradeModal("caravans", poiId) with faction inventories and flavor.
+- Dream-West B-10+ seeds with multi-region callbacks triggered by trades or reputation changes (cross-link with existing seed backlog).
+- Tactical hunting/ambush resolution via the encounter modal, including barter-dependent loot hooks.
+- Seasonal grading, night overlay, lantern glow, and weather vignette polish to support the barter UI mood.
+- Sprite chores and visual inventory deltas when barter transfers occur.
+- Cinematic HUD toggle (keep compatibility with modal-heavy barter flows).
+- Continuous-time travel loop with pause plus top-down caravan control that preserves trade modal access.
+
 Validation Checklist (Fort Trading Ledger pass):
 - Start a new run: no console errors.
 - Travel near a fort: “Trading Post” button appears; hides once you move away.
