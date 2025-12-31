@@ -395,3 +395,8 @@ Square Tile Map + Sprites (Deferred)
 - Add optional explorer tooltip/inspect mode for tiles plus hover labels for milestones.
 - Tie explorer region banding and tile types to real route/biome data instead of simple x-axis bands.
 - Add a lightweight explorer minimap overlay plus performance profiling (chunk caching, draw bounds) for the tile renderer.
+- Interactive minimap: click-to-pan + show POI markers; mobile toggle UX
+- Chunk caching/offscreen buffers for explorer terrain layer (static terrain blit)
+- Feature-corridor-driven terrain placement (Snake/Columbia/Humboldt rivers, deserts) using tags
+- Touch-friendly inspect: tap to pin tooltip + close button
+- Biome transition smoothing + seasonal tinting + variant tile set rotations
