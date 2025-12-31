@@ -638,7 +638,7 @@
 .ot-screen-travel.ot-view-mode-explorer #ot-trail-canvas {
   height: auto;
   aspect-ratio: 3 / 2;
-  max-height: 560px;
+  max-height: 700px;
 }
 
 /* Temporal viewport overlays (scene + map) */
@@ -5724,6 +5724,7 @@
     nutritionStatus: null,
     travelView: "journal",
     explorer: { x: 6, y: 20, hourBuffer: 0 },
+    explorerView: { camX: 0, camY: 0, zoom: 1, follow: true },
     hexMap: null,
     traillines: {
       visualMiles: 0,
@@ -17725,6 +17726,9 @@
   const explorerRuntime = {
     canvas: null,
     ctx: null,
+    dragPointerId: null,
+    lastDragX: 0,
+    lastDragY: 0,
   };
 
   function createExplorerWorld() {
@@ -17786,11 +17790,12 @@
     if (!dom.trailCanvas) return;
     ensureTraillinesState();
     ensureExplorerState();
+    ensureExplorerViewState();
 
     if (!explorerRuntime.canvas) {
       explorerRuntime.canvas = dom.trailCanvas;
       explorerRuntime.ctx = dom.trailCanvas.getContext("2d");
-      wireHexCanvasInteractions(dom.trailCanvas, {});
+      wireExplorerCanvasInteractions(dom.trailCanvas);
       window.addEventListener("resize", function () {
         resizeTrailCanvas();
         renderExplorerWorld();
@@ -17800,6 +17805,71 @@
     resizeTrailCanvas();
 
     renderExplorerWorld();
+  }
+
+  function wireExplorerCanvasInteractions(canvas) {
+    if (!canvas || canvas.dataset.explorerWired) return;
+    canvas.dataset.explorerWired = "1";
+
+    canvas.addEventListener("pointerdown", function (evt) {
+      if (gameState.travelView !== "explorer" || canvas !== dom.trailCanvas) return;
+      const view = ensureExplorerViewState();
+      view.follow = false;
+      explorerRuntime.dragPointerId = evt.pointerId;
+      explorerRuntime.lastDragX = evt.clientX;
+      explorerRuntime.lastDragY = evt.clientY;
+      if (canvas.setPointerCapture) canvas.setPointerCapture(evt.pointerId);
+    });
+
+    canvas.addEventListener("pointermove", function (evt) {
+      if (gameState.travelView !== "explorer" || canvas !== dom.trailCanvas) return;
+      if (explorerRuntime.dragPointerId == null || explorerRuntime.dragPointerId !== evt.pointerId)
+        return;
+      const rect = canvas.getBoundingClientRect();
+      const view = ensureExplorerViewState();
+      const baseTileSize = Math.min(
+        rect.width / EXPLORER_VIEWPORT.width,
+        rect.height / EXPLORER_VIEWPORT.height
+      );
+      const tileSize = baseTileSize * (view.zoom || 1);
+      if (!tileSize) return;
+      const dx = evt.clientX - explorerRuntime.lastDragX;
+      const dy = evt.clientY - explorerRuntime.lastDragY;
+      explorerRuntime.lastDragX = evt.clientX;
+      explorerRuntime.lastDragY = evt.clientY;
+      view.follow = false;
+      view.camX -= dx / tileSize;
+      view.camY -= dy / tileSize;
+      clampExplorerCamera(view);
+      renderExplorerWorld();
+    });
+
+    function endDrag(evt) {
+      if (evt && explorerRuntime.dragPointerId !== evt.pointerId) return;
+      if (canvas.releasePointerCapture && explorerRuntime.dragPointerId != null) {
+        try {
+          canvas.releasePointerCapture(explorerRuntime.dragPointerId);
+        } catch (e) {}
+      }
+      explorerRuntime.dragPointerId = null;
+    }
+
+    canvas.addEventListener("pointerup", endDrag);
+    canvas.addEventListener("pointercancel", endDrag);
+
+    canvas.addEventListener(
+      "wheel",
+      function (evt) {
+        if (gameState.travelView !== "explorer" || canvas !== dom.trailCanvas) return;
+        evt.preventDefault();
+        const view = ensureExplorerViewState();
+        const delta = evt.deltaY;
+        const step = delta > 0 ? -0.1 : 0.1;
+        view.zoom = clamp((view.zoom || 1) + step, 0.75, 2.5);
+        renderExplorerWorld();
+      },
+      { passive: false }
+    );
   }
 
   function explorerPalette(region) {
@@ -17837,6 +17907,9 @@
   };
 
   const explorerArtCache = { images: {}, canvases: {} };
+
+  const PAWN_SHEET_URL = "https://www.kylesalaya.com/uploads/9/3/7/0/93707764/pawns_orig.png";
+  const pawnSheet = { status: "idle", img: null, frameW: 0, frameH: 0 };
 
   function getArtCanvas(key, size) {
     const art = EXPLORER_ART[key];
@@ -17881,6 +17954,26 @@
     return null;
   }
 
+  function ensurePawnSheetLoaded() {
+    if (pawnSheet.status === "idle") {
+      const img = new Image();
+      pawnSheet.img = img;
+      pawnSheet.status = "loading";
+      img.crossOrigin = "anonymous";
+      img.onload = function () {
+        pawnSheet.status = "loaded";
+        pawnSheet.frameW = img.naturalWidth / 16;
+        pawnSheet.frameH = img.naturalHeight / 2;
+        renderExplorerWorld();
+      };
+      img.onerror = function () {
+        pawnSheet.status = "error";
+      };
+      img.src = PAWN_SHEET_URL;
+    }
+    return pawnSheet;
+  }
+
   function shadeColor(hex, delta) {
     const num = parseInt(hex.replace("#", ""), 16);
     const r = clamp(((num >> 16) & 0xff) + Math.round(255 * delta), 0, 255);
@@ -17923,6 +18016,35 @@
     return EXPLORER_WORLD.map[y][x] || "grass";
   }
 
+  function regionForWorldX(tx) {
+    const totalMiles = gameState.totalTrailMiles || gameState.targetMiles || 1;
+    const worldWidth = Math.max(1, EXPLORER_WORLD.width - 1);
+    const mileAlong = (clamp(tx, 0, worldWidth) / worldWidth) * Math.max(totalMiles, 1);
+    let bandRegion = gameState.region || "plains";
+    for (let i = 0; i < ROUTE_MILESTONES.length; i++) {
+      const m = ROUTE_MILESTONES[i];
+      if (m && m.mile <= mileAlong && m.region) {
+        bandRegion = m.region;
+      }
+    }
+    return bandRegion || "plains";
+  }
+
+  function clampExplorerCamera(view) {
+    view.camX = clamp(view.camX, 0, Math.max(EXPLORER_WORLD.width - 1, 0));
+    view.camY = clamp(view.camY, 0, Math.max(EXPLORER_WORLD.height - 1, 0));
+  }
+
+  function getExplorerWagonProgress() {
+    const totalMiles = gameState.totalTrailMiles || gameState.targetMiles || 1;
+    const traveled = Math.max(0, gameState.milesTraveled || 0);
+    const progressFrac = clamp(traveled / Math.max(totalMiles, 1), 0, 1);
+    const pathLen = Math.max(EXPLORER_WORLD.path.length - 1, 0);
+    const idx = clamp(Math.floor(progressFrac * pathLen), 0, pathLen);
+    const tile = EXPLORER_WORLD.path[idx] || EXPLORER_WORLD.path[pathLen] || { x: 0, y: 0 };
+    return { tile: tile, idx: idx };
+  }
+
   function renderExplorerWorld() {
     if (!explorerRuntime.canvas || !explorerRuntime.ctx) return;
     const exploring =
@@ -17938,6 +18060,7 @@
     }
 
     ensureExplorerState();
+    const view = ensureExplorerViewState();
     const rect = explorerRuntime.canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     const width = rect.width;
@@ -17946,10 +18069,18 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
 
+    const wagonProgress = getExplorerWagonProgress();
+    const wagonTile = wagonProgress.tile;
+    if (view.follow) {
+      view.camX = wagonTile.x;
+      view.camY = wagonTile.y;
+    }
+    view.zoom = clamp(view.zoom || 1, 0.75, 2.5);
+    clampExplorerCamera(view);
+
     const region = gameState.region || "plains";
     const w = gameState.weatherState || {};
     const palette = explorerPalette(region);
-    const baseArtKey = getRegionBaseArtKey(region);
 
     const skyTop = palette.sky;
     const skyBottom = w.tempC && w.tempC > 28 ? "#5b3d2a" : palette.sky;
@@ -17965,20 +18096,23 @@
       ctx.fillRect(0, 0, width, height);
     }
 
-    const tileSize = Math.min(
+    const baseTileSize = Math.min(
       width / EXPLORER_VIEWPORT.width,
       height / EXPLORER_VIEWPORT.height
     );
-    const ex = gameState.explorer || { x: 0, y: 0 };
+    const tileSize = baseTileSize * view.zoom;
+    if (!isFinite(tileSize) || tileSize <= 0) return;
+    const visibleTilesX = Math.max(1, Math.ceil(width / tileSize) + 1);
+    const visibleTilesY = Math.max(1, Math.ceil(height / tileSize) + 1);
     const startX = clamp(
-      Math.floor(ex.x - EXPLORER_VIEWPORT.width / 2),
+      Math.floor(view.camX - visibleTilesX / 2),
       0,
-      EXPLORER_WORLD.width - EXPLORER_VIEWPORT.width
+      Math.max(EXPLORER_WORLD.width - visibleTilesX, 0)
     );
     const startY = clamp(
-      Math.floor(ex.y - EXPLORER_VIEWPORT.height / 2),
+      Math.floor(view.camY - visibleTilesY / 2),
       0,
-      EXPLORER_WORLD.height - EXPLORER_VIEWPORT.height
+      Math.max(EXPLORER_WORLD.height - visibleTilesY, 0)
     );
 
     const fogMiles =
@@ -18003,14 +18137,17 @@
       void: "#111519",
     };
 
-    for (let vy = 0; vy < EXPLORER_VIEWPORT.height; vy++) {
-      for (let vx = 0; vx < EXPLORER_VIEWPORT.width; vx++) {
+    for (let vy = 0; vy < visibleTilesY; vy++) {
+      for (let vx = 0; vx < visibleTilesX; vx++) {
         const tx = startX + vx;
         const ty = startY + vy;
         const tile = getExplorerTile(tx, ty);
         const key = `${tx},${ty}`;
         const pathIdx = EXPLORER_WORLD.pathIndex[key];
         const seen = pathIdx == null || pathIdx <= frontierIdx + 1;
+
+        const bandRegion = regionForWorldX(tx);
+        const baseArtKey = getRegionBaseArtKey(bandRegion);
 
         const px = vx * tileSize;
         const py = vy * tileSize + tileSize * 0.3;
@@ -18054,9 +18191,9 @@
       if (!seen) return;
       if (
         pt.x < startX ||
-        pt.x >= startX + EXPLORER_VIEWPORT.width ||
+        pt.x >= startX + visibleTilesX ||
         pt.y < startY ||
-        pt.y >= startY + EXPLORER_VIEWPORT.height
+        pt.y >= startY + visibleTilesY
       ) {
         return;
       }
@@ -18082,8 +18219,24 @@
       ctx.restore();
     });
 
-    const wagonX = (ex.x - startX + 0.5) * tileSize;
-    const wagonY = (ex.y - startY + 0.9) * tileSize;
+    const wagonX = (wagonTile.x - startX + 0.5) * tileSize;
+    const wagonY = (wagonTile.y - startY + 0.9) * tileSize;
+    const prevPt = EXPLORER_WORLD.path[wagonProgress.idx - 1];
+    const nextPt = EXPLORER_WORLD.path[wagonProgress.idx + 1];
+    let dirX = 0;
+    let dirY = 0;
+    if (nextPt) {
+      dirX = nextPt.x - wagonTile.x;
+      dirY = nextPt.y - wagonTile.y;
+    } else if (prevPt) {
+      dirX = wagonTile.x - prevPt.x;
+      dirY = wagonTile.y - prevPt.y;
+    }
+    const absX = Math.abs(dirX);
+    const absY = Math.abs(dirY);
+    let facing = "south";
+    if (absX > absY && dirX !== 0) facing = dirX > 0 ? "east" : "west";
+    else if (absY > 0) facing = dirY > 0 ? "south" : "north";
     const oxenCount = Math.max(
       0,
       Math.floor((gameState.supplies && gameState.supplies.oxen) || 0)
@@ -18216,20 +18369,40 @@
       tileSize * 0.16
     );
 
-    // Followers tucked behind wagon
-    ctx.fillStyle = "rgba(215, 190, 150, 0.8)";
-    ctx.fillRect(
-      wagonX - tileSize * 0.12,
-      wagonY - tileSize * 0.9,
-      tileSize * 0.16,
-      tileSize * 0.18
-    );
-    ctx.fillRect(
-      wagonX + tileSize * 0.05,
-      wagonY - tileSize * 0.82,
-      tileSize * 0.16,
-      tileSize * 0.18
-    );
+    const pawns = getAllPeople()
+      .filter(function (p) {
+        return p && p.alive;
+      })
+      .slice(0, 3);
+    const sheet = ensurePawnSheetLoaded();
+    if (
+      pawns.length &&
+      sheet.status === "loaded" &&
+      sheet.img &&
+      sheet.frameW &&
+      sheet.frameH
+    ) {
+      const dirIndex = { south: 0, west: 1, east: 2, north: 3 }[facing] || 0;
+      const moving = gameState.mode === "travel" && (gameState.lastHourMiles || 0) > 0;
+      const frame = moving ? 1 + (Math.floor(Date.now() / 180) % 3) : 0;
+      const offsets = [
+        { x: -0.18, y: -0.3 },
+        { x: 0.16, y: -0.24 },
+        { x: -0.02, y: -0.46 },
+      ];
+      const drawW = tileSize * 0.72;
+      const drawH = drawW * (sheet.frameH / sheet.frameW);
+      pawns.forEach(function (person, idx) {
+        const offset = offsets[idx] || offsets[offsets.length - 1];
+        const gender = (person && person.genderHint) || "";
+        const row = /female|woman|girl/i.test(gender) ? 1 : 0;
+        const sx = (dirIndex * 4 + frame) * sheet.frameW;
+        const sy = row * sheet.frameH;
+        const px = wagonX + offset.x * tileSize - drawW / 2;
+        const py = wagonY + offset.y * tileSize - drawH * 0.1;
+        ctx.drawImage(sheet.img, sx, sy, sheet.frameW, sheet.frameH, px, py, drawW, drawH);
+      });
+    }
 
     if (w.precip === "rain") {
       ctx.strokeStyle = "rgba(160, 200, 255, 0.35)";
@@ -18280,7 +18453,24 @@
   }
 
   function handleExplorerStep(dx, dy) {
-    moveHexCamera(dx, dy);
+    const view = ensureExplorerViewState();
+    view.follow = false;
+    view.camX += dx;
+    view.camY += dy;
+    clampExplorerCamera(view);
+    renderExplorerWorld();
+  }
+
+  function recenterExplorerCameraOnWagon(options) {
+    const view = ensureExplorerViewState();
+    const progress = getExplorerWagonProgress();
+    view.camX = progress.tile.x;
+    view.camY = progress.tile.y;
+    if (options && options.follow != null) {
+      view.follow = options.follow;
+    }
+    clampExplorerCamera(view);
+    renderExplorerWorld();
   }
 
   /* ========= OREGON TRAIL HEX MAP ===================================== */
@@ -19136,6 +19326,23 @@
     state.explorer.y = playerHex.r;
     state.explorer.initializedFromProgress = true;
     return state.explorer;
+  }
+
+  function ensureExplorerViewState(gs) {
+    const state = gs || gameState;
+    if (!state.explorerView) {
+      state.explorerView = { camX: 0, camY: 0, zoom: 1, follow: true };
+    }
+    const view = state.explorerView;
+    if (typeof view.camX !== "number" || !isFinite(view.camX)) view.camX = 0;
+    if (typeof view.camY !== "number" || !isFinite(view.camY)) view.camY = 0;
+    if (typeof view.zoom !== "number" || !isFinite(view.zoom) || view.zoom <= 0)
+      view.zoom = 1;
+    view.zoom = clamp(view.zoom, 0.75, 2.5);
+    if (view.follow == null) view.follow = true;
+    view.camX = clamp(view.camX, 0, Math.max(EXPLORER_WORLD.width - 1, 0));
+    view.camY = clamp(view.camY, 0, Math.max(EXPLORER_WORLD.height - 1, 0));
+    return view;
   }
 
   function ensureHexMapState() {
@@ -22047,7 +22254,8 @@
     }
 
     if (gameState.phase === "travel") {
-      if (gameState.travelView === "explorer") {
+      const isExplorerView = gameState.travelView === "explorer";
+      if (isExplorerView) {
         initExplorerWorldIfNeeded();
       }
       renderStorytellerDescription(gameState.storytellerPresetId || "classic");
@@ -22061,7 +22269,9 @@
       renderAfflictionAlerts();
       renderTrailHeader();
       renderExplorerChip();
-      renderExplorer();
+      if (isExplorerView) {
+        renderExplorerWorld();
+      }
       renderTrailMap();
       syncMapModalState();
       renderCompanionDetail();
@@ -22793,16 +23003,11 @@
           evt.preventDefault();
           return;
         } else if (evt.key === "f" || evt.key === "F") {
-          if (gameState.hexMap) {
-            gameState.hexMap.follow = true;
-            recenterCameraOnPlayer();
-            renderExplorer();
-          }
+          recenterExplorerCameraOnWagon({ follow: true });
           evt.preventDefault();
           return;
         } else if (evt.key === "c" || evt.key === "C") {
-          recenterCameraOnPlayer();
-          renderExplorer();
+          recenterExplorerCameraOnWagon({});
           evt.preventDefault();
           return;
         }

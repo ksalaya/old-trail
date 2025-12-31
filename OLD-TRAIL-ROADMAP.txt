@@ -391,3 +391,7 @@ Square Tile Map + Sprites (Deferred)
 - Party pawn sprite sheet integration (4-dir + walk cycles) in Explorer view.
 - Region banding across explorer world (tile selection varies by progress/mile, not just current region).
 - Explorer input cleanup (stop using hex camera movement helpers in explorer mode; add square-grid pan/zoom).
+- Replace procedural wagon/oxen drawing with a sprite sheet set (variants for oxen count, damage, lanterns, night states).
+- Add optional explorer tooltip/inspect mode for tiles plus hover labels for milestones.
+- Tie explorer region banding and tile types to real route/biome data instead of simple x-axis bands.
+- Add a lightweight explorer minimap overlay plus performance profiling (chunk caching, draw bounds) for the tile renderer.
