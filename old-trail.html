@@ -17729,6 +17729,7 @@
     dragPointerId: null,
     lastDragX: 0,
     lastDragY: 0,
+    hover: null,
   };
 
   function createExplorerWorld() {
@@ -17772,7 +17773,37 @@
       if (i % 2 === 0 && height - 11 >= 0) map[height - 11][i] = "hill";
     }
 
-    return { width: width, height: height, map: map, path: path, pathIndex: pathIndex };
+    const nearestPathIdx = [];
+    const pathLen = path.length;
+    for (let ty = 0; ty < height; ty++) {
+      const row = [];
+      for (let tx = 0; tx < width; tx++) {
+        let bestIdx = 0;
+        let bestDist = Infinity;
+        for (let i = 0; i < pathLen; i++) {
+          const p = path[i];
+          const dx = p.x - tx;
+          const dy = p.y - ty;
+          const dist2 = dx * dx + dy * dy;
+          if (dist2 < bestDist) {
+            bestDist = dist2;
+            bestIdx = i;
+            if (dist2 === 0) break;
+          }
+        }
+        row.push(bestIdx);
+      }
+      nearestPathIdx.push(row);
+    }
+
+    return {
+      width: width,
+      height: height,
+      map: map,
+      path: path,
+      pathIndex: pathIndex,
+      nearestPathIdx: nearestPathIdx,
+    };
   }
 
   function resizeTrailCanvas() {
@@ -17823,8 +17854,6 @@
 
     canvas.addEventListener("pointermove", function (evt) {
       if (gameState.travelView !== "explorer" || canvas !== dom.trailCanvas) return;
-      if (explorerRuntime.dragPointerId == null || explorerRuntime.dragPointerId !== evt.pointerId)
-        return;
       const rect = canvas.getBoundingClientRect();
       const view = ensureExplorerViewState();
       const baseTileSize = Math.min(
@@ -17833,15 +17862,125 @@
       );
       const tileSize = baseTileSize * (view.zoom || 1);
       if (!tileSize) return;
-      const dx = evt.clientX - explorerRuntime.lastDragX;
-      const dy = evt.clientY - explorerRuntime.lastDragY;
-      explorerRuntime.lastDragX = evt.clientX;
-      explorerRuntime.lastDragY = evt.clientY;
-      view.follow = false;
-      view.camX -= dx / tileSize;
-      view.camY -= dy / tileSize;
-      clampExplorerCamera(view);
-      renderExplorerWorld();
+
+      if (
+        explorerRuntime.dragPointerId != null &&
+        explorerRuntime.dragPointerId === evt.pointerId
+      ) {
+        const dx = evt.clientX - explorerRuntime.lastDragX;
+        const dy = evt.clientY - explorerRuntime.lastDragY;
+        explorerRuntime.lastDragX = evt.clientX;
+        explorerRuntime.lastDragY = evt.clientY;
+        view.follow = false;
+        view.camX -= dx / tileSize;
+        view.camY -= dy / tileSize;
+        explorerRuntime.hover = null;
+        clampExplorerCamera(view);
+        renderExplorerWorld();
+        return;
+      }
+
+      if (!view.inspect) {
+        if (explorerRuntime.hover) {
+          explorerRuntime.hover = null;
+          renderExplorerWorld();
+        }
+        return;
+      }
+
+      const visibleTilesX = Math.max(1, Math.ceil(rect.width / tileSize) + 1);
+      const visibleTilesY = Math.max(1, Math.ceil(rect.height / tileSize) + 1);
+      const startX = clamp(
+        Math.floor(view.camX - visibleTilesX / 2),
+        0,
+        Math.max(EXPLORER_WORLD.width - visibleTilesX, 0)
+      );
+      const startY = clamp(
+        Math.floor(view.camY - visibleTilesY / 2),
+        0,
+        Math.max(EXPLORER_WORLD.height - visibleTilesY, 0)
+      );
+
+      const px = evt.clientX - rect.left;
+      const py = evt.clientY - rect.top;
+      const localX = Math.floor(px / tileSize);
+      const localY = Math.floor((py - tileSize * 0.3) / tileSize);
+      if (
+        localX < 0 ||
+        localY < 0 ||
+        localX >= visibleTilesX ||
+        localY >= visibleTilesY
+      ) {
+        if (explorerRuntime.hover) {
+          explorerRuntime.hover = null;
+          renderExplorerWorld();
+        }
+        return;
+      }
+
+      const tx = startX + localX;
+      const ty = startY + localY;
+      const tile = getExplorerTile(tx, ty);
+      const totalMiles = gameState.totalTrailMiles || gameState.targetMiles || 1;
+      const mileAtTile = getExplorerMileForTile(tx, ty, totalMiles);
+      const geoAnchors = getActiveRouteGeoAnchors();
+      const bio = biomeAtMile(mileAtTile, geoAnchors);
+
+      const fogMiles =
+        (gameState.traillines && gameState.traillines.fogMaxMile) ||
+        gameState.milesTraveled ||
+        0;
+      const fogProgress = clamp(
+        fogMiles / Math.max(gameState.targetMiles || 1, 1),
+        0,
+        1
+      );
+      const frontierIdx = Math.floor(
+        fogProgress * Math.max(EXPLORER_WORLD.path.length - 1, 0)
+      );
+
+      let milestoneName = null;
+      const milestones = getActiveRouteMilestones();
+      milestones.forEach(function (m) {
+        if (milestoneName || m.mile == null) return;
+        const fraction = clamp(m.mile / Math.max(totalMiles, 1), 0, 1);
+        const idx = Math.round(
+          fraction * Math.max(EXPLORER_WORLD.path.length - 1, 0)
+        );
+        const pt = EXPLORER_WORLD.path[idx];
+        if (!pt || pt.x !== tx || pt.y !== ty) return;
+        const pathIdx = EXPLORER_WORLD.pathIndex[`${pt.x},${pt.y}`];
+        const seen = pathIdx == null || pathIdx <= frontierIdx + 1;
+        if (!seen) return;
+        const poi = HEX_WORLD.poiById[m.poiId];
+        if (!poi) return;
+        milestoneName = poi.name || poi.id || null;
+      });
+
+      const biomeKey = bio ? bio.biome : "";
+      const hoverKey = `${tx},${ty}:${milestoneName || ""}:${tile}:${biomeKey}:${Math.round(
+        mileAtTile || 0
+      )}`;
+      if (!explorerRuntime.hover || explorerRuntime.hover._k !== hoverKey) {
+        explorerRuntime.hover = {
+          tx: tx,
+          ty: ty,
+          tile: tile,
+          mile: mileAtTile,
+          biome: bio && bio.biome,
+          region: bio && bio.region,
+          milestoneName: milestoneName,
+          _k: hoverKey,
+        };
+        renderExplorerWorld();
+      }
+    });
+
+    canvas.addEventListener("pointerleave", function () {
+      if (explorerRuntime.hover) {
+        explorerRuntime.hover = null;
+        renderExplorerWorld();
+      }
     });
 
     function endDrag(evt) {
@@ -18030,6 +18169,45 @@
     return bandRegion || "plains";
   }
 
+  function getActiveRouteGeoAnchors() {
+    const anchors = [];
+    const milestones = getActiveRouteMilestones();
+    milestones.forEach(function (m) {
+      if (m == null || typeof m.mile !== "number" || !isFinite(m.mile)) return;
+      const poi = m.poiId ? HEX_WORLD.poiById[m.poiId] : null;
+      if (!poi || typeof poi.lat !== "number" || typeof poi.lon !== "number") return;
+      if (!isFinite(poi.lat) || !isFinite(poi.lon)) return;
+      anchors.push({ mile: m.mile, lat: poi.lat, lon: poi.lon });
+    });
+    anchors.sort(function (a, b) {
+      return a.mile - b.mile;
+    });
+    return anchors;
+  }
+
+  function latLonAtMile(mile, anchors) {
+    if (!anchors || !anchors.length) return null;
+    if (mile <= anchors[0].mile) return { lat: anchors[0].lat, lon: anchors[0].lon };
+    const last = anchors[anchors.length - 1];
+    if (mile >= last.mile) return { lat: last.lat, lon: last.lon };
+    for (let i = 0; i < anchors.length - 1; i++) {
+      const a = anchors[i];
+      const b = anchors[i + 1];
+      if (mile >= a.mile && mile <= b.mile) {
+        const span = Math.max(b.mile - a.mile, 1e-6);
+        const t = clamp((mile - a.mile) / span, 0, 1);
+        return { lat: a.lat + (b.lat - a.lat) * t, lon: a.lon + (b.lon - a.lon) * t };
+      }
+    }
+    return { lat: anchors[0].lat, lon: anchors[0].lon };
+  }
+
+  function biomeAtMile(mile, anchors) {
+    const ll = latLonAtMile(mile, anchors);
+    if (!ll) return null;
+    return hexBiomeForLatLon(ll.lat, ll.lon);
+  }
+
   function clampExplorerCamera(view) {
     view.camX = clamp(view.camX, 0, Math.max(EXPLORER_WORLD.width - 1, 0));
     view.camY = clamp(view.camY, 0, Math.max(EXPLORER_WORLD.height - 1, 0));
@@ -18045,6 +18223,25 @@
     return { tile: tile, idx: idx };
   }
 
+  function getExplorerMileForTile(tx, ty, totalMiles) {
+    const key = `${tx},${ty}`;
+    const pathLen = Math.max(EXPLORER_WORLD.path.length - 1, 0);
+    if (pathLen <= 0) return 0;
+    let idx = EXPLORER_WORLD.pathIndex[key];
+    if (idx == null && EXPLORER_WORLD.nearestPathIdx) {
+      if (ty >= 0 && ty < EXPLORER_WORLD.nearestPathIdx.length) {
+        const row = EXPLORER_WORLD.nearestPathIdx[ty];
+        if (row && tx >= 0 && tx < row.length) idx = row[tx];
+      }
+    }
+    if (idx == null) {
+      const frac = clamp(tx / Math.max(EXPLORER_WORLD.width - 1, 1), 0, 1);
+      idx = Math.round(frac * pathLen);
+    }
+    const miles = (idx / Math.max(pathLen, 1)) * Math.max(totalMiles || 1, 1);
+    return clamp(miles, 0, Math.max(totalMiles || 1, 1));
+  }
+
   function renderExplorerWorld() {
     if (!explorerRuntime.canvas || !explorerRuntime.ctx) return;
     const exploring =
@@ -18054,11 +18251,12 @@
         0,
         0,
         explorerRuntime.canvas.width,
-        explorerRuntime.canvas.height
-      );
+      explorerRuntime.canvas.height
+    );
       return;
     }
 
+    const renderStart = performance.now();
     ensureExplorerState();
     const view = ensureExplorerViewState();
     const rect = explorerRuntime.canvas.getBoundingClientRect();
@@ -18095,6 +18293,9 @@
       ctx.fillStyle = `rgba(120, 140, 170, ${0.18 * haze})`;
       ctx.fillRect(0, 0, width, height);
     }
+
+    const totalMiles = gameState.totalTrailMiles || gameState.targetMiles || 1;
+    const geoAnchors = getActiveRouteGeoAnchors();
 
     const baseTileSize = Math.min(
       width / EXPLORER_VIEWPORT.width,
@@ -18137,6 +18338,8 @@
       void: "#111519",
     };
 
+    let tileCount = 0;
+
     for (let vy = 0; vy < visibleTilesY; vy++) {
       for (let vx = 0; vx < visibleTilesX; vx++) {
         const tx = startX + vx;
@@ -18146,8 +18349,10 @@
         const pathIdx = EXPLORER_WORLD.pathIndex[key];
         const seen = pathIdx == null || pathIdx <= frontierIdx + 1;
 
-        const bandRegion = regionForWorldX(tx);
-        const baseArtKey = getRegionBaseArtKey(bandRegion);
+        const mileAtTile = getExplorerMileForTile(tx, ty, totalMiles);
+        const bio = biomeAtMile(mileAtTile, geoAnchors);
+        const baseArtKey =
+          bio && bio.biome ? bio.biome : getRegionBaseArtKey(gameState.region || "plains");
 
         const px = vx * tileSize;
         const py = vy * tileSize + tileSize * 0.3;
@@ -18159,6 +18364,8 @@
           ctx.fillStyle = fallbackColors[tile] || palette.ground;
           ctx.fillRect(px, py, tileSize + 1, tileSize + 1);
         }
+
+        tileCount++;
 
         if (!seen) {
           ctx.fillStyle = "rgba(8, 10, 14, 0.45)";
@@ -18176,7 +18383,6 @@
     ctx.fillStyle = "rgba(0, 0, 0, 0.18)";
     ctx.fillRect(0, tileSize * 0.2, width, tileSize * 0.18);
 
-    const totalMiles = gameState.totalTrailMiles || gameState.targetMiles || 1;
     const milestones = getActiveRouteMilestones();
     milestones.forEach(function (m) {
       if (m.mile == null || !EXPLORER_WORLD.path.length) return;
@@ -18217,6 +18423,25 @@
         tileSize * 0.6
       );
       ctx.restore();
+
+      if (
+        view.inspect &&
+        explorerRuntime.hover &&
+        explorerRuntime.hover.tx === pt.x &&
+        explorerRuntime.hover.ty === pt.y &&
+        explorerRuntime.hover.milestoneName === poi.name
+      ) {
+        ctx.save();
+        ctx.font = `${Math.max(10, tileSize * 0.28)}px 'Trebuchet MS', 'Segoe UI', sans-serif`;
+        ctx.fillStyle = "#f7f3e9";
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.6)";
+        ctx.lineWidth = 3;
+        ctx.textBaseline = "bottom";
+        ctx.textAlign = "center";
+        ctx.strokeText(poi.name, cx, cy - tileSize * 0.5);
+        ctx.fillText(poi.name, cx, cy - tileSize * 0.5);
+        ctx.restore();
+      }
     });
 
     const wagonX = (wagonTile.x - startX + 0.5) * tileSize;
@@ -18426,6 +18651,117 @@
     } else if ((w.tempC || 0) > 28) {
       ctx.fillStyle = "rgba(210, 160, 80, 0.12)";
       ctx.fillRect(0, 0, width, height);
+    }
+
+    if (view.showMinimap) {
+      const mmMargin = Math.max(6, width * 0.01);
+      const mmWidth = Math.max(90, Math.min(180, width * 0.3));
+      const mmHeight = mmWidth * (EXPLORER_WORLD.height / EXPLORER_WORLD.width);
+      const mmX = width - mmWidth - mmMargin;
+      const mmY = mmMargin;
+      const scaleX = mmWidth / EXPLORER_WORLD.width;
+      const scaleY = mmHeight / EXPLORER_WORLD.height;
+      ctx.save();
+      ctx.fillStyle = "rgba(8, 10, 14, 0.35)";
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
+      ctx.lineWidth = 1;
+      ctx.fillRect(mmX, mmY, mmWidth, mmHeight);
+      ctx.strokeRect(mmX, mmY, mmWidth, mmHeight);
+
+      ctx.save();
+      ctx.translate(mmX, mmY);
+
+      ctx.strokeStyle = "rgba(240, 235, 220, 0.25)";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      EXPLORER_WORLD.path.forEach(function (p, idx) {
+        const px = p.x * scaleX;
+        const py = p.y * scaleY;
+        if (idx === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      });
+      ctx.stroke();
+
+      ctx.strokeStyle = "rgba(255, 240, 200, 0.65)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      EXPLORER_WORLD.path.forEach(function (p, idx) {
+        if (idx > frontierIdx + 1) return;
+        const px = p.x * scaleX;
+        const py = p.y * scaleY;
+        if (idx === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      });
+      ctx.stroke();
+
+      ctx.fillStyle = "#f5d7a1";
+      ctx.beginPath();
+      ctx.arc(wagonTile.x * scaleX, wagonTile.y * scaleY, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(
+        startX * scaleX,
+        startY * scaleY,
+        visibleTilesX * scaleX,
+        visibleTilesY * scaleY
+      );
+
+      ctx.restore();
+      ctx.restore();
+    }
+
+    const renderMs = performance.now() - renderStart;
+
+    if (view.showPerf) {
+      const perfText = `render: ${renderMs.toFixed(1)} ms | tiles: ${tileCount}`;
+      ctx.save();
+      ctx.font = "12px 'Trebuchet MS', 'Segoe UI', sans-serif";
+      ctx.textBaseline = "top";
+      ctx.textAlign = "right";
+      ctx.fillStyle = "rgba(8, 10, 14, 0.65)";
+      const perfWidth = ctx.measureText(perfText).width;
+      ctx.fillRect(width - 6 - perfWidth - 8, 6, perfWidth + 8, 18);
+      ctx.fillStyle = "#f4f2ec";
+      ctx.fillText(perfText, width - 10, 8);
+      ctx.restore();
+    }
+
+    if (view.inspect && explorerRuntime.hover) {
+      const hover = explorerRuntime.hover;
+      const lines = [];
+      if (hover.milestoneName) lines.push(`Milestone: ${hover.milestoneName}`);
+      if (hover.biome || hover.region) lines.push(`Biome: ${hover.biome || "?"} (${hover.region || "?"})`);
+      lines.push(`Terrain: ${hover.tile || "?"}`);
+      lines.push(`Tile: ${hover.tx}, ${hover.ty}`);
+      if (hover.mile != null) lines.push(`Mile: ~${Math.round(hover.mile)}`);
+      const padding = 8;
+      const lineHeight = 16;
+      ctx.save();
+      ctx.font = "12px 'Trebuchet MS', 'Segoe UI', sans-serif";
+      const panelWidth =
+        Math.max.apply(
+          null,
+          lines.map(function (l) {
+            return ctx.measureText(l).width;
+          })
+        ) +
+        padding * 2;
+      const panelHeight = lineHeight * lines.length + padding * 2;
+      const panelX = 10;
+      const panelY = height - panelHeight - 10;
+      ctx.fillStyle = "rgba(8, 10, 14, 0.75)";
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+      ctx.lineWidth = 1;
+      ctx.fillRect(panelX, panelY, panelWidth, panelHeight);
+      ctx.strokeRect(panelX, panelY, panelWidth, panelHeight);
+      ctx.fillStyle = "#f5f0e6";
+      ctx.textBaseline = "top";
+      lines.forEach(function (line, idx) {
+        ctx.fillText(line, panelX + padding, panelY + padding + idx * lineHeight);
+      });
+      ctx.restore();
     }
   }
 
@@ -19331,7 +19667,15 @@
   function ensureExplorerViewState(gs) {
     const state = gs || gameState;
     if (!state.explorerView) {
-      state.explorerView = { camX: 0, camY: 0, zoom: 1, follow: true };
+      state.explorerView = {
+        camX: 0,
+        camY: 0,
+        zoom: 1,
+        follow: true,
+        inspect: false,
+        showMinimap: true,
+        showPerf: false,
+      };
     }
     const view = state.explorerView;
     if (typeof view.camX !== "number" || !isFinite(view.camX)) view.camX = 0;
@@ -19339,6 +19683,12 @@
     if (typeof view.zoom !== "number" || !isFinite(view.zoom) || view.zoom <= 0)
       view.zoom = 1;
     view.zoom = clamp(view.zoom, 0.75, 2.5);
+    if (view.inspect == null) view.inspect = false;
+    if (view.showMinimap == null) view.showMinimap = true;
+    if (view.showPerf == null) view.showPerf = false;
+    view.inspect = !!view.inspect;
+    view.showMinimap = !!view.showMinimap;
+    view.showPerf = !!view.showPerf;
     if (view.follow == null) view.follow = true;
     view.camX = clamp(view.camX, 0, Math.max(EXPLORER_WORLD.width - 1, 0));
     view.camY = clamp(view.camY, 0, Math.max(EXPLORER_WORLD.height - 1, 0));
@@ -23025,6 +23375,29 @@
       }
 
       if (!isExplorer) return;
+
+      if (!typingInForm && !evt.metaKey && !evt.ctrlKey) {
+        const view = ensureExplorerViewState();
+        if (evt.key === "i" || evt.key === "I") {
+          view.inspect = !view.inspect;
+          explorerRuntime.hover = null;
+          renderExplorerWorld();
+          evt.preventDefault();
+          return;
+        } else if (evt.key === "m" || evt.key === "M") {
+          view.showMinimap = !view.showMinimap;
+          explorerRuntime.hover = null;
+          renderExplorerWorld();
+          evt.preventDefault();
+          return;
+        } else if (evt.key === "p" || evt.key === "P") {
+          view.showPerf = !view.showPerf;
+          explorerRuntime.hover = null;
+          renderExplorerWorld();
+          evt.preventDefault();
+          return;
+        }
+      }
 
       if (evt.key === "v" || evt.key === "V") {
         setTravelView(
