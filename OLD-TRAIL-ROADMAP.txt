@@ -377,3 +377,10 @@ Additional deferred items (current pass):
 - Sprite chore movement + visual inventory deltas tied to camp/trade transfers — acceptance: visible sprite task loops with inventory indicators when goods move.
 - Cinematic HUD toggle with saved presets, modal-friendly behavior — acceptance: HUD/minimap fade option saved per profile and respecting modal visibility needs.
 - Continuous-time travel loop with pause + top-down caravan control (retain hourly fallback) — acceptance: playable continuous-time travel mode with pause/resume and controllable caravan position, while keeping hourly flow as a fallback.
+
+Deferred items (syntax fix follow-up)
+- Dream-West B-11+ multi-region callbacks keyed off ledger and faction rep deltas with explicit cooldown gates to keep existing pacing intact.
+- Seasonal grading plus night overlay, lantern glow, and weather vignette polish that preserves modal readability across regions.
+- Sprite chore movement loops with visual inventory delta cues during camp chores and trade transfers.
+- Cinematic HUD toggle with saved preset profiles that remain safe to use while modals are open.
+- Continuous-time travel loop with pause and top-down caravan control while retaining the hourly travel mode as a fallback.
