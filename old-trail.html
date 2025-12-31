@@ -3368,6 +3368,66 @@
       },
     },
     {
+      id: "seed_b10_quiet_ledger",
+      kind: "minor",
+      condition: function (ctx) {
+        return (
+          ctx.storyState.mythicEnabled !== false &&
+          ctx.mode === "camp" &&
+          ctx.block === "night" &&
+          getEventFlag("men_in_gray_contact") === true &&
+          hoursSinceFlag("seed_b10_quiet_ledger_time") >= 168 &&
+          hoursSinceFlag("seed_b_global_time") >= 36
+        );
+      },
+      weight: function () {
+        return 2;
+      },
+      run: async function (ctx) {
+        const selection = await presentEncounter({
+          id: "seed_b10_quiet_ledger",
+          title: "Quiet ledger in the dark",
+          subtitle: ctx.location,
+          body: [
+            "Men in gray set a small ledger on a crate, its pages already opened to a neat column of figures.",
+          ],
+          tags: ["camp", "mythic", "trade"],
+          options: [
+            { id: "open", label: "Open the quiet ledger (trade)", tone: "warm", hint: "Contraband rates stay hushed." },
+            {
+              id: "ask",
+              label: "Ask what the forts whisper about",
+              tone: "neutral",
+              hint: "Gauge the rumors; tension shifts.",
+            },
+            { id: "send", label: "Send them away", tone: "danger", hint: "Risk slight offense." },
+          ],
+          defaultId: "open",
+        });
+        const nowHour = getCurrentTrailHour(gameState);
+        setEventFlag("seed_b_global_time", nowHour);
+        setEventFlag("seed_b10_quiet_ledger_time", nowHour);
+        let logText = "The gray coats wait in silence, ledger untouched.";
+        if (selection === "open") {
+          adjustFactionRep("men_in_gray", 1, null, ctx);
+          setEventFlag("seed_b10_quiet_ledger_opened", true);
+          logText = "You scan the quiet ledger; the gray coats nod once as you trade.";
+          addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+          recordStoryBeat("seed", "mythic", "Opened the quiet ledger", { choice: selection });
+          openVendorTradeModal("men_in_gray", "men_in_gray_ledger");
+          return;
+        } else if (selection === "ask") {
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) + 1, 0, 100);
+          logText = "You ask about fort whispers; they mention stamped tariffs and rival clerks with thin smiles.";
+        } else if (selection === "send") {
+          adjustFactionRep("men_in_gray", -1, null, ctx);
+          logText = "You wave them off. The ledger snaps shut without a word.";
+        }
+        addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("seed", "mythic", "Turned away the quiet ledger", { choice: selection });
+      },
+    },
+    {
       id: "seed_b03_men_in_gray_sighting",
       kind: "minor",
       condition: function (ctx) {
@@ -4017,89 +4077,6 @@
         September: { pRain: 0.22, pStorm: 0.12, tMin: 8, tMax: 22, windKph: [8, 22] },
         October: { pRain: 0.28, pStorm: 0.14, tMin: 5, tMax: 18, windKph: [8, 20] },
       },
-    },
-    caravan_peddler: {
-      label: "Ledger of a passing caravan",
-      catalog: [
-        "flour",
-        "bacon",
-        "beans_rice",
-        "hardtack",
-        "dried_fruit",
-        "coffee",
-        "sugar",
-        "salt_soda",
-        "firewood",
-        "water_barrels",
-        "ammo",
-        "rifles",
-        "med_kits",
-      ],
-      baseStock: {
-        flour: 80,
-        bacon: 26,
-        beans_rice: 40,
-        hardtack: 36,
-        dried_fruit: 18,
-        coffee: 12,
-        sugar: 14,
-        salt_soda: 10,
-        firewood: 22,
-        water_barrels: 4,
-        ammo: 70,
-        rifles: 2,
-        med_kits: 6,
-      },
-      stockCap: {
-        flour: 120,
-        bacon: 40,
-        beans_rice: 60,
-        hardtack: 54,
-        dried_fruit: 28,
-        coffee: 20,
-        sugar: 22,
-        salt_soda: 15,
-        firewood: 32,
-        water_barrels: 6,
-        ammo: 110,
-        rifles: 3,
-        med_kits: 9,
-      },
-      restockPerDay: {
-        flour: 6,
-        bacon: 2.2,
-        beans_rice: 3.4,
-        hardtack: 3,
-        dried_fruit: 1.2,
-        coffee: 1,
-        sugar: 1,
-        salt_soda: 0.6,
-        firewood: 3,
-        water_barrels: 0.35,
-        ammo: 6,
-        rifles: 0.08,
-        med_kits: 0.25,
-      },
-      flavorNotes: [
-        "Canvas ledger smells of dust and cardamom; pages flutter with each gust.",
-        "Freighter boys tally bacon twice—once for freight, once for camp kitchens.",
-        "Ruts deep as graves near the last crossing; flour shook loose in half the sacks.",
-        "Night watch keeps rifles hidden until trust is earned.",
-        "Coffee tins are banded with twine and road grit—ask gentle.",
-      ],
-    },
-    open_eye_peddler: {
-      label: "Inked-eye satchel", 
-      catalog: ["tea", "coffee", "dried_fruit", "salt_soda", "med_kits", "buffalo_chips", "ammo"],
-      baseStock: { tea: 14, coffee: 8, dried_fruit: 12, salt_soda: 6, med_kits: 4, buffalo_chips: 18, ammo: 24 },
-      stockCap: { tea: 22, coffee: 14, dried_fruit: 18, salt_soda: 10, med_kits: 6, buffalo_chips: 28, ammo: 36 },
-      restockPerDay: { tea: 1.2, coffee: 0.8, dried_fruit: 0.8, salt_soda: 0.5, med_kits: 0.24, buffalo_chips: 1.4, ammo: 1.4 },
-      flavorNotes: [
-        "Steeped leaves sold with a blessing, wrapped in blue cloth.",
-        "Charcoal marks an open eye on the ledger's cover, watched closely as coins change hands.",
-        "They trade stories for salt-soda, listening more than they speak.",
-        "Powder tins rattle softly under dried sprigs of sage.",
-      ],
     },
   };
 
@@ -8917,9 +8894,159 @@
     flavorNotes: ["Army trains pass through; sutlers mind their ledgers.", "Pay fair, mind the scales, and they keep the gate open."],
   };
 
+  const FORT_POLICY_DEFS = {
+    army_tariff: {
+      label: "Army tariff ledger",
+      desc: "Garrison clerks add duty to keep the barracks fed and the books balanced.",
+      buyTariffPct: 0.12,
+      sellTariffPct: 0.06,
+      notes: [
+        "Army stamp shines beside the prices; duty is tallied before ink dries.",
+        "Officer eyes the column for rifles twice before nodding you on.",
+      ],
+      rivals: ["fort_bridger_wy"],
+    },
+    free_traders: {
+      label: "Free-trader slips",
+      desc: "Locals favor open purses and quick deals; tariffs stay light if ink stays neat.",
+      buyTariffPct: 0.04,
+      sellTariffPct: 0.02,
+      notes: ["Loose tariffs keep wagons rolling; clerks skip a stamp for regular faces."],
+      rivals: ["fort_kearny_ne"],
+    },
+    company_counter: {
+      label: "Company counter",
+      desc: "Company brokers skim a quiet cut while keeping rivals guessing at their books.",
+      buyTariffPct: 0.09,
+      sellTariffPct: 0.04,
+      notes: ["Company tallymen weigh every barrel twice before quoting a figure."],
+      rivals: ["fort_bridger_wy"],
+    },
+  };
+
   const FORT_TRADE_DEFS = {
+    caravan_peddler: {
+      label: "Ledger of a passing caravan",
+      catalog: [
+        "flour",
+        "bacon",
+        "beans_rice",
+        "hardtack",
+        "dried_fruit",
+        "coffee",
+        "sugar",
+        "salt_soda",
+        "firewood",
+        "water_barrels",
+        "ammo",
+        "rifles",
+        "med_kits",
+      ],
+      baseStock: {
+        flour: 80,
+        bacon: 26,
+        beans_rice: 40,
+        hardtack: 36,
+        dried_fruit: 18,
+        coffee: 12,
+        sugar: 14,
+        salt_soda: 10,
+        firewood: 22,
+        water_barrels: 4,
+        ammo: 70,
+        rifles: 2,
+        med_kits: 6,
+      },
+      stockCap: {
+        flour: 120,
+        bacon: 40,
+        beans_rice: 60,
+        hardtack: 54,
+        dried_fruit: 28,
+        coffee: 20,
+        sugar: 22,
+        salt_soda: 15,
+        firewood: 32,
+        water_barrels: 6,
+        ammo: 110,
+        rifles: 3,
+        med_kits: 9,
+      },
+      restockPerDay: {
+        flour: 6,
+        bacon: 2.2,
+        beans_rice: 3.4,
+        hardtack: 3,
+        dried_fruit: 1.2,
+        coffee: 1,
+        sugar: 1,
+        salt_soda: 0.6,
+        firewood: 3,
+        water_barrels: 0.35,
+        ammo: 6,
+        rifles: 0.08,
+        med_kits: 0.25,
+      },
+      flavorNotes: [
+        "Canvas ledger smells of dust and cardamom; pages flutter with each gust.",
+        "Freighter boys tally bacon twice—once for freight, once for camp kitchens.",
+        "Ruts deep as graves near the last crossing; flour shook loose in half the sacks.",
+        "Night watch keeps rifles hidden until trust is earned.",
+        "Coffee tins are banded with twine and road grit—ask gentle.",
+      ],
+    },
+    open_eye_peddler: {
+      label: "Inked-eye satchel",
+      catalog: ["tea", "coffee", "dried_fruit", "salt_soda", "med_kits", "buffalo_chips", "ammo"],
+      baseStock: { tea: 14, coffee: 8, dried_fruit: 12, salt_soda: 6, med_kits: 4, buffalo_chips: 18, ammo: 24 },
+      stockCap: { tea: 22, coffee: 14, dried_fruit: 18, salt_soda: 10, med_kits: 6, buffalo_chips: 28, ammo: 36 },
+      restockPerDay: { tea: 1.2, coffee: 0.8, dried_fruit: 0.8, salt_soda: 0.5, med_kits: 0.24, buffalo_chips: 1.4, ammo: 1.4 },
+      flavorNotes: [
+        "Steeped leaves sold with a blessing, wrapped in blue cloth.",
+        "Charcoal marks an open eye on the ledger's cover, watched closely as coins change hands.",
+        "They trade stories for salt-soda, listening more than they speak.",
+        "Powder tins rattle softly under dried sprigs of sage.",
+      ],
+    },
+    men_in_gray_ledger: {
+      label: "Quiet Ledger",
+      catalog: ["ammo", "rifles", "med_kits", "coffee", "tea", "dried_fruit", "salt_soda"],
+      baseStock: {
+        ammo: 52,
+        rifles: 3,
+        med_kits: 6,
+        coffee: 10,
+        tea: 14,
+        dried_fruit: 12,
+        salt_soda: 6,
+      },
+      stockCap: {
+        ammo: 90,
+        rifles: 4,
+        med_kits: 10,
+        coffee: 16,
+        tea: 20,
+        dried_fruit: 18,
+        salt_soda: 10,
+      },
+      restockPerDay: {
+        ammo: 4.5,
+        rifles: 0.08,
+        med_kits: 0.35,
+        coffee: 0.9,
+        tea: 1.1,
+        dried_fruit: 0.8,
+        salt_soda: 0.4,
+      },
+      flavorNotes: [
+        "Pages are faintly oiled to hide notes; the ledger opens without a sound.",
+        "Rifles are wrapped in gray cloth, initials stitched where a stamp should be.",
+        "A dull silver token weights the corner of the page when you look away.",
+      ],
+    },
     fort_kearny_ne: {
       label: "Platte River sutler",
+      policyId: "army_tariff",
       catalog: [
         "flour",
         "bacon",
@@ -9000,6 +9127,7 @@
     },
     fort_laramie_wy: {
       label: "Laramie sutler",
+      policyId: "army_tariff",
       catalog: [
         "flour",
         "bacon",
@@ -9080,6 +9208,7 @@
     },
     fort_bridger_wy: {
       label: "Bridger trading post",
+      policyId: "free_traders",
       catalog: [
         "flour",
         "bacon",
@@ -9164,6 +9293,7 @@
     },
     fort_hall_id: {
       label: "Snake River post",
+      policyId: "company_counter",
       catalog: [
         "flour",
         "bacon",
@@ -9244,6 +9374,7 @@
     },
     fort_boise_id: {
       label: "Boise River sutler",
+      policyId: "free_traders",
       catalog: [
         "flour",
         "bacon",
@@ -9486,6 +9617,12 @@
 
   function getFortTradeDef(poiId) {
     return (poiId && FORT_TRADE_DEFS[poiId]) || DEFAULT_FORT_TRADE_DEF;
+  }
+
+  function getFortPolicyForTradeDef(tradeDef) {
+    if (!tradeDef || !tradeDef.policyId) return null;
+    const policy = FORT_POLICY_DEFS[tradeDef.policyId];
+    return policy || null;
   }
 
   function getDaySerial(date) {
@@ -19595,8 +19732,14 @@
     const scarcityBuyMult = clamp(1 + 0.35 * scarcity01, 1, 1.35);
     const demand01 = clamp((baseStockVal - vendorStock) / Math.max(1, baseStockVal || 1), 0, 1);
     const demandSellMult = clamp(1 + 0.2 * demand01, 0.85, 1.2);
-    const unitBuy = roundToCents(item.cost * terms.costMult * scarcityBuyMult);
-    let unitSell = roundToCents(item.cost * 0.6 * terms.gainMult * demandSellMult);
+    const policy = getFortPolicyForTradeDef(tradeDef);
+    const buyTariffPct = policy && isFinite(policy.buyTariffPct) ? policy.buyTariffPct : 0;
+    const sellTariffPct = policy && isFinite(policy.sellTariffPct) ? policy.sellTariffPct : 0;
+    const tariffBuyMult = clamp(1 + buyTariffPct, 0, 10);
+    const tariffSellMult = clamp(1 - sellTariffPct, 0, 1);
+    const unitBuy = roundToCents(item.cost * terms.costMult * scarcityBuyMult * tariffBuyMult);
+    let unitSell = roundToCents(item.cost * 0.6 * terms.gainMult * demandSellMult * tariffSellMult);
+    if (unitSell < 0) unitSell = 0;
     const maxSell = roundToCents(unitBuy * 0.9);
     if (unitSell > maxSell) unitSell = maxSell;
     const cap = getVendorStockCap(tradeDef, item.id, baseStockVal);
@@ -19605,6 +19748,8 @@
       unitSell: unitSell,
       scarcityBuyMult: scarcityBuyMult,
       demandSellMult: demandSellMult,
+      tariffBuyMult: tariffBuyMult,
+      tariffSellMult: tariffSellMult,
       vendorStock: vendorStock,
       baseStock: baseStockVal,
       cap: cap,
@@ -19644,6 +19789,37 @@
       picks.slice(0, 2).forEach(function (line) {
         if (notes.length < 4) notes.push(line);
       });
+    }
+
+    const policy = getFortPolicyForTradeDef(tradeDef);
+    if (policy && notes.length < 4) {
+      const policyLines = policy.notes || [];
+      let policyLine = policy.desc;
+      if (policyLines.length) {
+        const rng = mulberry32(
+          hashToInt(String(vendorState.seed || 0) + ":policy:" + today + ":" + (tradeDef.label || "sutler"))
+        );
+        policyLine = policyLines.slice().sort(function () {
+          return rng() - 0.5;
+        })[0];
+      }
+      if (policyLine) notes.push(policyLine);
+    }
+
+    if (policy && Array.isArray(policy.rivals) && policy.rivals.length && notes.length < 4) {
+      const ledger = (ensureStoryState().tradeLedger || []).slice().reverse();
+      const windowDay = today - 7;
+      const recent = ledger.find(function (entry) {
+        if (!entry || !entry.vendorPoi) return false;
+        if (policy.rivals.indexOf(entry.vendorPoi) < 0) return false;
+        const entryDay = getDaySerial(entry.ts || new Date());
+        return entryDay >= windowDay;
+      });
+      if (recent) {
+        const rivalDef = getFortTradeDef(recent.vendorPoi);
+        const rivalLabel = (rivalDef && rivalDef.label) || "another fort";
+        notes.push(`The clerk thumbs the stamp from ${rivalLabel} and raises an eyebrow.`);
+      }
     }
 
     const minNotes = 2;
@@ -19836,6 +20012,24 @@
     }
   }
 
+  function applyTradeConsequences(vendorKey, action, receivedItemIds, qtyMap, ctx) {
+    if (vendorKey !== "men_in_gray") return;
+    const receivedList = Array.isArray(receivedItemIds) ? receivedItemIds : [];
+    const receivedContraband = receivedList.some(function (id) {
+      if (id !== "rifles" && id !== "ammo") return false;
+      const qty = qtyMap && qtyMap[id];
+      return typeof qty === "number" ? qty > 0 : true;
+    });
+    if (!receivedContraband) return;
+    adjustFactionRep("men_in_gray", 2, null, ctx);
+    adjustFactionRep("forts", -1, null, ctx);
+    const ss = ensureStoryState();
+    if (ss.mythicEnabled !== false) {
+      ss.mythicRumor = clamp((ss.mythicRumor || 0) + 1, 0, 100);
+    }
+    setEventFlag("gray_contraband_recent_time", getCurrentTrailHour(gameState));
+  }
+
   function renderTradeLedger(notes) {
     if (dom.tradeLedgerNotes) {
       dom.tradeLedgerNotes.innerHTML = "";
@@ -19896,6 +20090,9 @@
     const termsInfo = getTradeTermsForFaction(vendorKey);
     const terms = termsInfo;
     const tier = termsInfo.tier;
+    const policy = getFortPolicyForTradeDef(tradeDef);
+    const buyTariffPct = policy && isFinite(policy.buyTariffPct) ? Math.round(policy.buyTariffPct * 100) : 0;
+    const sellTariffPct = policy && isFinite(policy.sellTariffPct) ? Math.round(policy.sellTariffPct * 100) : 0;
 
     if (dom.tradeTitle)
       dom.tradeTitle.textContent = vendorKey === "forts" ? "Trading Post" : getVendorLabelForKey(vendorKey);
@@ -19924,7 +20121,8 @@
       dom.tradeSummary.textContent =
         summaryLoad +
         (draft > 0 ? ` (${loadPct}% capacity${overloadNote})` : " (no draft power)") +
-        ` · Buy x${terms.costMult.toFixed(2)} / Sell x${terms.gainMult.toFixed(2)} (${tier.label} ${tier.value >= 0 ? "+" : ""}${tier.value})`;
+        ` · Buy x${terms.costMult.toFixed(2)} / Sell x${terms.gainMult.toFixed(2)} (${tier.label} ${tier.value >= 0 ? "+" : ""}${tier.value})` +
+        ` · Policy: ${policy ? policy.label : "Standard ledger"} · Tariff: +${buyTariffPct}% buy / -${sellTariffPct}% sell`;
     }
 
     if (dom.btnTradeBuyTab && dom.btnTradeSellTab && dom.btnTradeBarterTab) {
@@ -20001,6 +20199,7 @@
       const tdBuy = document.createElement("td");
       tdBuy.textContent = pricing.unitBuy > 0 ? formatMoney(pricing.unitBuy) : "—";
       tdBuy.title = `Rep x${terms.costMult.toFixed(2)} · Scarcity x${pricing.scarcityBuyMult.toFixed(2)}`;
+      if (policy) tdBuy.title += ` · Tariff x${pricing.tariffBuyMult.toFixed(2)}`;
       if (buyRestriction.restricted && buyRestriction.reason)
         tdBuy.title += ` · ${buyRestriction.reason}`;
       tr.appendChild(tdBuy);
@@ -20008,6 +20207,7 @@
       const tdSell = document.createElement("td");
       tdSell.textContent = pricing.unitSell > 0 ? formatMoney(pricing.unitSell) : "—";
       tdSell.title = `Rep x${terms.gainMult.toFixed(2)} · Demand x${pricing.demandSellMult.toFixed(2)}`;
+      if (policy) tdSell.title += ` · Tariff x${pricing.tariffSellMult.toFixed(2)}`;
       tr.appendChild(tdSell);
 
       const tdAction = document.createElement("td");
@@ -20323,6 +20523,7 @@
       vendor: tradeUi.vendorKey,
       vendorPoi: ctx.poiId,
     });
+    applyTradeConsequences(vendorKey, "buy", [itemId], { [itemId]: useQty }, { poiId: ctx.poiId });
     saveGame();
     renderAll();
     renderTradeModal();
@@ -20542,6 +20743,12 @@
           .join(" + ")
       : "nothing";
 
+    const askQtyMap = {};
+    askLines.forEach(function (line) {
+      if (!line || !line.id) return;
+      askQtyMap[line.id] = (askQtyMap[line.id] || 0) + Math.max(0, line.qty || 0);
+    });
+
     recordTradeLedgerEntry({
       action: "barter",
       itemName: `${offerSummary} → ${askSummary}`,
@@ -20550,6 +20757,9 @@
       total: 0,
       vendor: tradeUi.vendorKey,
       vendorPoi: ctx.poiId,
+    });
+    applyTradeConsequences(vendorKey, "barter", askLines.map(function (l) { return l.id; }), askQtyMap, {
+      poiId: ctx.poiId,
     });
   }
 
