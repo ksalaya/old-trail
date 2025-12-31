@@ -627,6 +627,20 @@
   display: none;
 }
 
+.ot-screen-travel.ot-view-mode-explorer {
+  grid-template-columns: 1fr;
+}
+
+.ot-screen-travel.ot-view-mode-explorer .ot-travel-side {
+  display: none;
+}
+
+.ot-screen-travel.ot-view-mode-explorer #ot-trail-canvas {
+  height: auto;
+  aspect-ratio: 3 / 2;
+  max-height: 560px;
+}
+
 /* Temporal viewport overlays (scene + map) */
 
 .ot-viewport-window {
@@ -17781,8 +17795,9 @@
         resizeTrailCanvas();
         renderExplorerWorld();
       });
-      resizeTrailCanvas();
     }
+
+    resizeTrailCanvas();
 
     renderExplorerWorld();
   }
@@ -17806,6 +17821,66 @@
     };
   }
 
+  const EXPLORER_ART = {
+    prairie: { url: "https://www.kylesalaya.com/uploads/9/3/7/0/93707764/prairie_orig.png" },
+    river_bottom: { url: "https://www.kylesalaya.com/uploads/9/3/7/0/93707764/river-bottom_orig.png" },
+    steppe: { url: "https://www.kylesalaya.com/uploads/9/3/7/0/93707764/steppe_orig.png" },
+    alpine: { url: "https://www.kylesalaya.com/uploads/9/3/7/0/93707764/alpine_orig.png" },
+    desert_sage: { url: "https://www.kylesalaya.com/uploads/9/3/7/0/93707764/desert-sage_orig.png" },
+    conifer_forest: { url: "https://www.kylesalaya.com/uploads/9/3/7/0/93707764/conifer-forest_orig.png" },
+    river_gorge: { url: "https://www.kylesalaya.com/uploads/9/3/7/0/93707764/river-gorge_orig.png" },
+    valley: { url: "https://www.kylesalaya.com/uploads/9/3/7/0/93707764/valley_orig.png" },
+    great_basin_desert: { url: "https://www.kylesalaya.com/uploads/9/3/7/0/93707764/great-basin-desert_orig.png" },
+    alkali_flat: { url: "https://www.kylesalaya.com/uploads/9/3/7/0/93707764/alkali-flat_orig.png" },
+    icon_fort_stockade: { url: "https://www.kylesalaya.com/uploads/9/3/7/0/93707764/fort-stockade_orig.png" },
+    icon_town: { url: "https://www.kylesalaya.com/uploads/9/3/7/0/93707764/icon-town_orig.png" },
+  };
+
+  const explorerArtCache = { images: {}, canvases: {} };
+
+  function getArtCanvas(key, size) {
+    const art = EXPLORER_ART[key];
+    if (!art) return null;
+    const canvasKey = `${key}:${size}`;
+    if (explorerArtCache.canvases[canvasKey]) return explorerArtCache.canvases[canvasKey];
+
+    let record = explorerArtCache.images[key];
+    if (!record) {
+      const img = new Image();
+      record = { img: img, status: "loading" };
+      explorerArtCache.images[key] = record;
+      img.crossOrigin = "anonymous";
+      img.onload = function () {
+        record.status = "loaded";
+        const c = document.createElement("canvas");
+        c.width = size;
+        c.height = size;
+        const cctx = c.getContext("2d");
+        cctx.drawImage(img, 0, 0, size, size);
+        explorerArtCache.canvases[canvasKey] = c;
+        if (gameState.travelView === "explorer") {
+          renderExplorerWorld();
+        }
+      };
+      img.onerror = function () {
+        record.status = "error";
+      };
+      img.src = art.url;
+    }
+
+    if (record.status === "loaded" && record.img && record.img.complete) {
+      const c = document.createElement("canvas");
+      c.width = size;
+      c.height = size;
+      const cctx = c.getContext("2d");
+      cctx.drawImage(record.img, 0, 0, size, size);
+      explorerArtCache.canvases[canvasKey] = c;
+      return c;
+    }
+
+    return null;
+  }
+
   function shadeColor(hex, delta) {
     const num = parseInt(hex.replace("#", ""), 16);
     const r = clamp(((num >> 16) & 0xff) + Math.round(255 * delta), 0, 255);
@@ -17817,6 +17892,29 @@
         return s.length === 1 ? "0" + s : s;
       })
       .join("");
+  }
+
+  function getRegionBaseArtKey(region) {
+    return (
+      {
+        plains: "prairie",
+        central_plains: "river_bottom",
+        high_plains: "steppe",
+        mountains: "alpine",
+        great_basin: "great_basin_desert",
+        snake_plain: "desert_sage",
+        blue_mountains: "conifer_forest",
+        columbia: "river_gorge",
+        willamette: "valley",
+      }[region] || "prairie"
+    );
+  }
+
+  function getTileArtKey(tile, regionKey) {
+    if (tile === "forest") return "conifer_forest";
+    if (tile === "water") return "river_bottom";
+    if (tile === "void") return "alkali_flat";
+    return regionKey || "prairie";
   }
 
   function getExplorerTile(x, y) {
@@ -17851,6 +17949,7 @@
     const region = gameState.region || "plains";
     const w = gameState.weatherState || {};
     const palette = explorerPalette(region);
+    const baseArtKey = getRegionBaseArtKey(region);
 
     const skyTop = palette.sky;
     const skyBottom = w.tempC && w.tempC > 28 ? "#5b3d2a" : palette.sky;
@@ -17895,6 +17994,15 @@
       fogProgress * Math.max(EXPLORER_WORLD.path.length - 1, 0)
     );
 
+    const fallbackColors = {
+      trail: palette.trail,
+      grass: palette.ground,
+      hill: shadeColor(palette.ground, 0.12),
+      forest: palette.forest,
+      water: palette.water,
+      void: "#111519",
+    };
+
     for (let vy = 0; vy < EXPLORER_VIEWPORT.height; vy++) {
       for (let vx = 0; vx < EXPLORER_VIEWPORT.width; vx++) {
         const tx = startX + vx;
@@ -17906,16 +18014,14 @@
 
         const px = vx * tileSize;
         const py = vy * tileSize + tileSize * 0.3;
-        const colors = {
-          trail: palette.trail,
-          grass: palette.ground,
-          hill: shadeColor(palette.ground, 0.12),
-          forest: palette.forest,
-          water: palette.water,
-          void: "#111519",
-        };
-        ctx.fillStyle = colors[tile] || palette.ground;
-        ctx.fillRect(px, py, tileSize + 1, tileSize + 1);
+        const tileArtKey = getTileArtKey(tile, baseArtKey);
+        const tileArt = getArtCanvas(tileArtKey, 32);
+        if (tileArt) {
+          ctx.drawImage(tileArt, px, py, tileSize + 1, tileSize + 1);
+        } else {
+          ctx.fillStyle = fallbackColors[tile] || palette.ground;
+          ctx.fillRect(px, py, tileSize + 1, tileSize + 1);
+        }
 
         if (!seen) {
           ctx.fillStyle = "rgba(8, 10, 14, 0.45)";
@@ -17933,8 +18039,120 @@
     ctx.fillStyle = "rgba(0, 0, 0, 0.18)";
     ctx.fillRect(0, tileSize * 0.2, width, tileSize * 0.18);
 
+    const totalMiles = gameState.totalTrailMiles || gameState.targetMiles || 1;
+    const milestones = getActiveRouteMilestones();
+    milestones.forEach(function (m) {
+      if (m.mile == null || !EXPLORER_WORLD.path.length) return;
+      const fraction = clamp(m.mile / Math.max(totalMiles, 1), 0, 1);
+      const idx = Math.round(
+        fraction * Math.max(EXPLORER_WORLD.path.length - 1, 0)
+      );
+      const pt = EXPLORER_WORLD.path[idx];
+      if (!pt) return;
+      const pathIdx = EXPLORER_WORLD.pathIndex[`${pt.x},${pt.y}`];
+      const seen = pathIdx == null || pathIdx <= frontierIdx + 1;
+      if (!seen) return;
+      if (
+        pt.x < startX ||
+        pt.x >= startX + EXPLORER_VIEWPORT.width ||
+        pt.y < startY ||
+        pt.y >= startY + EXPLORER_VIEWPORT.height
+      ) {
+        return;
+      }
+      const poi = HEX_WORLD.poiById[m.poiId];
+      if (!poi) return;
+      const iconKey = poi.type && poi.type.indexOf("fort") !== -1 ? "icon_fort_stockade" : "icon_town";
+      const iconCanvas = getArtCanvas(iconKey, 24);
+      if (!iconCanvas) return;
+      const vx = pt.x - startX + 0.5;
+      const vy = pt.y - startY + 0.8;
+      const cx = vx * tileSize;
+      const cy = vy * tileSize;
+      ctx.save();
+      ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
+      ctx.shadowBlur = 6;
+      ctx.drawImage(
+        iconCanvas,
+        cx - (tileSize * 0.6) / 2,
+        cy - (tileSize * 0.6) / 2,
+        tileSize * 0.6,
+        tileSize * 0.6
+      );
+      ctx.restore();
+    });
+
     const wagonX = (ex.x - startX + 0.5) * tileSize;
     const wagonY = (ex.y - startY + 0.9) * tileSize;
+    const oxenCount = Math.max(
+      0,
+      Math.floor((gameState.supplies && gameState.supplies.oxen) || 0)
+    );
+    const visualOxen = Math.min(6, oxenCount);
+    if (visualOxen > 0) {
+      const pairCount = Math.ceil(visualOxen / 2);
+      const yokeSpacing = tileSize * 0.32;
+      const laneOffset = tileSize * 0.14;
+      const hitchStartX = wagonX + tileSize * 0.32;
+      const oxBodyColor = "rgba(133, 96, 66, 0.95)";
+      const oxOutline = "#3a2a1c";
+      for (let i = 0; i < pairCount; i++) {
+        const pairX = wagonX + tileSize * 0.45 + i * yokeSpacing;
+        const hitchEndX = pairX - tileSize * 0.14;
+        ctx.strokeStyle = "rgba(90, 70, 48, 0.8)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(hitchStartX + i * 0.06 * tileSize, wagonY);
+        ctx.lineTo(hitchEndX, wagonY);
+        ctx.stroke();
+
+        for (let lane = 0; lane < 2; lane++) {
+          const idx = i * 2 + lane;
+          if (idx >= visualOxen) break;
+          const offsetY = lane === 0 ? -laneOffset : laneOffset;
+          const oxX = pairX;
+          const oxY = wagonY + offsetY;
+          ctx.fillStyle = oxBodyColor;
+          ctx.strokeStyle = oxOutline;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.ellipse(
+            oxX,
+            oxY,
+            tileSize * 0.24,
+            tileSize * 0.12,
+            0,
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.ellipse(
+            oxX + tileSize * 0.16,
+            oxY - tileSize * 0.02,
+            tileSize * 0.07,
+            tileSize * 0.07,
+            0,
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.strokeStyle = "#2d1d12";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(oxX + tileSize * 0.21, oxY - tileSize * 0.06);
+          ctx.lineTo(oxX + tileSize * 0.25, oxY - tileSize * 0.1);
+          ctx.moveTo(oxX + tileSize * 0.21, oxY + tileSize * 0.02);
+          ctx.lineTo(oxX + tileSize * 0.25, oxY + tileSize * 0.06);
+          ctx.stroke();
+        }
+      }
+    }
+
     ctx.fillStyle = "#cdb89a";
     ctx.strokeStyle = "#4a321a";
     ctx.lineWidth = 2;
@@ -18037,6 +18255,17 @@
       ctx.fillRect(0, 0, width, height);
     }
   }
+
+  /* Validation checklist (Explorer view updates)
+    - Start new run → go to Travel → toggle Explorer.
+    - Explorer canvas spans full embed width; layout doesn’t break Journal view.
+    - Canvas resizes sharply when toggling views and when resizing the browser (no blur).
+    - Tile images load progressively; if they fail, fallback colors still render.
+    - Oxen count changes wagon team visuals (try buying/selling oxen); clamp works.
+    - No new trail log spam during rendering.
+    - Save/load still works (best effort).
+    - Any “mythic/secret” content never appears in normal logs/events as a side effect.
+  */
 
   function tickExplorerTimeForStep() {
     ensureExplorerState();
@@ -22111,6 +22340,8 @@
 
     if (view === "explorer") {
       initExplorerWorldIfNeeded();
+      resizeTrailCanvas();
+      renderExplorerWorld();
     }
 
     saveGame();

@@ -385,3 +385,9 @@ Deferred items (syntax fix follow-up)
 - Cinematic HUD toggle with saved preset profiles that remain safe to use while modals are open.
 - Continuous-time travel loop with pause and top-down caravan control while retaining the hourly travel mode as a fallback.
 
+
+Square Tile Map + Sprites (Deferred)
+- Convert strategic hex map modal to square tile renderer + input mapping.
+- Party pawn sprite sheet integration (4-dir + walk cycles) in Explorer view.
+- Region banding across explorer world (tile selection varies by progress/mile, not just current region).
+- Explorer input cleanup (stop using hex camera movement helpers in explorer mode; add square-grid pan/zoom).
