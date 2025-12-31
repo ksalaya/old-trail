@@ -368,3 +368,12 @@ Deferred (trade and traversal follow-ups)
 - Hook up sprite chore animations with visual inventory deltas during stock moves and camp chores.
 - Add a cinematic HUD toggle with save-persisted settings.
 - Prototype a continuous-time travel loop with pause and top-down caravan control to supplant the hourly tick.
+
+Additional deferred items (current pass):
+- Full rival-fort quest chain system (policy/tariff missions: delivery, smuggling, audits) — acceptance: rivalry-driven questline with at least one mission per policy archetype and ledger-aware outcomes.
+- Dream-West B-11+ seeds with multi-region callbacks triggered by ledger and faction reputation deltas — acceptance: additional B seeds that check recent trades/rep shifts and fire regionally distinct follow-ups.
+- Tactical hunting/ambush encounter resolution (cover/volley, oxen risk, injuries, loot tables) — acceptance: encounter modal with cover/volley choices and explicit oxen/party injury plus loot results.
+- Seasonal grading/night overlay/lantern glow/weather vignette pass — acceptance: visual layer toggles that respond to season/time/weather without breaking modal readability.
+- Sprite chore movement + visual inventory deltas tied to camp/trade transfers — acceptance: visible sprite task loops with inventory indicators when goods move.
+- Cinematic HUD toggle with saved presets, modal-friendly behavior — acceptance: HUD/minimap fade option saved per profile and respecting modal visibility needs.
+- Continuous-time travel loop with pause + top-down caravan control (retain hourly fallback) — acceptance: playable continuous-time travel mode with pause/resume and controllable caravan position, while keeping hourly flow as a fallback.
