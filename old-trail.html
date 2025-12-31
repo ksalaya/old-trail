@@ -3925,6 +3925,405 @@
         recordStoryBeat("seed", "omen", "Saw a paper-thin sun", { choice: selection });
       },
     },
+    {
+      id: "seed_b11_tariff_stamp",
+      kind: "minor",
+      condition: function (ctx) {
+        const recent = findRecentTrade(function (e, hrsAgo) {
+          if (hrsAgo > 72) return false;
+          if (e.vendor !== "forts") return false;
+          if (!e.vendorPoi) return false;
+          const def = getFortTradeDef(e.vendorPoi);
+          const policy = getFortPolicyForTradeDef(def);
+          if (!policy) return false;
+          return (policy.buyTariffPct || 0) >= 0.08 || (policy.sellTariffPct || 0) >= 0.04;
+        });
+        return (
+          ctx.mode === "camp" &&
+          (ctx.block === "evening" || ctx.block === "night") &&
+          hoursSinceFlag("seed_b11_tariff_stamp_time") >= 168 &&
+          hoursSinceFlag("seed_b_global_time") >= 36 &&
+          !!recent
+        );
+      },
+      weight: function () {
+        return 2;
+      },
+      run: async function (ctx) {
+        const recent = findRecentTrade(function (e, hrsAgo) {
+          if (hrsAgo > 72) return false;
+          if (e.vendor !== "forts") return false;
+          if (!e.vendorPoi) return false;
+          const def = getFortTradeDef(e.vendorPoi);
+          const policy = getFortPolicyForTradeDef(def);
+          if (!policy) return false;
+          return (policy.buyTariffPct || 0) >= 0.08 || (policy.sellTariffPct || 0) >= 0.04;
+        });
+        if (!recent || !recent.entry) return;
+        const nowHour = getCurrentTrailHour(gameState);
+        const tradeDef = getFortTradeDef(recent.entry.vendorPoi);
+        const policy = getFortPolicyForTradeDef(tradeDef) || {};
+        const fortLabel = (tradeDef && tradeDef.label) || "the last fort";
+        const regionLine =
+          {
+            mountains: "Ink beads on the page like dew on granite, each tariff mark hard as the peaks.",
+            snake_plain: "Dust from the sage seems trapped in the ink; the stamp looks sun-bleached already.",
+            columbia: "Moist river air smudges the mark, as if the seal had crossed water in secret.",
+          }[ctx.regionKey] || "The mark wasn't there before—a fresh stamp pressed over your ledger lines.";
+        const selection = await presentEncounter({
+          id: "seed_b11_tariff_stamp",
+          title: "A tariff stamp appears",
+          subtitle: ctx.location,
+          body: [
+            "You flip through your trade notes and freeze. A small tariff stamp has appeared beside the last fort's entry.",
+            regionLine,
+            "The ink looks official, matching " + fortLabel + "'s seal though you don't recall it being there.",
+          ],
+          tags: ["camp", "trade"],
+          options: [
+            { id: "pay", label: "Pay the duty quietly", tone: "neutral", hint: "Settle accounts before anyone asks." },
+            { id: "dispute", label: "Dispute it at the next post", tone: "warm", hint: "Argue the charge later." },
+            { id: "forge", label: "Scratch in your own figures", tone: "danger", hint: "Risk a harsher audit." },
+          ],
+          defaultId: "pay",
+        });
+        setEventFlag("seed_b_global_time", nowHour);
+        setEventFlag("seed_b11_tariff_stamp_time", nowHour);
+        setEventFlag("b11_lastFortPoi", recent.entry.vendorPoi);
+        setEventFlag("b11_choice", selection);
+        const ss = ensureStoryState();
+        let logText = "You note the phantom tariff stamp and move on.";
+        const baseCost = clamp(roundToCents((gameState.money || 0) * 0.03), 2, 12);
+        const tariffPct = Math.max(policy.buyTariffPct || 0, policy.sellTariffPct || 0);
+        const moneyCost = clamp(roundToCents(baseCost * (1 + tariffPct)), 1, 25);
+        if (selection === "pay") {
+          let paid = false;
+          if ((gameState.money || 0) >= moneyCost) {
+            gameState.money = Math.max(0, (gameState.money || 0) - moneyCost);
+            paid = true;
+          }
+          adjustFactionRep("forts", 2, null, ctx);
+          ss.tension = clamp((ss.tension || 0) - 1, 0, 100);
+          logText = paid
+            ? "You settle the stamped duty quietly and hope the ledger stays closed."
+            : "You acknowledge the stamp but lack the coin; you promise to settle next post.";
+        } else if (selection === "dispute") {
+          setEventFlag("b11_dispute_pending", true);
+          adjustFactionRep("forts", -1, null, ctx);
+          ss.tension = clamp((ss.tension || 0) + 1, 0, 100);
+          logText = "You mark the stamp for dispute at the next fort, readying your arguments.";
+        } else if (selection === "forge") {
+          setEventFlag("b11_forged_stamp", true);
+          const take = clamp(3 + Math.round(Math.random() * 7), 3, 10);
+          gameState.money = (gameState.money || 0) + take;
+          adjustFactionRep("forts", -3, null, ctx);
+          ss.tension = clamp((ss.tension || 0) + 2, 0, 100);
+          logText = "You scrape and rewrite the figures, pocketing a little more for the risk.";
+        }
+        const thoughtTarget = getActiveLeader() || choice(ctx.people || getAllPeople());
+        if (thoughtTarget) {
+          addThought(thoughtTarget, {
+            id: "tariff_stamp_mark",
+            label: selection === "dispute" ? "Argued over ledger duty" : "Studied the tariff stamp",
+            value: selection === "forge" ? -1 : 1,
+            hoursLeft: 12,
+            source: "camp",
+          });
+        }
+        addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("seed", "trade", "Tariff stamp", {
+          choice: selection,
+          fort: recent.entry.vendorPoi,
+        });
+      },
+    },
+    {
+      id: "seed_b11_tariff_followup",
+      kind: "minor",
+      condition: function (ctx) {
+        const dispute = getEventFlag("b11_dispute_pending") === true;
+        const forged = getEventFlag("b11_forged_stamp") === true;
+        const sinceStamp = hoursSinceFlag("seed_b11_tariff_stamp_time");
+        const atFort = ctx.location && (ctx.location.indexOf("Fort") >= 0 || ctx.location.indexOf("Mission") >= 0);
+        return (
+          (dispute || forged) &&
+          sinceStamp >= 24 &&
+          sinceStamp <= 168 &&
+          hoursSinceFlag("seed_b11_tariff_followup_time") >= 168 &&
+          atFort
+        );
+      },
+      weight: function () {
+        return 2;
+      },
+      run: async function (ctx) {
+        const dispute = getEventFlag("b11_dispute_pending") === true;
+        const forged = getEventFlag("b11_forged_stamp") === true;
+        if (!dispute && !forged) return;
+        const nowHour = getCurrentTrailHour(gameState);
+        const ss = ensureStoryState();
+        const subtitle = ctx.location || "Fort gate";
+        const bodyLine = dispute
+          ? "A clerk at the counter taps the stamped line on your ledger, eyebrow raised."
+          : "The gate officer squints at the stamp and the shaky figures beside it.";
+        const options = dispute
+          ? [
+              { id: "pay", label: "Back down and pay", tone: "neutral", hint: "Lose a bit of coin; ease the clerk." },
+              { id: "hold", label: "Hold your ground", tone: "danger", hint: "Risk souring the post." },
+            ]
+          : [
+              { id: "bribe", label: "Offer a bribe", tone: "danger", hint: "Coin for quiet." },
+              { id: "ignorant", label: "Play ignorant", tone: "neutral", hint: "Hope they let it slide." },
+            ];
+        const selection = await presentEncounter({
+          id: "seed_b11_tariff_followup",
+          title: dispute ? "Tariff dispute at the counter" : "Clerk eyes your stamp",
+          subtitle: subtitle,
+          body: [bodyLine],
+          tags: ["trade", "fort"],
+          options: options,
+          defaultId: options[0].id,
+        });
+        setEventFlag("seed_b_global_time", nowHour);
+        setEventFlag("seed_b11_tariff_followup_time", nowHour);
+        let logText = "The tariff note is set aside without incident.";
+        if (dispute) {
+          if (selection === "pay") {
+            const cost = clamp(roundToCents((gameState.money || 0) * 0.02), 1, 10);
+            if ((gameState.money || 0) >= cost) {
+              gameState.money = Math.max(0, (gameState.money || 0) - cost);
+            }
+            adjustFactionRep("forts", 1, null, ctx);
+            logText = "You pay the tariff and the clerk stamps a quiet resolution.";
+          } else if (selection === "hold") {
+            adjustFactionRep("forts", -3, null, ctx);
+            const target = getActiveLeader() || choice(ctx.people || getAllPeople());
+            if (target) {
+              addThought(target, {
+                id: "tariff_argued",
+                label: "Held firm against a tariff",
+                value: -2,
+                hoursLeft: 10,
+                source: "camp",
+              });
+            }
+            logText = "You argue the stamp is wrong; the clerk frowns and waves you through curtly.";
+          }
+          setEventFlag("b11_dispute_pending", false);
+        } else if (forged) {
+          if (selection === "bribe") {
+            const cost = clamp(roundToCents((gameState.money || 0) * 0.04), 2, 14);
+            if ((gameState.money || 0) >= cost) {
+              gameState.money = Math.max(0, (gameState.money || 0) - cost);
+            }
+            adjustFactionRep("forts", -1, null, ctx);
+            logText = "A few coins slide across; the clerk's ledger closes with a sigh.";
+          } else if (selection === "ignorant") {
+            if (Math.random() < 0.5) {
+              ss.tension = clamp((ss.tension || 0) + 1, 0, 100);
+              logText = "You plead ignorance. The clerk scolds you and stamps a warning.";
+            } else {
+              adjustFactionRep("forts", -3, null, ctx);
+              setEventFlag("forts_audit_watch_time", nowHour);
+              logText = "The ruse fails; a harsher note goes in the ledger and a watch is logged.";
+            }
+          }
+          setEventFlag("b11_forged_stamp", false);
+        }
+        addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("seed", "trade", "Tariff stamp follow-up", { choice: selection });
+      },
+    },
+    {
+      id: "seed_b12_rival_stamp_whisper",
+      kind: "breather",
+      condition: function (ctx) {
+        const recentRep =
+          getHoursSinceRepChange("forts") <= 72 || getHoursSinceRepChange("open_eye") <= 72;
+        const recentLedger = findRecentTrade(function (e, hrsAgo) {
+          return hrsAgo <= 120;
+        });
+        return (
+          (ctx.mode === "travel" || ctx.mode === "camp") &&
+          hoursSinceFlag("seed_b12_rival_stamp_whisper_time") >= 168 &&
+          hoursSinceFlag("seed_b_global_time") >= 36 &&
+          recentRep &&
+          !!recentLedger
+        );
+      },
+      weight: function () {
+        return 2;
+      },
+      run: async function (ctx) {
+        const nowHour = getCurrentTrailHour(gameState);
+        const regionLine =
+          {
+            mountains: "Someone scrawled a note about tariffs climbing where the passes pinch the road.",
+            snake_plain: "The whisper names alkali posts and clerks tightening stamps after caravan squabbles.",
+            columbia: "Ink mentions river forts relaxing one fee while doubling another if barges are late.",
+          }[ctx.regionKey] || "A margin note hints rival clerks will shift tariffs soon—no source is cited.";
+        const selection = await presentEncounter({
+          id: "seed_b12_rival_stamp_whisper",
+          title: "Whispered stamp forecast",
+          subtitle: ctx.location,
+          body: [
+            "A companion reads a faded margin note: a rumor about tariffs and rival clerks jostling for coin.",
+            regionLine,
+          ],
+          tags: ["travel", "trade"],
+          options: [
+            { id: "laugh", label: "Laugh it off", tone: "neutral", hint: "Ease the air." },
+            { id: "write", label: "Write it down", tone: "warm", hint: "Journal the whisper." },
+            { id: "count", label: "Count the goods twice", tone: "neutral", hint: "A brief pause to double-check." },
+          ],
+          defaultId: "laugh",
+        });
+        setEventFlag("seed_b_global_time", nowHour);
+        setEventFlag("seed_b12_rival_stamp_whisper_time", nowHour);
+        let logText = "The rumor fades with the trail dust.";
+        if (selection === "laugh") {
+          ensureStoryState().tension = clamp((ensureStoryState().tension || 0) - 1, 0, 100);
+          logText = "You laugh it off, shaking some edge from the air.";
+        } else if (selection === "write") {
+          const leader = getActiveLeader();
+          if (leader) {
+            addThought(leader, {
+              id: "stamp_whisper_note",
+              label: "Noted the tariff whisper",
+              value: 2,
+              hoursLeft: 16,
+              source: "journal",
+            });
+            adjustPersonStat(leader, "morale", 1);
+          }
+          logText = "You jot the whisper down, treating it like a lead worth keeping.";
+        } else if (selection === "count") {
+          const until = nowHour + 24;
+          setEventFlag("b12_cautious_until", until);
+          ensureStoryState().tension = clamp((ensureStoryState().tension || 0) - 1, 0, 100);
+          logText = "You halt long enough to count crates twice, deciding to tread carefully for a day.";
+        }
+        addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("seed", "trade", "Heard a rival tariff whisper", { choice: selection });
+      },
+    },
+    {
+      id: "seed_b13_open_eye_receipt",
+      kind: "minor",
+      condition: function (ctx) {
+        const openEyeRecent = getHoursSinceRepChange("open_eye") <= 96;
+        const recentTrade = findRecentTrade(function (e, hrsAgo) {
+          return hrsAgo <= 120 && e.vendor === "open_eye";
+        });
+        return (
+          ctx.mode === "camp" &&
+          (ctx.block === "morning" || ctx.block === "evening") &&
+          hoursSinceFlag("seed_b13_open_eye_receipt_time") >= 168 &&
+          hoursSinceFlag("seed_b_global_time") >= 36 &&
+          (openEyeRecent || !!recentTrade)
+        );
+      },
+      weight: function () {
+        return 2;
+      },
+      run: async function (ctx) {
+        const nowHour = getCurrentTrailHour(gameState);
+        const selection = await presentEncounter({
+          id: "seed_b13_open_eye_receipt",
+          title: "Sealed receipt by the fire",
+          subtitle: ctx.location,
+          body: [
+            "An ink-eyed traveler sits near the wagon, holding a folded receipt sealed with a faint eye symbol.",
+            "They ask you to hand it to the next fort clerk who minds tariffs.",
+          ],
+          tags: ["camp", "trade"],
+          options: [
+            { id: "take", label: "Take the sealed receipt", tone: "warm", hint: "Carry it to the next fort." },
+            { id: "bless", label: "Ask for a small blessing instead", tone: "neutral", hint: "Skip the errand." },
+            { id: "decline", label: "Decline", tone: "neutral", hint: "Avoid entanglement." },
+          ],
+          defaultId: "take",
+        });
+        setEventFlag("seed_b_global_time", nowHour);
+        setEventFlag("seed_b13_open_eye_receipt_time", nowHour);
+        let logText = "The traveler nods and vanishes into the trees.";
+        if (selection === "take") {
+          setEventFlag("b13_receipt_pending", true);
+          setEventFlag("b13_receipt_deadline_hour", nowHour + 240);
+          adjustFactionRep("open_eye", 2, null, ctx);
+          ensureStoryState().tension = clamp((ensureStoryState().tension || 0) + 1, 0, 100);
+          logText = "You take the sealed receipt, promising to hand it over at the next fort.";
+        } else if (selection === "bless") {
+          (ctx.people || getAllPeople()).forEach(function (p) {
+            adjustPersonStat(p, "morale", 1);
+          });
+          ensureStoryState().tension = clamp((ensureStoryState().tension || 0) - 1, 0, 100);
+          logText = "You ask for a simple blessing instead; the traveler smiles and whispers a quiet thanks.";
+        } else if (selection === "decline") {
+          ensureStoryState().tension = clamp((ensureStoryState().tension || 0) - 1, 0, 100);
+          logText = "You decline the errand and keep the fire fed instead.";
+        }
+        addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("seed", "trade", "Open-eye receipt offered", { choice: selection });
+      },
+    },
+    {
+      id: "seed_b13_open_eye_delivery",
+      kind: "minor",
+      condition: function (ctx) {
+        const pending = getEventFlag("b13_receipt_pending") === true;
+        const deadline = getEventFlag("b13_receipt_deadline_hour");
+        const withinDeadline = deadline == null ? true : getCurrentTrailHour(gameState) <= deadline;
+        const atFort = ctx.location && (ctx.location.indexOf("Fort") >= 0 || ctx.location.indexOf("Mission") >= 0);
+        return (
+          pending &&
+          withinDeadline &&
+          hoursSinceFlag("seed_b13_open_eye_delivery_time") >= 168 &&
+          atFort &&
+          hoursSinceFlag("seed_b13_open_eye_receipt_time") >= 24
+        );
+      },
+      weight: function () {
+        return 2;
+      },
+      run: async function (ctx) {
+        const pending = getEventFlag("b13_receipt_pending") === true;
+        if (!pending) return;
+        const nowHour = getCurrentTrailHour(gameState);
+        const selection = await presentEncounter({
+          id: "seed_b13_open_eye_delivery",
+          title: "Clerk eyes the sealed receipt",
+          subtitle: ctx.location,
+          body: [
+            "At the fort counter, a clerk notices the faint eye seal on the folded note you carry.",
+            "Their expression tightens, waiting to see what you'll do.",
+          ],
+          tags: ["trade", "fort"],
+          options: [
+            { id: "hand", label: "Hand it over", tone: "warm", hint: "Collect a quiet reward." },
+            { id: "pocket", label: "Pocket it / tear it up", tone: "danger", hint: "Risk offense." },
+          ],
+          defaultId: "hand",
+        });
+        setEventFlag("seed_b_global_time", nowHour);
+        setEventFlag("seed_b13_open_eye_delivery_time", nowHour);
+        setEventFlag("b13_receipt_pending", false);
+        setEventFlag("b13_receipt_deadline_hour", null);
+        let logText = "The sealed receipt changes nothing at the counter.";
+        if (selection === "hand") {
+          gameState.supplies.med_kits = (gameState.supplies.med_kits || 0) + 1;
+          adjustFactionRep("open_eye", 3, null, ctx);
+          adjustFactionRep("forts", -1, null, ctx);
+          logText = "You hand over the seal; the clerk swaps in a small packet of supplies with a frown.";
+        } else if (selection === "pocket") {
+          adjustFactionRep("open_eye", -4, null, ctx);
+          ensureStoryState().tension = clamp((ensureStoryState().tension || 0) + 1, 0, 100);
+          logText = "You pocket the note instead; the clerk notices the seal and stiffens at the slight.";
+        }
+        addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("seed", "trade", "Open-eye receipt delivered", { choice: selection });
+      },
+    },
   ];
 
   const ROUTE_MILESTONES = [
@@ -5718,6 +6117,8 @@
         tradeLedger: [],
         tradeVendors: {},
         tradeHaggling: {},
+        factionRepLog: [],
+        factionRepLast: {},
       };
     }
     const ss = gameState.storyState;
@@ -5768,6 +6169,8 @@
     if (!Array.isArray(ss.tradeLedger)) ss.tradeLedger = [];
     if (!ss.tradeVendors) ss.tradeVendors = {};
     if (!ss.tradeHaggling) ss.tradeHaggling = {};
+    if (!Array.isArray(ss.factionRepLog)) ss.factionRepLog = [];
+    if (!ss.factionRepLast) ss.factionRepLast = {};
     return ss;
   }
 
@@ -8883,10 +9286,51 @@
     if (!ss.factionRep) ss.factionRep = { caravans: 0, forts: 0, open_eye: 0, men_in_gray: 0 };
     if (typeof ss.factionRep[factionId] !== "number") ss.factionRep[factionId] = 0;
     ss.factionRep[factionId] = clamp(ss.factionRep[factionId] + delta, -100, 100);
+    const currentHour = getCurrentTrailHour(gameState);
+    const entry = {
+      hour: currentHour,
+      dayKey: getDayKey(gameState.date),
+      factionId: factionId,
+      delta: delta,
+      value: ss.factionRep[factionId],
+      location: (ctx && ctx.location) || gameState.locationName || "",
+    };
+    ss.factionRepLog.push(entry);
+    if (ss.factionRepLog.length > 40) {
+      ss.factionRepLog.splice(0, ss.factionRepLog.length - 40);
+    }
+    ss.factionRepLast[factionId] = {
+      hour: currentHour,
+      delta: delta,
+      value: ss.factionRep[factionId],
+    };
     if (reason) {
       addLog(reason, { tone: delta >= 0 ? "event" : "warning", location: ctx && ctx.location });
     }
     return ss.factionRep[factionId];
+  }
+
+  function getHoursSinceRepChange(factionId) {
+    const ss = ensureStoryState();
+    if (!ss.factionRepLast || !ss.factionRepLast[factionId]) return Infinity;
+    const last = ss.factionRepLast[factionId];
+    return getCurrentTrailHour(gameState) - (last.hour || 0);
+  }
+
+  function coerceDate(val) {
+    if (val instanceof Date) return val;
+    if (typeof val === "string" || typeof val === "number") {
+      const d = new Date(val);
+      if (!isNaN(d)) return d;
+    }
+    return null;
+  }
+
+  function hoursSinceDate(val) {
+    const baseDate = coerceDate(gameState && gameState.date);
+    const other = coerceDate(val);
+    if (!baseDate || !other) return Infinity;
+    return (baseDate.getTime() - other.getTime()) / 3600000;
   }
 
   function getFactionRepTier(factionId) {
@@ -20131,6 +20575,17 @@
     }
   }
 
+  function findRecentTrade(predicate, maxLookback = 15) {
+    const ledger = (ensureStoryState().tradeLedger || []);
+    for (let i = ledger.length - 1, n = 0; i >= 0 && n < maxLookback; i--, n++) {
+      const e = ledger[i];
+      if (!e) continue;
+      const hrsAgo = hoursSinceDate(e.ts);
+      if (predicate(e, hrsAgo)) return { entry: e, hoursAgo: hrsAgo };
+    }
+    return null;
+  }
+
   function applyTradeConsequences(vendorKey, action, receivedItemIds, qtyMap, ctx) {
     if (vendorKey !== "men_in_gray") return;
     const receivedList = Array.isArray(receivedItemIds) ? receivedItemIds : [];
@@ -23890,4 +24345,13 @@
 - Haggle attempts exhausted disables proposing; panel explains remaining attempts.
 - Trade ledger shows “Barter — …” lines; no trail log spam.
 - Save/reload mid-run; trade modal and barter baskets open without crashes.
+-->
+<!-- Validation checklist (Dream-West B11/B12/B13 seeds):
+- Start new run; no console errors.
+- Fast-forward 5–10 days; B-11/B-12/B-13 seeds surface with seed_lastHour + seed_b_global_time + per-seed cooldown spacing.
+- B-11 follow-up triggers once after dispute/forge at a fort or mission; clears pending flags; no repeats.
+- B-13 follow-up triggers once at a fort/mission before deadline; clears pending flags; no repeats.
+- Mythic OFF: no new mythic-only triggers were added; Men in Gray behaviors unchanged.
+- Save + reload mid-run; ledger still renders and events function without crashes.
+- Trail log: one line per seed run; smaller beats stay in pawn thoughts (no spam).
 -->
