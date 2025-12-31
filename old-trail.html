@@ -4077,6 +4077,7 @@
         September: { pRain: 0.22, pStorm: 0.12, tMin: 8, tMax: 22, windKph: [8, 22] },
         October: { pRain: 0.28, pStorm: 0.14, tMin: 5, tMax: 18, windKph: [8, 20] },
       },
+    },
   };
 
   const PACE_CONFIG = {
@@ -23851,7 +23852,24 @@
     renderAll();
   }
 
-  init();
+  try {
+    init();
+  } catch (err) {
+    console.error("Old Trail fatal init error:", err);
+    var root = document.getElementById("oldtrail-root") || document.body;
+    if (root) {
+      var banner = document.createElement("div");
+      banner.textContent = "Old Trail failed to start — open console for details.";
+      banner.style.marginTop = "8px";
+      banner.style.padding = "10px 12px";
+      banner.style.background = "#4a1b1b";
+      banner.style.color = "#f1e9dd";
+      banner.style.border = "1px solid rgba(255, 121, 121, 0.6)";
+      banner.style.borderRadius = "10px";
+      banner.style.fontSize = "12px";
+      root.appendChild(banner);
+    }
+  }
 })();
 </script>
 <!-- Validation checklist (Fort ledger scarcity pass):
