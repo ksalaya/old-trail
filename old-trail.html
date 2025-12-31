@@ -1331,6 +1331,65 @@
   margin-bottom: 10px;
 }
 
+.ot-barter-panel {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(245, 210, 139, 0.18);
+  border-radius: 10px;
+  padding: 10px;
+  margin-top: 8px;
+  display: none;
+}
+
+.ot-barter-panel h4 {
+  margin: 0 0 6px 0;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #e9e3d5;
+}
+
+.ot-barter-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.ot-barter-list {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(245, 210, 139, 0.12);
+  border-radius: 8px;
+  padding: 6px;
+  min-height: 48px;
+}
+
+.ot-barter-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.ot-barter-line button {
+  margin-left: 8px;
+}
+
+.ot-barter-totals {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.ot-barter-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .ot-trade-ledger-notes-title {
   font-size: 10px;
   text-transform: uppercase;
@@ -2444,6 +2503,7 @@
       <div class="ot-trade-tabs">
         <button id="ot-trade-tab-buy" class="ot-btn-outline">Buy</button>
         <button id="ot-trade-tab-sell" class="ot-btn-outline">Sell</button>
+        <button id="ot-trade-tab-barter" class="ot-btn-outline">Barter</button>
       </div>
 
       <div class="ot-trade-grid">
@@ -2462,6 +2522,7 @@
             <tbody id="ot-trade-body"></tbody>
           </table>
           <div id="ot-trade-msg" class="ot-modal-sub" style="min-height:16px; margin-top:6px;"></div>
+          <div id="ot-barter-panel" class="ot-barter-panel" style="display:none;"></div>
         </div>
 
         <div class="ot-trade-ledger">
@@ -7288,10 +7349,12 @@
     dom.tradeSummary = document.getElementById("ot-trade-summary");
     dom.tradeBody = document.getElementById("ot-trade-body");
     dom.tradeMsg = document.getElementById("ot-trade-msg");
+    dom.barterPanel = document.getElementById("ot-barter-panel");
     dom.tradeLedgerNotes = document.getElementById("ot-trade-ledger-notes");
     dom.tradeLedgerBody = document.getElementById("ot-trade-ledger-body");
     dom.btnTradeBuyTab = document.getElementById("ot-trade-tab-buy");
     dom.btnTradeSellTab = document.getElementById("ot-trade-tab-sell");
+    dom.btnTradeBarterTab = document.getElementById("ot-trade-tab-barter");
     dom.btnCloseTrade = document.getElementById("ot-btn-close-trade");
 
     dom.btnOpenPriorities = document.getElementById("ot-btn-open-priorities");
@@ -19495,6 +19558,10 @@
       };
     if (!gameState.ui.trade.tab) gameState.ui.trade.tab = "buy";
     if (!gameState.ui.trade.vendorKey) gameState.ui.trade.vendorKey = "forts";
+    if (!gameState.ui.trade.barter)
+      gameState.ui.trade.barter = { offer: {}, ask: {} };
+    if (!gameState.ui.trade.barter.offer) gameState.ui.trade.barter.offer = {};
+    if (!gameState.ui.trade.barter.ask) gameState.ui.trade.barter.ask = {};
     return gameState.ui.trade;
   }
 
@@ -19614,6 +19681,91 @@
     return info;
   }
 
+  function ensureBarterState() {
+    const tradeUi = ensureTradeUiState();
+    if (!tradeUi.barter) tradeUi.barter = { offer: {}, ask: {} };
+    if (!tradeUi.barter.offer) tradeUi.barter.offer = {};
+    if (!tradeUi.barter.ask) tradeUi.barter.ask = {};
+    return tradeUi.barter;
+  }
+
+  function formatBarterLineItems(basket) {
+    const lines = [];
+    Object.keys(basket || {}).forEach(function (id) {
+      const qty = basket[id];
+      if (qty > 0) {
+        lines.push({ id: id, qty: qty, def: findSupplyDef(id) });
+      }
+    });
+    return lines;
+  }
+
+  function computeBarterTotals(ctx, basketsOverride) {
+    const tradeUi = ctx.tradeUi;
+    const tradeDef = ctx.tradeDef;
+    const vendorState = ctx.vendorState;
+    const vendorKey = tradeUi.vendorKey || "forts";
+    const termsInfo = getTradeTermsForFaction(vendorKey);
+    const terms = termsInfo;
+    const tier = termsInfo.tier || getFactionRepTier(vendorKey);
+    const barter = basketsOverride || ensureBarterState();
+    const offerLines = formatBarterLineItems(barter.offer || {});
+    const askLines = formatBarterLineItems(barter.ask || {});
+    let offerValue = 0;
+    let askValue = 0;
+    const problems = [];
+
+    offerLines.forEach(function (line) {
+      const def = line.def;
+      if (!def) return;
+      const pricing = computeTradePricing(def, tradeDef, vendorState, terms);
+      offerValue += pricing.unitSell * line.qty;
+      const owned = gameState.supplies[def.id] || 0;
+      if (line.qty > owned + 1e-6) {
+        problems.push(`You only have ${owned} ${def.name}.`);
+      }
+      if (pricing.vendorStock + line.qty > pricing.cap + 1e-6) {
+        problems.push(`Vendor can't take more ${def.name} (cap ${Math.floor(pricing.cap)}).`);
+      }
+      const restriction = getTradeRestriction(def.id, "sell", vendorKey, tier);
+      if (restriction.restricted) {
+        problems.push(restriction.reason || `${def.name} can't be offered.`);
+      }
+    });
+
+    askLines.forEach(function (line) {
+      const def = line.def;
+      if (!def) return;
+      const pricing = computeTradePricing(def, tradeDef, vendorState, terms);
+      askValue += pricing.unitBuy * line.qty;
+      if (line.qty > pricing.vendorStock + 1e-6) {
+        problems.push(`Not enough ${def.name} in stock.`);
+      }
+      const restriction = getTradeRestriction(def.id, "buy", vendorKey, tier);
+      if (restriction.restricted) {
+        problems.push(restriction.reason || `${def.name} can't be requested.`);
+      }
+    });
+
+    return {
+      offerValue: offerValue,
+      askValue: askValue,
+      offerLines: offerLines,
+      askLines: askLines,
+      problems: problems,
+    };
+  }
+
+  function adjustBarterQty(side, itemId, delta, maxQty) {
+    const barter = ensureBarterState();
+    const bucket = side === "ask" ? barter.ask : barter.offer;
+    if (!bucket[itemId]) bucket[itemId] = 0;
+    bucket[itemId] = bucket[itemId] + delta;
+    if (bucket[itemId] < 0) bucket[itemId] = 0;
+    if (maxQty != null) bucket[itemId] = Math.min(bucket[itemId], maxQty);
+    if (bucket[itemId] <= 0) delete bucket[itemId];
+  }
+
   function getHaggleTracker(vendorKey, poiId) {
     const ss = ensureStoryState();
     const key = (vendorKey || "forts") + ":" + (poiId || "frontier");
@@ -19648,6 +19800,14 @@
     if (tierId === "neutral") return 0.4;
     if (tierId === "wary") return 0.25;
     return 0.15;
+  }
+
+  function getBarterAcceptRatio(tierId) {
+    if (tierId === "ally") return 0.95;
+    if (tierId === "trusted") return 0.98;
+    if (tierId === "neutral") return 1.02;
+    if (tierId === "wary") return 1.08;
+    return 1.15;
   }
 
   function recordTradeLedgerEntry(entry) {
@@ -19706,9 +19866,14 @@
     entries.forEach(function (e) {
       const row = document.createElement("div");
       row.className = "ot-trade-ledger-entry";
-      const verb = e.action === "sell" ? "Sell" : "Buy";
+      let verb = e.action === "sell" ? "Sell" : "Buy";
       const label = e.itemName || e.itemId || "goods";
-      row.textContent = `${verb} ${e.qty} ${label} — ${formatMoney(e.total || 0)}`;
+      if (e.action === "barter") {
+        verb = "Barter";
+        row.textContent = `${verb} — ${label}`;
+      } else {
+        row.textContent = `${verb} ${e.qty} ${label} — ${formatMoney(e.total || 0)}`;
+      }
       const meta = document.createElement("small");
       const ts = e.ts instanceof Date ? e.ts : new Date(e.ts);
       const timeLabel = formatDateTime(ts);
@@ -19762,7 +19927,7 @@
         ` · Buy x${terms.costMult.toFixed(2)} / Sell x${terms.gainMult.toFixed(2)} (${tier.label} ${tier.value >= 0 ? "+" : ""}${tier.value})`;
     }
 
-    if (dom.btnTradeBuyTab && dom.btnTradeSellTab) {
+    if (dom.btnTradeBuyTab && dom.btnTradeSellTab && dom.btnTradeBarterTab) {
       dom.btnTradeBuyTab.classList.toggle(
         "ot-trade-tab-active",
         tradeUi.tab === "buy"
@@ -19770,6 +19935,10 @@
       dom.btnTradeSellTab.classList.toggle(
         "ot-trade-tab-active",
         tradeUi.tab === "sell"
+      );
+      dom.btnTradeBarterTab.classList.toggle(
+        "ot-trade-tab-active",
+        tradeUi.tab === "barter"
       );
     }
 
@@ -19790,6 +19959,7 @@
     dom.tradeBody.innerHTML = "";
     const money = gameState.money || 0;
     const haggleRemaining = remainingHaggleAttempts(vendorKey, ctx.poiId);
+    const barterState = ensureBarterState();
 
     const ledgerNotes = generateLedgerNotes(tradeDef, vendorState);
 
@@ -19803,7 +19973,14 @@
       const pricing = computeTradePricing(item, tradeDef, vendorState, terms);
       const buyRestriction = getTradeRestriction(item.id, "buy", vendorKey, tier);
       const sellRestriction = getTradeRestriction(item.id, "sell", vendorKey, tier);
-      const activeRestriction = tradeUi.tab === "buy" ? buyRestriction : sellRestriction;
+      const activeRestriction =
+        tradeUi.tab === "buy"
+          ? buyRestriction
+          : tradeUi.tab === "sell"
+          ? sellRestriction
+          : buyRestriction.restricted
+          ? buyRestriction
+          : sellRestriction;
       const nameLabel = activeRestriction.restricted ? `${item.name} (${activeRestriction.tag || "restricted"})` : item.name;
 
       const tdName = document.createElement("td");
@@ -19887,7 +20064,7 @@
           !!offerDisabledReason,
           offerDisabledReason
         );
-      } else {
+      } else if (tradeUi.tab === "sell") {
         addBtn(
           "Sell 1",
           function () {
@@ -19928,10 +20105,151 @@
           !!sellOfferReason,
           sellOfferReason
         );
+      } else if (tradeUi.tab === "barter") {
+        const availableSpace = Math.max(
+          0,
+          pricing.cap - pricing.vendorStock - (barterState.offer[item.id] || 0)
+        );
+        const availableStock = Math.max(0, pricing.vendorStock - (barterState.ask[item.id] || 0));
+        const maxOffer = Math.min(owned, Math.max(0, pricing.cap - pricing.vendorStock));
+        const maxAsk = Math.max(0, pricing.vendorStock);
+        addBtn(
+          "Offer +1",
+          function () {
+            adjustBarterQty("offer", item.id, 1, maxOffer);
+            renderTradeModal();
+          },
+          owned <= 0 || availableSpace <= 0 || sellRestriction.restricted,
+          sellRestriction.restricted
+            ? sellRestriction.reason
+            : availableSpace <= 0
+            ? "Vendor can't take more."
+            : owned <= 0
+            ? "Nothing to offer."
+            : null
+        );
+        addBtn(
+          "Ask +1",
+          function () {
+            adjustBarterQty("ask", item.id, 1, maxAsk);
+            renderTradeModal();
+          },
+          availableStock <= 0 || buyRestriction.restricted,
+          buyRestriction.restricted
+            ? buyRestriction.reason
+            : availableStock <= 0
+            ? "Out of stock."
+            : null
+        );
       }
       tr.appendChild(tdAction);
       dom.tradeBody.appendChild(tr);
     });
+
+    if (dom.barterPanel) {
+      if (tradeUi.tab !== "barter") {
+        dom.barterPanel.style.display = "none";
+      } else {
+        dom.barterPanel.style.display = "block";
+        dom.barterPanel.innerHTML = "";
+        const totals = computeBarterTotals(ctx);
+
+        const bundleLabel = function (lines, side) {
+          const wrapper = document.createElement("div");
+          const heading = document.createElement("h4");
+          heading.textContent = side === "offer" ? "You offer" : "You request";
+          wrapper.appendChild(heading);
+          const list = document.createElement("div");
+          list.className = "ot-barter-list";
+          if (!lines.length) {
+            const empty = document.createElement("div");
+            empty.className = "ot-text-muted";
+            empty.textContent = "Empty";
+            list.appendChild(empty);
+          } else {
+            lines.forEach(function (line) {
+              const row = document.createElement("div");
+              row.className = "ot-barter-line";
+              const label = document.createElement("div");
+              label.textContent = `${line.qty} ${line.def ? line.def.name : line.id}`;
+              row.appendChild(label);
+              const btn = document.createElement("button");
+              btn.className = "ot-mini-btn";
+              btn.textContent = "−";
+              btn.title = "Remove 1";
+              btn.addEventListener("click", function () {
+                adjustBarterQty(side, line.id, -1);
+                renderTradeModal();
+              });
+              row.appendChild(btn);
+              list.appendChild(row);
+            });
+          }
+          wrapper.appendChild(list);
+          return wrapper;
+        };
+
+        const cols = document.createElement("div");
+        cols.className = "ot-barter-columns";
+        cols.appendChild(bundleLabel(totals.offerLines, "offer"));
+        cols.appendChild(bundleLabel(totals.askLines, "ask"));
+        dom.barterPanel.appendChild(cols);
+
+        const totalsRow = document.createElement("div");
+        totalsRow.className = "ot-barter-totals";
+        const offerVal = document.createElement("div");
+        offerVal.textContent = `Offer Value: ${formatMoney(totals.offerValue)}`;
+        const askVal = document.createElement("div");
+        askVal.textContent = `Request Value: ${formatMoney(totals.askValue)}`;
+        const balance = document.createElement("div");
+        let hint = "Fair";
+        if (totals.askValue <= 0 || totals.offerValue <= 0) hint = "Needs both sides";
+        else if (totals.offerValue >= totals.askValue * 1.05) hint = "Generous";
+        else if (totals.offerValue < totals.askValue * 0.97) hint = "Short";
+        balance.textContent = hint;
+        totalsRow.appendChild(offerVal);
+        totalsRow.appendChild(askVal);
+        totalsRow.appendChild(balance);
+        dom.barterPanel.appendChild(totalsRow);
+
+        if (totals.problems.length) {
+          const warn = document.createElement("div");
+          warn.className = "ot-modal-sub";
+          warn.textContent = totals.problems[0];
+          dom.barterPanel.appendChild(warn);
+        }
+
+        const haggleNote = document.createElement("div");
+        haggleNote.className = "ot-modal-sub";
+        haggleNote.textContent = `Haggle attempts left: ${haggleRemaining}`;
+        dom.barterPanel.appendChild(haggleNote);
+
+        const actions = document.createElement("div");
+        actions.className = "ot-barter-actions";
+        const btnClear = document.createElement("button");
+        btnClear.className = "ot-btn-outline";
+        btnClear.textContent = "Clear";
+        btnClear.addEventListener("click", function () {
+          barterState.offer = {};
+          barterState.ask = {};
+          renderTradeModal();
+        });
+        const btnPropose = document.createElement("button");
+        btnPropose.className = "ot-btn";
+        btnPropose.textContent = "Propose Barter";
+        btnPropose.disabled =
+          !totals.offerLines.length ||
+          !totals.askLines.length ||
+          totals.problems.length > 0 ||
+          !canHaggleToday(vendorKey, ctx.poiId);
+        btnPropose.addEventListener("click", function () {
+          proposeBarter();
+        });
+        actions.appendChild(btnClear);
+        actions.appendChild(btnPropose);
+        dom.barterPanel.appendChild(actions);
+      }
+    }
 
     renderTradeLedger(ledgerNotes);
   }
@@ -19943,6 +20261,7 @@
     tradeUi.tab = "buy";
     tradeUi.vendorKey = vendorKey || "forts";
     tradeUi.poiId = poiId || tradeUi.poiId || "frontier";
+    tradeUi.barter = { offer: {}, ask: {} };
     if (dom.tradeMsg) dom.tradeMsg.textContent = "";
     dom.tradeModal.classList.add("active");
     renderTradeModal();
@@ -20176,6 +20495,201 @@
     setMsg(msg);
     renderTradeModal();
     setMsg(msg);
+  }
+
+  function applyBarterDeal(ctx, offerBasket, askBasket) {
+    const tradeUi = ctx.tradeUi;
+    const tradeDef = ctx.tradeDef;
+    const vendorState = ctx.vendorState;
+    const vendorKey = tradeUi.vendorKey || "forts";
+    const terms = getTradeTermsForFaction(vendorKey);
+    const offerLines = formatBarterLineItems(offerBasket || {});
+    const askLines = formatBarterLineItems(askBasket || {});
+
+    offerLines.forEach(function (line) {
+      if (!line.def) return;
+      const owned = gameState.supplies[line.id] || 0;
+      const pricing = computeTradePricing(line.def, tradeDef, vendorState, terms);
+      const currentStock = vendorState.stocks[line.id] || 0;
+      const capSpace = Math.max(0, pricing.cap - currentStock);
+      const qty = Math.max(0, Math.min(line.qty, owned, capSpace));
+      if (qty <= 0) return;
+      gameState.supplies[line.id] = Math.max(0, owned - qty);
+      vendorState.stocks[line.id] = clamp(currentStock + qty, 0, pricing.cap);
+    });
+
+    askLines.forEach(function (line) {
+      if (!line.def) return;
+      const stock = vendorState.stocks[line.id] || 0;
+      const takeQty = Math.max(0, Math.min(line.qty, stock));
+      if (takeQty <= 0) return;
+      vendorState.stocks[line.id] = Math.max(0, stock - takeQty);
+      gameState.supplies[line.id] = (gameState.supplies[line.id] || 0) + takeQty;
+    });
+
+    const offerSummary = offerLines.length
+      ? offerLines
+          .map(function (l) {
+            return `${l.qty} ${l.def ? l.def.name : l.id}`;
+          })
+          .join(" + ")
+      : "nothing";
+    const askSummary = askLines.length
+      ? askLines
+          .map(function (l) {
+            return `${l.qty} ${l.def ? l.def.name : l.id}`;
+          })
+          .join(" + ")
+      : "nothing";
+
+    recordTradeLedgerEntry({
+      action: "barter",
+      itemName: `${offerSummary} → ${askSummary}`,
+      qty: 1,
+      unitPrice: 0,
+      total: 0,
+      vendor: tradeUi.vendorKey,
+      vendorPoi: ctx.poiId,
+    });
+  }
+
+  async function proposeBarter() {
+    const ctx = resolveTradeContext();
+    const tradeUi = ctx.tradeUi;
+    const vendorKey = tradeUi.vendorKey || "forts";
+    const termsInfo = getTradeTermsForFaction(vendorKey);
+    const tierId = (termsInfo.tier && termsInfo.tier.id) || "neutral";
+    const acceptRatio = getBarterAcceptRatio(tierId);
+    const barter = ensureBarterState();
+    const offerBasket = Object.assign({}, barter.offer);
+    const askBasket = Object.assign({}, barter.ask);
+    const totals = computeBarterTotals(ctx, { offer: offerBasket, ask: askBasket });
+    const setMsg = function (msg) {
+      if (dom.tradeMsg) dom.tradeMsg.textContent = msg;
+    };
+
+    if (!totals.offerLines.length || !totals.askLines.length) {
+      setMsg("Build an offer and request first.");
+      return;
+    }
+    if (totals.problems.length) {
+      setMsg(totals.problems[0]);
+      return;
+    }
+    if (!canHaggleToday(vendorKey, ctx.poiId)) {
+      setMsg("No more haggling today.");
+      return;
+    }
+    if (totals.askValue <= 0 || totals.offerValue <= 0) {
+      setMsg("Need a meaningful exchange.");
+      return;
+    }
+
+    consumeHaggleAttempt(vendorKey, ctx.poiId);
+
+    const offerDesc = totals.offerLines
+      .map(function (l) {
+        return `${l.qty} ${l.def ? l.def.name : l.id}`;
+      })
+      .join(", ");
+    const askDesc = totals.askLines
+      .map(function (l) {
+        return `${l.qty} ${l.def ? l.def.name : l.id}`;
+      })
+      .join(", ");
+
+    const acceptThreshold = totals.askValue * acceptRatio;
+    const counterThreshold = totals.askValue * acceptRatio * 0.9;
+
+    if (totals.offerValue >= acceptThreshold) {
+      const choice = await presentEncounter({
+        id: `barter_accept_${vendorKey}_${ctx.poiId || "frontier"}`,
+        title: "Barter terms accepted",
+        subtitle: getVendorLabelForKey(vendorKey),
+        body: [`You offer: ${offerDesc}`, `You request: ${askDesc}`],
+        options: [
+          { id: "accept", label: "Accept", tone: "warm" },
+          { id: "cancel", label: "Cancel", tone: "neutral" },
+        ],
+        defaultId: "accept",
+      });
+      if (choice === "accept") {
+        applyBarterDeal(ctx, offerBasket, askBasket);
+        barter.offer = {};
+        barter.ask = {};
+        saveGame();
+        renderAll();
+        renderTradeModal();
+        setMsg("Barter completed.");
+      } else {
+        renderTradeModal();
+        setMsg("You hold your offer back.");
+      }
+      return;
+    }
+
+    if (totals.offerValue >= counterThreshold) {
+      const counterAsk = Object.assign({}, askBasket);
+      let counterTotals = computeBarterTotals(ctx, { offer: offerBasket, ask: counterAsk });
+      const maxValue = totals.offerValue / acceptRatio;
+      const terms = termsInfo;
+      const tradeDef = ctx.tradeDef;
+      const vendorState = ctx.vendorState;
+      let guard = 0;
+      while (counterTotals.askValue > maxValue && counterTotals.askLines.length && guard < 200) {
+        const sorted = counterTotals.askLines.slice().sort(function (a, b) {
+          const pa = a.def ? computeTradePricing(a.def, tradeDef, vendorState, terms).unitBuy : 0;
+          const pb = b.def ? computeTradePricing(b.def, tradeDef, vendorState, terms).unitBuy : 0;
+          return pb - pa;
+        });
+        const target = sorted[0];
+        counterAsk[target.id] = Math.max(0, (counterAsk[target.id] || 0) - 1);
+        if (counterAsk[target.id] <= 0) delete counterAsk[target.id];
+        counterTotals = computeBarterTotals(ctx, { offer: offerBasket, ask: counterAsk });
+        guard++;
+      }
+
+      if (!counterTotals.askLines.length) {
+        renderTradeModal();
+        setMsg("No deal. They tap the ledger shut.");
+        return;
+      }
+
+      const counterDesc = counterTotals.askLines
+        .map(function (l) {
+          return `${l.qty} ${l.def ? l.def.name : l.id}`;
+        })
+        .join(", ");
+
+      const counterChoice = await presentEncounter({
+        id: `barter_counter_${vendorKey}_${ctx.poiId || "frontier"}`,
+        title: "Ledger counteroffer",
+        subtitle: getVendorLabelForKey(vendorKey),
+        body: ["They'll do it, but for less:", `You offer: ${offerDesc}`, `You receive: ${counterDesc}`],
+        options: [
+          { id: "accept", label: "Accept counter", tone: "warm" },
+          { id: "refuse", label: "Refuse", tone: "neutral" },
+        ],
+        defaultId: "accept",
+      });
+
+      if (counterChoice === "accept") {
+        applyBarterDeal(ctx, offerBasket, counterAsk);
+        barter.offer = {};
+        barter.ask = {};
+        saveGame();
+        renderAll();
+        renderTradeModal();
+        setMsg("Counter accepted.");
+      } else {
+        renderTradeModal();
+        setMsg("No deal. They tap the ledger shut.");
+      }
+      return;
+    }
+
+    renderTradeModal();
+    setMsg("No deal. They tap the ledger shut.");
   }
 
   async function offerSell(itemId, qty) {
@@ -21044,6 +21558,13 @@
       dom.btnTradeSellTab.addEventListener("click", function () {
         const tradeUi = ensureTradeUiState();
         tradeUi.tab = "sell";
+        renderTradeModal();
+      });
+    }
+    if (dom.btnTradeBarterTab) {
+      dom.btnTradeBarterTab.addEventListener("click", function () {
+        const tradeUi = ensureTradeUiState();
+        tradeUi.tab = "barter";
         renderTradeModal();
       });
     }
@@ -23014,4 +23535,13 @@
 - Save + reload mid-run; trade modal still works; vendor inventories persist; no crashes.
 - Trail log remains clean (no spam per transaction); trade history shows in the trade ledger panel.
 - Mythic OFF: nothing new leaks into Men in Gray behaviors (this pass should not add mythic triggers at all).
+-->
+<!-- Validation checklist (Barter tab):
+- Start new run; no console errors.
+- Reach a fort and open Trade; Buy/Sell tabs still function and haggle offers spend attempts.
+- Switch to Barter tab; Offer/Request bundles update totals; Clear empties baskets.
+- Propose Barter consumes a haggle attempt, applies accepted/countered trades without negative stocks or dupes, and refuses cleanly.
+- Haggle attempts exhausted disables proposing; panel explains remaining attempts.
+- Trade ledger shows “Barter — …” lines; no trail log spam.
+- Save/reload mid-run; trade modal and barter baskets open without crashes.
 -->
