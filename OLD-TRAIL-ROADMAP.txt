@@ -311,6 +311,12 @@ Deferred (new)
 - Wire Open Eye and Men in Gray faction reputation into fort/caravan trade modifiers and UI surfacing once faction hooks are ready.
 - Fill in remaining Dream-West B-set seeds and callbacks (b06+), with region-aware variants and tension tuning.
 - Extend Open Eye revival into later-tier confrontations or aid (escort, fort delivery options) once additional chain support is available.
+- Build a full mental-break/meltdown loop with escalating states (refusing tasks, fleeing, leadership challenges) tied to morale/stress instead of one-off beats.
+- Stage deeper multi-step mythic questlines with callbacks across regions and days, beyond the current single setpiece/seed moments.
+- Simulate recurring NPC caravans and factions over time (return visits, remembered favors/grudges) that feed events and trade menus.
+- Add explicit event overlap/queue rules to avoid conflicting incidents in the same block while still allowing occasional deliberate clashes.
+- Expand storyteller preset roster/weirdness slider (e.g., chaotic narrator) with UI surfacing and pacing rules.
+- Broaden social arc varieties (longer rivalries/romance/campfire follow-ups) with trait-driven writing hooks.
 
 Validation Checklist (Dream-West B-set)
 - Start new run; no console errors.

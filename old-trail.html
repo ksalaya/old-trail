@@ -2042,14 +2042,14 @@
               <div class="ot-label">Companions (up to 4)</div>
               <div id="ot-draft-rows"></div>
               <div class="ot-draft-controls" style="margin-top: 6px;">
-                <button id="ot-btn-generate-party" class="ot-btn-gold" style="flex:1;">Generate party</button>
+                <button id="ot-btn-generate-party" class="ot-btn-gold" style="flex:1;" type="button">Generate party</button>
                 <div class="ot-panel-body-sm ot-text-muted" style="flex:1;">
                   Reroll individuals, lock favorites, or type over names. Traits and backstories carry into play.
                 </div>
               </div>
             </div>
 
-            <button id="ot-btn-begin-outfit" class="ot-btn-gold">
+            <button id="ot-btn-begin-outfit" class="ot-btn-gold" type="button">
               Begin outfitting
             </button>
           </div>
@@ -2122,10 +2122,10 @@
             <div
               style="margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap;"
             >
-              <button id="ot-btn-add-recommended" class="ot-btn-outline">
+              <button id="ot-btn-add-recommended" class="ot-btn-outline" type="button">
                 Add recommended load
               </button>
-              <button id="ot-btn-begin-journey" class="ot-btn-gold">
+              <button id="ot-btn-begin-journey" class="ot-btn-gold" type="button">
                 Begin the journey
               </button>
             </div>
@@ -7791,6 +7791,14 @@
 
   /* ========= GAME INITIALIZATION ========================================== */
 
+  function normalizeButtonTypes(rootEl) {
+    const scope = rootEl && rootEl.querySelectorAll ? rootEl : document;
+    const buttons = scope.querySelectorAll ? scope.querySelectorAll("button") : [];
+    buttons.forEach(function (btn) {
+      if (!btn.getAttribute("type")) btn.setAttribute("type", "button");
+    });
+  }
+
   function initDom() {
     dom.root = document.getElementById("oldtrail-root");
     dom.screens = {
@@ -10474,7 +10482,226 @@
     return rel.opinion >= 50 ? "Ally" : rel.opinion <= -25 ? "Tense" : "Neutral";
   }
 
-  function socialInteraction(a, b, type) {
+  function weightedPickWith(items, rngFn) {
+    const rollFn = rngFn || Math.random;
+    const total = items.reduce(function (sum, item) {
+      return sum + Math.max(0, item.weight || 0);
+    }, 0);
+    if (total <= 0) return items[0];
+    let roll = rollFn() * total;
+    for (let i = 0; i < items.length; i++) {
+      roll -= Math.max(0, items[i].weight || 0);
+      if (roll <= 0) return items[i];
+    }
+    return items[items.length - 1];
+  }
+
+  function describeSocialLine(type, a, b, opts) {
+    const rng = (opts && opts.rng) || Math.random;
+    const mythicOn = opts && opts.mythicOn;
+    const pair = a.name + " and " + b.name;
+    const bardic =
+      hasTrait(a, "trail_teller") ||
+      hasTrait(b, "trail_teller") ||
+      hasTrait(a, "wry") ||
+      hasTrait(b, "wry") ||
+      hasTrait(a, "camp_poet") ||
+      hasTrait(b, "camp_poet") ||
+      hasTrait(a, "harmonica_hand") ||
+      hasTrait(b, "harmonica_hand");
+    const calming =
+      hasTrait(a, "peacemaker") ||
+      hasTrait(b, "peacemaker") ||
+      hasTrait(a, "soft_spoken") ||
+      hasTrait(b, "soft_spoken") ||
+      hasTrait(a, "polite") ||
+      hasTrait(b, "polite");
+    const gossip = hasTrait(a, "gossip") || hasTrait(b, "gossip") || hasTrait(a, "jealous") || hasTrait(b, "jealous");
+    const hot =
+      hasTrait(a, "argumentative") ||
+      hasTrait(b, "argumentative") ||
+      hasTrait(a, "hotheaded") ||
+      hasTrait(b, "hotheaded") ||
+      hasTrait(a, "bossy") ||
+      hasTrait(b, "bossy");
+
+    const base = {
+      chat: [
+        `${pair} walk the line of wagons, trading notes on ruts and grass.`,
+        `${pair} sit by the water casks, swapping quiet stories about home.`,
+        `${pair} compare gear repairs under lantern light, hands busy while words come easy.`,
+        `${pair} pace the camp perimeter and talk about tomorrow's miles.`,
+        `${pair} lean against a wheel, sharing how they read clouds and omens as superstition, not fact.`,
+        `${pair} pass a tin cup back and forth, grateful for company more than the drink.`,
+      ],
+      joke: [
+        `${pair} trade dry jokes about burnt beans until the whole fire pit chuckles.`,
+        `${pair} riff on tall trail tales, turning misery into a playful ballad.`,
+        `${pair} make a bad pun about oxen that somehow lands, easing shoulders.`,
+        `${pair} dare each other to sing a verse; the laughter carries past the wagons.`,
+        `${pair} tease the cook about salt and coffee, earning mock groans and smiles.`,
+        `${pair} play-act a snake-oil pitchman routine until someone nearly spits coffee.`,
+      ],
+      help: [
+        `${pair} tighten straps and re-pack flour sacks together, fussing over knots.`,
+        `${pair} patch a worn blanket side by side, trading needle and thread.`,
+        `${pair} share a slow walk to stretch stiff knees before turning in.`,
+        `${pair} check each other's blisters and rewrap bandages without complaint.`,
+        `${pair} haul extra wood to the fire, finding a rhythm that calms the camp.`,
+        `${pair} clean the coffee pot together, talking through watch plans as they work.`,
+      ],
+      argue: [
+        `${pair} spark over who botched the watchbill, words clipped as sparks pop.`,
+        `${pair} clash about tomorrow's pace, heat rising faster than the fire.`,
+        `${pair} jab about wasted flour and sloppy packing until others glance over.`,
+        `${pair} debate whether to trust the next cutoff, neither willing to yield.`,
+        `${pair} revisit an old slight from the trail, voices low but sharp.`,
+        `${pair} trade barbs about who leads and who follows, tempers barely checked.`,
+      ],
+      cold: [
+        `${pair} pass each other in silence, gossip hanging heavier than smoke.`,
+        `${pair} split chores without a word, careful not to meet eyes.`,
+        `${pair} sit on opposite sides of the embers, replies thin as ash.`,
+        `${pair} trade barbed politeness about watch duty, the camp noticing the chill.`,
+        `${pair} linger at different wagons, their laughter reserved for others.`,
+        `${pair} exchange a stiff nod and move on, resentment tucked away with bedrolls.`,
+      ],
+      apology: [
+        `${pair} meet by the fire; a brief apology softens yesterday's hard words.`,
+        `${pair} trade quiet sorries while mending gear, letting the needle carry the peace.`,
+        `${pair} admit they were harsh about chores, promising to listen next time.`,
+        `${pair} agree to reset the ledger over shared coffee grounds.`,
+        `${pair} settle on a plan for watch rotations, apology folded into the pact.`,
+        `${pair} breathe out their anger and nod, tension easing with the night air.`,
+      ],
+    };
+
+    if (bardic && type === "joke") {
+      base.joke.push(
+        `${pair} spin a rhymed yarn about coyotes and saints, turning the camp into an audience.`
+      );
+    }
+    if (bardic && type === "chat") {
+      base.chat.push(
+        `${pair} swap verses and trail lore, the song mixing with the creak of settling wagons.`
+      );
+    }
+    if (calming && type === "help") {
+      base.help.push(
+        `${pair} move slow and deliberate, their steady tone smoothing frayed nerves around them.`
+      );
+    }
+    if (hot && type === "argue") {
+      base.argue.push(
+        `${pair} argue like flint on steel, one barking orders while the other bites back.`
+      );
+    }
+    if (gossip && type === "cold") {
+      base.cold.push(
+        `${pair} trade frostbitten small talk, each hinting they've heard unkind whispers.`
+      );
+    }
+    if (gossip && type === "apology") {
+      base.apology.push(
+        `${pair} acknowledge loose tongues hurt, promising to keep tonight's worries at the fire.`
+      );
+    }
+    if (mythicOn && bardic && type === "chat") {
+      base.chat.push(
+        `${pair} tell a superstition about lights on the plains, laughing it off as smoke dreams.`
+      );
+    }
+
+    const options = base[type] || base.chat;
+    if (!options.length) return `${pair} share a moment by the fire.`;
+    const pick = options[Math.floor(rng() * options.length) % options.length];
+    return pick;
+  }
+
+  function chooseSocialType(a, b, rel, rngFn) {
+    const rng = rngFn || Math.random;
+    const base = {
+      chat: 1,
+      joke: 0.9,
+      help: 0.7,
+      argue: 0.35,
+      cold: 0.25,
+      apology: 0.3,
+    };
+    const opinion = (rel && typeof rel.opinion === "number" ? rel.opinion : 0) || 0;
+    const hot =
+      hasTrait(a, "argumentative") ||
+      hasTrait(b, "argumentative") ||
+      hasTrait(a, "hotheaded") ||
+      hasTrait(b, "hotheaded") ||
+      hasTrait(a, "bossy") ||
+      hasTrait(b, "bossy");
+    const calm =
+      hasTrait(a, "peacemaker") ||
+      hasTrait(b, "peacemaker") ||
+      hasTrait(a, "soft_spoken") ||
+      hasTrait(b, "soft_spoken") ||
+      hasTrait(a, "polite") ||
+      hasTrait(b, "polite");
+    const jokey =
+      hasTrait(a, "trail_teller") ||
+      hasTrait(b, "trail_teller") ||
+      hasTrait(a, "wry") ||
+      hasTrait(b, "wry") ||
+      hasTrait(a, "harmonica_hand") ||
+      hasTrait(b, "harmonica_hand") ||
+      hasTrait(a, "camp_poet") ||
+      hasTrait(b, "camp_poet") ||
+      hasTrait(a, "prankster") ||
+      hasTrait(b, "prankster");
+    const coldish =
+      hasTrait(a, "gossip") ||
+      hasTrait(b, "gossip") ||
+      hasTrait(a, "jealous") ||
+      hasTrait(b, "jealous") ||
+      hasTrait(a, "loner") ||
+      hasTrait(b, "loner");
+
+    if (opinion < -30) {
+      base.argue += 0.6;
+      base.cold += 0.4;
+      base.apology += 0.15;
+      base.joke -= 0.25;
+    } else if (opinion < -10) {
+      base.argue += 0.25;
+      base.cold += 0.2;
+      base.apology += 0.1;
+    } else if (opinion > 40) {
+      base.joke += 0.6;
+      base.help += 0.4;
+      base.chat += 0.4;
+      base.argue -= 0.25;
+      base.cold -= 0.1;
+    }
+
+    if (hot) base.argue += 0.5;
+    if (calm) {
+      base.argue *= 0.6;
+      base.apology += 0.25;
+      base.help += 0.2;
+    }
+    if (jokey) {
+      base.joke += 0.5;
+      base.chat += 0.25;
+    }
+    if (coldish) {
+      base.cold += 0.4;
+      base.argue += 0.1;
+    }
+
+    const weights = Object.keys(base).map(function (key) {
+      return { id: key, weight: Math.max(0.05, base[key]) };
+    });
+    const picked = weightedPickWith(weights, rng);
+    return picked ? picked.id : "chat";
+  }
+
+  function socialInteraction(a, b, type, rngFn) {
     if (!a || !b) return;
     const labelMap = {
       chat: { delta: 2, thought: "Good talk" },
@@ -10487,9 +10714,25 @@
     const cfg = labelMap[type] || labelMap.chat;
     adjustOpinion(a, b, cfg.delta, "social");
     adjustOpinion(b, a, cfg.delta * 0.8, "social");
-    addThought(a, { id: `${type}_${b.id}`, label: cfg.thought, value: cfg.delta >= 0 ? 2 : -2, hoursLeft: 8, source: "social" });
-    addThought(b, { id: `${type}_${a.id}`, label: cfg.thought, value: cfg.delta >= 0 ? 2 : -2, hoursLeft: 8, source: "social" });
-    addLog(`${a.name} and ${b.name} ${type === "argue" ? "argued" : type === "cold" ? "kept apart" : "shared a moment"}.`, {
+    addThought(a, {
+      id: `${type}_${b.id}`,
+      label: cfg.thought,
+      value: cfg.delta >= 0 ? 2 : -2,
+      hoursLeft: 8,
+      source: "social",
+    });
+    addThought(b, {
+      id: `${type}_${a.id}`,
+      label: cfg.thought,
+      value: cfg.delta >= 0 ? 2 : -2,
+      hoursLeft: 8,
+      source: "social",
+    });
+    const logLine = describeSocialLine(type, a, b, {
+      rng: rngFn,
+      mythicOn: ensureStoryState().mythicEnabled !== false,
+    });
+    addLog(logLine, {
       tone: cfg.delta >= 0 ? "social" : "warning",
       characters: [a.id, b.id],
     });
@@ -10509,18 +10752,17 @@
     if (people.length < 2) return;
     const rng = draftRng("social:" + dayKey + ":" + block);
     const count = Math.min(2, Math.max(1, Math.floor(people.length / 2)));
+    const usedPairs = {};
     for (let i = 0; i < count; i++) {
       const a = people[Math.floor(rng() * people.length)];
       const b = people[Math.floor(rng() * people.length)];
       if (!a || !b || a.id === b.id) continue;
+      const pairKey = getPairKey(a, b);
+      if (usedPairs[pairKey]) continue;
+      usedPairs[pairKey] = true;
       const rel = getRelationship(a, b);
-      let type = "chat";
-      if (rel.opinion < -20 && rng() < 0.5) type = "argue";
-      else if (rel.opinion > 40 && rng() < 0.5) type = "joke";
-      else if (rng() < 0.3) type = "help";
-      else if (rng() < 0.2) type = "cold";
-      else if (rel.opinion < -10 && rng() < 0.25) type = "apology";
-      socialInteraction(a, b, type);
+      const type = chooseSocialType(a, b, rel, rng);
+      socialInteraction(a, b, type, rng);
     }
   }
 
@@ -16928,12 +17170,53 @@
         return 5;
       },
       run: function (ctx) {
+        const pool = (ctx.people && ctx.people.length ? ctx.people : getAllPeople()).filter(function (p) {
+          return p && p.alive;
+        });
         const lost = Math.min(6, gameState.supplies.meal_simple || 0);
         if (lost > 0) gameState.supplies.meal_simple = Math.max(0, (gameState.supplies.meal_simple || 0) - lost);
+
+        const accuserWeights = pool.map(function (p) {
+          let w = 1;
+          if (hasTrait(p, "quartermaster") || hasTrait(p, "organizer") || hasTrait(p, "frugal") || hasTrait(p, "germ_wary")) w += 2.2;
+          if (hasTrait(p, "meticulous") || hasTrait(p, "scribe_clerk")) w += 1.1;
+          if ((p.morale || 50) > 60) w += 0.3;
+          return { person: p, weight: Math.max(0.1, w) };
+        });
+        const accuserPick = weightedPick(accuserWeights) || accuserWeights[0];
+        const accuser = accuserPick ? accuserPick.person : pool[0];
+        const suspectPool = pool.filter(function (p) {
+          return p && accuser && p.id !== accuser.id;
+        });
+        const suspectWeights = suspectPool.map(function (p) {
+          let w = 1;
+          const shady =
+            hasTrait(p, "klepto", { includeHidden: true }) ||
+            hasTrait(p, "wasteful") ||
+            hasTrait(p, "miserly") ||
+            hasTrait(p, "runaway", { includeHidden: true }) ||
+            hasTrait(p, "wanted", { includeHidden: true });
+          if (shady) w += 3.3;
+          if ((p.morale || 50) < 40) w += 0.9;
+          const rel = accuser ? getRelationship(accuser, p) : null;
+          if (rel && rel.opinion < -10) w += 1;
+          return { person: p, weight: Math.max(0.1, w), shady: shady };
+        });
+        const suspectPick = weightedPick(suspectWeights) || suspectWeights[0];
+        const accused = suspectPick ? suspectPick.person : pool[1] || accuser;
+        setEventFlag("ration_chain_accuser", accuser ? accuser.id : null);
+        setEventFlag("ration_chain_suspect", accused ? accused.id : null);
+        setEventFlag("ration_chain_suspect_shady", suspectPick ? !!suspectPick.shady : false);
+
         advanceChain("ration_chain", 1);
         addLog(
-          "A bundle of cooked rations goes missing. Voices in the dark blame hunger and careless watch.",
-          { tone: "warning", tag: "DAY " + ctx.dayTag, location: ctx.location, characters: ctx.people.slice(0, 2).map(function (p) { return p.id; }) }
+          `Supper comes up light. ${accuser ? accuser.name : "Someone"} insists a portion walked off, eyes sliding toward ${accused ? accused.name : "a quiet wagon"}.`,
+          {
+            tone: "warning",
+            tag: "DAY " + ctx.dayTag,
+            location: ctx.location,
+            characters: [accuser && accuser.id, accused && accused.id].filter(Boolean),
+          }
         );
       },
     },
@@ -16948,8 +17231,21 @@
       },
       run: async function (ctx) {
         const people = ctx.people || [];
-        const accuser = people[0];
-        const accused = people[1] || accuser;
+        const findPerson = function (id, fallback) {
+          return (
+            getAllPeople().find(function (p) {
+              return p && p.id === id;
+            }) || fallback
+          );
+        };
+        const accuserId = getEventFlag("ration_chain_accuser");
+        const accusedId = getEventFlag("ration_chain_suspect");
+        const accuser = findPerson(accuserId, people[0]);
+        const accused = findPerson(accusedId, people[1] || people[0]);
+        if (!accuser || !accused || accuser.id === accused.id) {
+          setEventFlag("ration_chain_step", 0);
+          return;
+        }
         const choice = await presentEncounter({
           id: "ration_confront",
           title: "Missing rations",
@@ -16957,9 +17253,9 @@
           body: [
             "Supper comes up light. " +
               accuser.name +
-              " insists someone skimmed the pot. Eyes drift toward " +
+              " counts what is left and points toward " +
               accused.name +
-              " and the quieter wagons.",
+              " as the circle goes quiet.",
           ],
           options: [
             { id: "search", label: "Search packs", tone: "danger", hint: "May mend or strain trust." },
@@ -16971,10 +17267,27 @@
         setEventFlag("ration_chain_choice", choice);
         advanceChain("ration_chain", 2);
         if (choice === "search") {
-          adjustOpinion(accuser, accused, -6, "accusation");
-          adjustOpinion(accused, accuser, -4, "accusation");
-          addThought(accused, { id: "searched", label: "Searched", value: -3, hoursLeft: 12, source: "social" });
-          addLog("Bags are turned out by lantern light. Tempers cool but trust frays.", { tone: "warning", characters: [accuser.id, accused.id] });
+          const shady = !!getEventFlag("ration_chain_suspect_shady");
+          const found = Math.random() < (shady ? 0.6 : 0.22);
+          setEventFlag("ration_chain_found_stash", found);
+          if (found) {
+            const recovered = Math.max(1, Math.min(4, Math.round((gameState.supplies.meal_simple || 0) * 0.12) + 1));
+            gameState.supplies.meal_simple = (gameState.supplies.meal_simple || 0) + recovered;
+            adjustOpinion(accuser, accused, -8, "accusation");
+            adjustOpinion(accused, accuser, -9, "accusation");
+            addThought(accused, { id: "searched", label: "Caught hoarding", value: -6, hoursLeft: 18, source: "social" });
+            addThought(accuser, { id: "vindicated_search", label: "Vindicated search", value: 2, hoursLeft: 10, source: "social" });
+            addLog(
+              `${accuser.name} turns out ${accused.name}'s pack; a tucked-away pouch of rations spills free, easing hunger but not suspicion.`,
+              { tone: "warning", characters: [accuser.id, accused.id] }
+            );
+          } else {
+            adjustOpinion(accuser, accused, -3, "accusation");
+            adjustOpinion(accused, accuser, -6, "accusation");
+            addThought(accused, { id: "searched", label: "Searched", value: -3, hoursLeft: 12, source: "social" });
+            addThought(accuser, { id: "false_alarm", label: "Raised a fuss", value: -2, hoursLeft: 10, source: "social" });
+            addLog("Bags are turned out by lantern light; nothing surfaces. Now the circle watches the accuser as much as the accused.", { tone: "warning", characters: [accuser.id, accused.id] });
+          }
         } else if (choice === "share") {
           gameState.supplies.meal_simple = Math.max(0, (gameState.supplies.meal_simple || 0) - 2);
           adjustOpinion(accused, accuser, 4, "forgiven");
@@ -16996,16 +17309,121 @@
       },
       run: function (ctx) {
         const choice = getEventFlag("ration_chain_choice");
+        const found = getEventFlag("ration_chain_found_stash");
         if (choice === "share") {
           ctx.people.forEach(function (p) {
             addThought(p, { id: "generous_meal", label: "Shared meal", value: 3, hoursLeft: 10, source: "social" });
           });
         } else if (choice === "search") {
-          ctx.storyState.risk.low_morale = true;
+          if (found) {
+            ctx.people.forEach(function (p) {
+              addThought(p, { id: "food_found", label: "Stash recovered", value: 1, hoursLeft: 8, source: "social" });
+            });
+          } else {
+            ctx.storyState.risk.low_morale = true;
+          }
         }
         addLog("The missing rations become a story, not a wound. Camp talk shifts back to miles ahead.", { tone: "social", tag: "DAY " + ctx.dayTag, location: ctx.location });
         setEventFlag("ration_chain_step", 0);
         setEventFlag("ration_chain_choice", null);
+        setEventFlag("ration_chain_accuser", null);
+        setEventFlag("ration_chain_suspect", null);
+        setEventFlag("ration_chain_suspect_shady", null);
+        setEventFlag("ration_chain_found_stash", null);
+      },
+    },
+    {
+      id: "chain_tonic_showman",
+      kind: "minor",
+      minTension: 2,
+      condition: function (ctx) {
+        const last = hoursSinceFlag("tonic_show_lastHour");
+        const pending = getEventFlag("tonic_show_pending_hour");
+        return ctx.mode === "travel" && ctx.block !== "night" && last >= 24 * 7 && !pending;
+      },
+      weight: function () {
+        return 3;
+      },
+      run: async function (ctx) {
+        const buyer = (ctx.people && ctx.people[0]) || choice(getAllPeople());
+        const selection = await presentEncounter({
+          id: "tonic_showman",
+          title: "Traveling miracle show",
+          subtitle: ctx.location,
+          body: [
+            "A brightly painted wagon rolls alongside, its pitchman waving vials of 'miracle tonic' and promising vigor for miles ahead.",
+          ],
+          options: [
+            { id: "watch", label: "Watch the patter", tone: "warm", hint: "A laugh might help morale." },
+            { id: "buy", label: "Buy a bottle ($6)", tone: "neutral", hint: "Lose coin; gain a small tonic." },
+            { id: "shoo", label: "Shoo them along", tone: "danger", hint: "Keep focus on the trail." },
+          ],
+          defaultId: "watch",
+        });
+        const now = getCurrentTrailHour(gameState);
+        setEventFlag("tonic_show_lastHour", now);
+        setEventFlag("tonic_show_choice", selection);
+        if (selection === "watch") {
+          (ctx.people || []).forEach(function (p) {
+            adjustPersonStat(p, "morale", 1);
+          });
+          addLog("You let the troupe rattle off jokes and folk cures. The road feels lighter for a spell.", { tone: "social", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        } else if (selection === "buy") {
+          const cost = 6;
+          gameState.money = Math.max(0, (gameState.money || 0) - cost);
+          gameState.supplies.med_kits = (gameState.supplies.med_kits || 0) + 1;
+          setEventFlag("tonic_show_pending_hour", now);
+          setEventFlag("tonic_show_buyer", buyer ? buyer.id : null);
+          addLog("Coins trade hands. You tuck the tonic away, unsure if it's cure or colored water.", { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location, characters: [buyer && buyer.id].filter(Boolean) });
+        } else {
+          addLog("You wave the pitchman on. The painted wagon clatters ahead to find another audience.", { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        }
+      },
+    },
+    {
+      id: "chain_tonic_followup",
+      kind: "minor",
+      condition: function (ctx) {
+        const pendingHour = getEventFlag("tonic_show_pending_hour");
+        if (pendingHour == null) return false;
+        const waited = hoursSinceFlag("tonic_show_pending_hour");
+        return waited >= 24 && waited <= 72;
+      },
+      weight: function () {
+        return 4;
+      },
+      run: function (ctx) {
+        const buyerId = getEventFlag("tonic_show_buyer");
+        const buyer = getAllPeople().find(function (p) {
+          return p && p.id === buyerId;
+        }) || (ctx.people && ctx.people[0]);
+        const mythicOn = ensureStoryState().mythicEnabled !== false;
+        const outcome = Math.random();
+        let logText = "The tonic proves forgettable, leaving only a bitter aftertaste.";
+        if (outcome < 0.45) {
+          if (buyer) {
+            adjustPersonStat(buyer, "morale", 3);
+            adjustPersonStat(buyer, "condition", 2);
+            addThought(buyer, { id: "tonic_boost", label: "Tonic pep", value: 3, hoursLeft: 12, source: "event" });
+          }
+          logText = (buyer ? buyer.name + " swears the tonic cleared their head." : "Someone") +
+            " feels sharper after the dose.";
+        } else if (mythicOn && outcome < 0.7) {
+          if (buyer) {
+            addThought(buyer, { id: "tonic_dream", label: "Strange tonic dream", value: -1, hoursLeft: 12, source: "mythic" });
+          }
+          logText = (buyer ? buyer.name : "A companion") + " wakes claiming the tonic drew star-bright dreams that linger at dawn.";
+        } else {
+          if (buyer) {
+            adjustPersonStat(buyer, "morale", -2);
+            addThought(buyer, { id: "tonic_queasy", label: "Queasy from tonic", value: -3, hoursLeft: 10, source: "event" });
+          }
+          logText = (buyer ? buyer.name : "A traveler") + " spends the morning queasy, swearing off miracle wagons.";
+        }
+        addLog(logText, { tone: outcome < 0.45 ? "social" : "warning", tag: "DAY " + ctx.dayTag, location: ctx.location, characters: [buyer && buyer.id].filter(Boolean) });
+        setEventFlag("tonic_show_pending_hour", null);
+        setEventFlag("tonic_show_buyer", null);
+        setEventFlag("tonic_show_choice", null);
       },
     },
     {
@@ -23609,13 +24027,33 @@
   }
 
   function wireEvents() {
+    const on = function (el, evt, handler, opts, label) {
+      if (!el) {
+        if (label) console.error("[ot] Missing element for", label, "binding");
+        return false;
+      }
+      try {
+        el.addEventListener(evt, handler, opts);
+        return true;
+      } catch (err) {
+        console.error("[ot] Failed to bind", label || evt, err);
+        return false;
+      }
+    };
+
     if (dom.departureSeason) {
-      dom.departureSeason.addEventListener("change", function () {
-        renderDepartureSeasonDesc();
-      });
+      on(
+        dom.departureSeason,
+        "change",
+        function () {
+          renderDepartureSeasonDesc();
+        },
+        null,
+        "departure season"
+      );
     }
 
-    dom.departureSelect.addEventListener("change", updateStartArt);
+    on(dom.departureSelect, "change", updateStartArt, null, "departure select");
     if (!ensurePartyDraftState().initialized) {
       ensurePartyDraftState().initialized = true;
       generateFullDraft();
@@ -23624,22 +24062,34 @@
       renderAllDraftInfo();
     }
     if (dom.btnGenerateParty) {
-      dom.btnGenerateParty.addEventListener("click", function () {
-        generateFullDraft();
-        renderAllDraftInfo();
-        saveGame();
-      });
+      on(
+        dom.btnGenerateParty,
+        "click",
+        function () {
+          generateFullDraft();
+          renderAllDraftInfo();
+          saveGame();
+        },
+        null,
+        "generate party"
+      );
     }
     if (dom.mythicToggle) {
       dom.mythicToggle.value = gameState.mythicEnabled === false ? "off" : "on";
-      dom.mythicToggle.addEventListener("change", function () {
-        gameState.mythicEnabled = dom.mythicToggle.value !== "off";
-        ensureStoryState().mythicEnabled = gameState.mythicEnabled;
-      });
+      on(
+        dom.mythicToggle,
+        "change",
+        function () {
+          gameState.mythicEnabled = dom.mythicToggle.value !== "off";
+          ensureStoryState().mythicEnabled = gameState.mythicEnabled;
+        },
+        null,
+        "mythic toggle"
+      );
     }
-    dom.btnBeginOutfit.addEventListener("click", startNewGameFromForm);
-    dom.btnAddRecommended.addEventListener("click", addRecommendedLoad);
-    dom.btnBeginJourney.addEventListener("click", beginJourney);
+    on(dom.btnBeginOutfit, "click", startNewGameFromForm, null, "begin outfit");
+    on(dom.btnAddRecommended, "click", addRecommendedLoad, null, "add recommended load");
+    on(dom.btnBeginJourney, "click", beginJourney, null, "begin journey");
     renderStorytellerOptions(
       dom.storytellerPreset,
       gameState.storytellerPresetId || "classic"
@@ -23647,19 +24097,31 @@
     renderStorytellerDescription(gameState.storytellerPresetId || "classic");
     if (dom.tensionDebug) {
       dom.tensionDebug.checked = !!gameState.tensionDebug;
-      dom.tensionDebug.addEventListener("change", function () {
-        gameState.tensionDebug = dom.tensionDebug.checked;
-        gameState.showStorytellerDebug = dom.tensionDebug.checked;
-        renderTensionDebug(ensureStoryState(), buildStoryContext());
-      });
+      on(
+        dom.tensionDebug,
+        "change",
+        function () {
+          gameState.tensionDebug = dom.tensionDebug.checked;
+          gameState.showStorytellerDebug = dom.tensionDebug.checked;
+          renderTensionDebug(ensureStoryState(), buildStoryContext());
+        },
+        null,
+        "tension debug toggle"
+      );
     }
     if (dom.storytellerPreset) {
-      dom.storytellerPreset.addEventListener("change", function () {
-        const presetId = dom.storytellerPreset.value || "classic";
-        setStorytellerPreset(presetId, { resetTimers: true });
-        renderStorytellerDescription(presetId);
-        saveGame();
-      });
+      on(
+        dom.storytellerPreset,
+        "change",
+        function () {
+          const presetId = dom.storytellerPreset.value || "classic";
+          setStorytellerPreset(presetId, { resetTimers: true });
+          renderStorytellerDescription(presetId);
+          saveGame();
+        },
+        null,
+        "storyteller preset"
+      );
     }
 
     renderStorytellerOptions(
@@ -23667,320 +24129,534 @@
       gameState.storytellerPresetId || "classic"
     );
     if (dom.btnToggleNarrator) {
-      dom.btnToggleNarrator.addEventListener("click", function () {
-        if (!dom.narratorPicker) return;
-        const visible = dom.narratorPicker.style.display !== "none";
-        dom.narratorPicker.style.display = visible ? "none" : "block";
-      });
+      on(
+        dom.btnToggleNarrator,
+        "click",
+        function () {
+          if (!dom.narratorPicker) return;
+          const visible = dom.narratorPicker.style.display !== "none";
+          dom.narratorPicker.style.display = visible ? "none" : "block";
+        },
+        null,
+        "toggle narrator picker"
+      );
     }
     if (dom.storytellerMidrun) {
-      dom.storytellerMidrun.addEventListener("change", function () {
-        const presetId = dom.storytellerMidrun.value || "classic";
-        const oldPreset = gameState.storytellerPresetId || "classic";
-        if (presetId === oldPreset) return;
-        const check = canSwapStorytellerPreset(presetId);
-        if (!check.ok) {
-          if (dom.narratorHint) dom.narratorHint.textContent = check.reason;
-          dom.storytellerMidrun.value = oldPreset;
-          return;
-        }
-        setStorytellerPreset(presetId, { resetTimers: false });
-        noteStorytellerSwap();
-        renderStorytellerDescription(presetId);
-        const preset = STORYTELLER_PRESETS[presetId] || STORYTELLER_PRESETS.classic;
-        const tone =
-          "You resolve to travel under " +
-          preset.label.toLowerCase() +
-          " — " +
-          (preset.tagline || preset.hint || "a different narrator mood") + ".";
-        addLog(tone, { tone: "meta" });
-        saveGame();
-        renderStorytellerOptions(dom.storytellerPreset, presetId);
-        renderNarratorRules();
-      });
+      on(
+        dom.storytellerMidrun,
+        "change",
+        function () {
+          const presetId = dom.storytellerMidrun.value || "classic";
+          const oldPreset = gameState.storytellerPresetId || "classic";
+          if (presetId === oldPreset) return;
+          const check = canSwapStorytellerPreset(presetId);
+          if (!check.ok) {
+            if (dom.narratorHint) dom.narratorHint.textContent = check.reason;
+            dom.storytellerMidrun.value = oldPreset;
+            return;
+          }
+          setStorytellerPreset(presetId, { resetTimers: false });
+          noteStorytellerSwap();
+          renderStorytellerDescription(presetId);
+          const preset = STORYTELLER_PRESETS[presetId] || STORYTELLER_PRESETS.classic;
+          const tone =
+            "You resolve to travel under " +
+            preset.label.toLowerCase() +
+            " — " +
+            (preset.tagline || preset.hint || "a different narrator mood") + ".";
+          addLog(tone, { tone: "meta" });
+          saveGame();
+          renderStorytellerOptions(dom.storytellerPreset, presetId);
+          renderNarratorRules();
+        },
+        null,
+        "storyteller midrun"
+      );
     }
-    dom.btnAdvance1.addEventListener("click", function () {
-      withAdvanceLock(function () {
-        return advanceHours(1);
-      });
-    });
-    dom.btnAdvance4.addEventListener("click", function () {
-      withAdvanceLock(function () {
-        return advanceHours(4);
-      });
-    });
+    on(
+      dom.btnAdvance1,
+      "click",
+      function () {
+        withAdvanceLock(function () {
+          return advanceHours(1);
+        });
+      },
+      null,
+      "advance 1h"
+    );
+    on(
+      dom.btnAdvance4,
+      "click",
+      function () {
+        withAdvanceLock(function () {
+          return advanceHours(4);
+        });
+      },
+      null,
+      "advance 4h"
+    );
     if (dom.btnViewJournal) {
-      dom.btnViewJournal.addEventListener("click", function () {
-        setTravelView("journal");
-      });
+      on(
+        dom.btnViewJournal,
+        "click",
+        function () {
+          setTravelView("journal");
+        },
+        null,
+        "view journal"
+      );
     }
     if (dom.btnViewExplorer) {
-      dom.btnViewExplorer.addEventListener("click", function () {
-        setTravelView("explorer");
-      });
+      on(
+        dom.btnViewExplorer,
+        "click",
+        function () {
+          setTravelView("explorer");
+        },
+        null,
+        "view explorer"
+      );
     }
-    dom.btnToggleMode.addEventListener("click", function () {
-      gameState.mode = gameState.mode === "travel" ? "camp" : "travel";
-      resetTasksForCurrentMode();
-      addLog(
-        gameState.mode === "travel"
-          ? "You break camp and move out."
-          : "You halt the wagons and make camp."
-      );
-      saveGame();
-      renderAll();
-    });
-    dom.btnChangePace.addEventListener("click", function () {
-      const options = ["steady", "slow", "grueling"];
-      const idx = options.indexOf(gameState.pace);
-      const next = options[(idx + 1) % options.length];
-      gameState.pace = next;
-      addLog(
-        "You change the pace to " +
-          PACE_CONFIG[next].label.toLowerCase() +
-          "."
-      );
-      saveGame();
-      renderAll();
-    });
-    dom.btnChangeRations.addEventListener("click", function () {
-      const options = ["filling", "normal", "meager", "barebones"];
-      const idx = options.indexOf(gameState.rations);
-      const next = options[(idx + 1) % options.length];
-      gameState.rations = next;
-      addLog(
-        "You shift the party to " +
-          RATION_CONFIG[next].label.toLowerCase() +
-          "."
-      );
-      saveGame();
-      renderAll();
-    });
+    on(
+      dom.btnToggleMode,
+      "click",
+      function () {
+        gameState.mode = gameState.mode === "travel" ? "camp" : "travel";
+        resetTasksForCurrentMode();
+        addLog(
+          gameState.mode === "travel"
+            ? "You break camp and move out."
+            : "You halt the wagons and make camp."
+        );
+        saveGame();
+        renderAll();
+      },
+      null,
+      "toggle mode"
+    );
+    on(
+      dom.btnChangePace,
+      "click",
+      function () {
+        const options = ["steady", "slow", "grueling"];
+        const idx = options.indexOf(gameState.pace);
+        const next = options[(idx + 1) % options.length];
+        gameState.pace = next;
+        addLog(
+          "You change the pace to " +
+            PACE_CONFIG[next].label.toLowerCase() +
+            "."
+        );
+        saveGame();
+        renderAll();
+      },
+      null,
+      "change pace"
+    );
+    on(
+      dom.btnChangeRations,
+      "click",
+      function () {
+        const options = ["filling", "normal", "meager", "barebones"];
+        const idx = options.indexOf(gameState.rations);
+        const next = options[(idx + 1) % options.length];
+        gameState.rations = next;
+        addLog(
+          "You shift the party to " +
+            RATION_CONFIG[next].label.toLowerCase() +
+            "."
+        );
+        saveGame();
+        renderAll();
+      },
+      null,
+      "change rations"
+    );
 
-    dom.btnOpenInventory.addEventListener("click", function () {
-      renderInventoryModal();
-      dom.inventoryModal.classList.add("active");
-    });
-    dom.btnCloseInventory.addEventListener("click", function () {
-      dom.inventoryModal.classList.remove("active");
-    });
-    if (dom.btnOpenTrade) {
-      dom.btnOpenTrade.addEventListener("click", openTradeModal);
-    }
+    on(
+      dom.btnOpenInventory,
+      "click",
+      function () {
+        renderInventoryModal();
+        if (dom.inventoryModal) dom.inventoryModal.classList.add("active");
+      },
+      null,
+      "open inventory"
+    );
+    on(
+      dom.btnCloseInventory,
+      "click",
+      function () {
+        if (dom.inventoryModal) dom.inventoryModal.classList.remove("active");
+      },
+      null,
+      "close inventory"
+    );
+    on(dom.btnOpenTrade, "click", openTradeModal, null, "open trade");
     if (dom.tradeBackdrop && dom.tradeModal) {
-      dom.tradeBackdrop.addEventListener("click", closeTradeModal);
+      on(dom.tradeBackdrop, "click", closeTradeModal, null, "trade backdrop");
     }
-    if (dom.btnCloseTrade) {
-      dom.btnCloseTrade.addEventListener("click", closeTradeModal);
-    }
+    on(dom.btnCloseTrade, "click", closeTradeModal, null, "close trade");
     if (dom.btnTradeBuyTab) {
-      dom.btnTradeBuyTab.addEventListener("click", function () {
-        const tradeUi = ensureTradeUiState();
-        tradeUi.tab = "buy";
-        renderTradeModal();
-      });
+      on(
+        dom.btnTradeBuyTab,
+        "click",
+        function () {
+          const tradeUi = ensureTradeUiState();
+          tradeUi.tab = "buy";
+          renderTradeModal();
+        },
+        null,
+        "trade buy tab"
+      );
     }
     if (dom.btnTradeSellTab) {
-      dom.btnTradeSellTab.addEventListener("click", function () {
-        const tradeUi = ensureTradeUiState();
-        tradeUi.tab = "sell";
-        renderTradeModal();
-      });
+      on(
+        dom.btnTradeSellTab,
+        "click",
+        function () {
+          const tradeUi = ensureTradeUiState();
+          tradeUi.tab = "sell";
+          renderTradeModal();
+        },
+        null,
+        "trade sell tab"
+      );
     }
     if (dom.btnTradeBarterTab) {
-      dom.btnTradeBarterTab.addEventListener("click", function () {
-        const tradeUi = ensureTradeUiState();
-        tradeUi.tab = "barter";
-        renderTradeModal();
-      });
+      on(
+        dom.btnTradeBarterTab,
+        "click",
+        function () {
+          const tradeUi = ensureTradeUiState();
+          tradeUi.tab = "barter";
+          renderTradeModal();
+        },
+        null,
+        "trade barter tab"
+      );
     }
     if (dom.btnOpenSocial) {
-      dom.btnOpenSocial.addEventListener("click", function () {
-        renderSocialWeb();
-        if (dom.socialModal) dom.socialModal.classList.add("active");
-      });
+      on(
+        dom.btnOpenSocial,
+        "click",
+        function () {
+          renderSocialWeb();
+          if (dom.socialModal) dom.socialModal.classList.add("active");
+        },
+        null,
+        "open social"
+      );
     }
     if (dom.socialBackdrop && dom.socialModal) {
-      dom.socialBackdrop.addEventListener("click", function () {
-        dom.socialModal.classList.remove("active");
-      });
+      on(
+        dom.socialBackdrop,
+        "click",
+        function () {
+          dom.socialModal.classList.remove("active");
+        },
+        null,
+        "close social"
+      );
     }
     if (dom.btnOpenMap) {
-      dom.btnOpenMap.addEventListener("click", function () {
-        openMapModal();
-      });
+      on(dom.btnOpenMap, "click", function () { openMapModal(); }, null, "open map");
     }
     if (dom.btnCloseMap) {
-      dom.btnCloseMap.addEventListener("click", function () {
-        closeMapModal();
-      });
+      on(dom.btnCloseMap, "click", function () { closeMapModal(); }, null, "close map");
     }
     if (dom.explorerChip) {
-      dom.explorerChip.addEventListener("click", function (e) {
-        const actionTarget = e.target.closest("[data-action]");
-        if (!actionTarget) return;
-        const view = ensureExplorerViewState();
-        if (actionTarget.dataset.action === "toggle-minimap") {
-          view.showMinimap = !view.showMinimap;
-          explorerRuntime.hover = null;
-          renderExplorerChip();
-          renderExplorerWorld();
-        } else if (actionTarget.dataset.action === "toggle-inspect") {
-          view.inspect = !view.inspect;
-          explorerRuntime.hover = null;
-          explorerRuntime.pinnedInspect = null;
-          hideExplorerTooltip();
-          renderExplorerChip();
-          renderExplorerWorld();
-        }
-      });
+      on(
+        dom.explorerChip,
+        "click",
+        function (e) {
+          const actionTarget = e.target.closest("[data-action]");
+          if (!actionTarget) return;
+          const view = ensureExplorerViewState();
+          if (actionTarget.dataset.action === "toggle-minimap") {
+            view.showMinimap = !view.showMinimap;
+            explorerRuntime.hover = null;
+            renderExplorerChip();
+            renderExplorerWorld();
+          } else if (actionTarget.dataset.action === "toggle-inspect") {
+            view.inspect = !view.inspect;
+            explorerRuntime.hover = null;
+            explorerRuntime.pinnedInspect = null;
+            hideExplorerTooltip();
+            renderExplorerChip();
+            renderExplorerWorld();
+          }
+        },
+        null,
+        "explorer chip"
+      );
     }
     if (dom.explorerTooltip) {
-      dom.explorerTooltip.addEventListener("click", function (e) {
-        const target = e.target.closest("[data-action=\"close-inspect\"]");
-        if (target) {
-          explorerRuntime.pinnedInspect = null;
-          hideExplorerTooltip();
-        }
-      });
+      on(
+        dom.explorerTooltip,
+        "click",
+        function (e) {
+          const target = e.target.closest("[data-action=\"close-inspect\"]");
+          if (target) {
+            explorerRuntime.pinnedInspect = null;
+            hideExplorerTooltip();
+          }
+        },
+        null,
+        "explorer tooltip"
+      );
     }
     if (dom.mapModal) {
-      dom.mapModal.addEventListener("click", function (e) {
-        if (e.target === dom.mapModal || e.target === dom.mapBackdrop) {
-          closeMapModal();
-        }
-      });
+      on(
+        dom.mapModal,
+        "click",
+        function (e) {
+          if (e.target === dom.mapModal || e.target === dom.mapBackdrop) {
+            closeMapModal();
+          }
+        },
+        null,
+        "map modal"
+      );
     }
     if (dom.btnTravel1h) {
-      dom.btnTravel1h.addEventListener("click", function () {
-        withAdvanceLock(function () {
-          return advanceHoursTowardDestination(1);
-        });
-      });
+      on(
+        dom.btnTravel1h,
+        "click",
+        function () {
+          withAdvanceLock(function () {
+            return advanceHoursTowardDestination(1);
+          });
+        },
+        null,
+        "travel 1h"
+      );
     }
     if (dom.btnTravel4h) {
-      dom.btnTravel4h.addEventListener("click", function () {
-        withAdvanceLock(function () {
-          return advanceHoursTowardDestination(4);
-        });
-      });
+      on(
+        dom.btnTravel4h,
+        "click",
+        function () {
+          withAdvanceLock(function () {
+            return advanceHoursTowardDestination(4);
+          });
+        },
+        null,
+        "travel 4h"
+      );
     }
     if (dom.btnAutoTravel) {
-      dom.btnAutoTravel.addEventListener("click", function () {
-        withAdvanceLock(function () {
-          return advanceHoursTowardDestination(12);
-        });
-      });
+      on(
+        dom.btnAutoTravel,
+        "click",
+        function () {
+          withAdvanceLock(function () {
+            return advanceHoursTowardDestination(12);
+          });
+        },
+        null,
+        "auto travel"
+      );
     }
     if (dom.btnClearTarget) {
-      dom.btnClearTarget.addEventListener("click", function () {
-        clearTravelDestination();
-      });
+      on(
+        dom.btnClearTarget,
+        "click",
+        function () {
+          clearTravelDestination();
+        },
+        null,
+        "clear travel target"
+      );
     }
     if (dom.inventoryModal) {
-      dom.inventoryModal.addEventListener("click", function (e) {
-        if (e.target === dom.inventoryModal || e.target === dom.modalBackdrop) {
-          dom.inventoryModal.classList.remove("active");
-        }
-      });
+      on(
+        dom.inventoryModal,
+        "click",
+        function (e) {
+          if (e.target === dom.inventoryModal || e.target === dom.modalBackdrop) {
+            dom.inventoryModal.classList.remove("active");
+          }
+        },
+        null,
+        "inventory modal"
+      );
     }
 
     if (dom.btnOpenPriorities) {
-      dom.btnOpenPriorities.addEventListener("click", function () {
-        renderPrioritiesModal();
-        dom.prioritiesModal.classList.add("active");
-      });
+      on(
+        dom.btnOpenPriorities,
+        "click",
+        function () {
+          renderPrioritiesModal();
+          dom.prioritiesModal.classList.add("active");
+        },
+        null,
+        "open priorities"
+      );
     }
     if (dom.btnEditRoles) {
-      dom.btnEditRoles.addEventListener("click", function () {
-        renderPrioritiesModal();
-        dom.prioritiesModal.classList.add("active");
-      });
+      on(
+        dom.btnEditRoles,
+        "click",
+        function () {
+          renderPrioritiesModal();
+          dom.prioritiesModal.classList.add("active");
+        },
+        null,
+        "edit roles"
+      );
     }
     if (dom.btnClosePriorities) {
-      dom.btnClosePriorities.addEventListener("click", function () {
-        dom.prioritiesModal.classList.remove("active");
-      });
+      on(
+        dom.btnClosePriorities,
+        "click",
+        function () {
+          dom.prioritiesModal.classList.remove("active");
+        },
+        null,
+        "close priorities"
+      );
     }
     if (dom.prioritiesModal) {
-      dom.prioritiesModal.addEventListener("click", function (e) {
-        if (
-          e.target === dom.prioritiesModal ||
-          e.target === dom.prioritiesBackdrop
-        ) {
-          dom.prioritiesModal.classList.remove("active");
-        }
-      });
+      on(
+        dom.prioritiesModal,
+        "click",
+        function (e) {
+          if (
+            e.target === dom.prioritiesModal ||
+            e.target === dom.prioritiesBackdrop
+          ) {
+            dom.prioritiesModal.classList.remove("active");
+          }
+        },
+        null,
+        "priorities modal"
+      );
     }
 
     if (dom.btnToggleMapList) {
-      dom.btnToggleMapList.addEventListener("click", function () {
-        gameState.mapListVisible = !gameState.mapListVisible;
-        updateMapListVisibility();
-        saveGame();
-      });
+      on(
+        dom.btnToggleMapList,
+        "click",
+        function () {
+          gameState.mapListVisible = !gameState.mapListVisible;
+          updateMapListVisibility();
+          saveGame();
+        },
+        null,
+        "toggle map list"
+      );
     }
 
     if (dom.toggleFog) {
-      dom.toggleFog.addEventListener("change", function () {
-        ensureHexMapState();
-        gameState.hexMap.fogEnabled = !!dom.toggleFog.checked;
-        saveGame();
-        renderExplorer();
-      });
+      on(
+        dom.toggleFog,
+        "change",
+        function () {
+          ensureHexMapState();
+          gameState.hexMap.fogEnabled = !!dom.toggleFog.checked;
+          saveGame();
+          renderExplorer();
+        },
+        null,
+        "toggle fog"
+      );
     }
     if (dom.toggleSilhouettes) {
-      dom.toggleSilhouettes.addEventListener("change", function () {
-        ensureHexMapState();
-        gameState.hexMap.silhouettesEnabled = !!dom.toggleSilhouettes.checked;
-        saveGame();
-        renderExplorer();
-      });
+      on(
+        dom.toggleSilhouettes,
+        "change",
+        function () {
+          ensureHexMapState();
+          gameState.hexMap.silhouettesEnabled = !!dom.toggleSilhouettes.checked;
+          saveGame();
+          renderExplorer();
+        },
+        null,
+        "toggle silhouettes"
+      );
     }
 
     // Evening camp macros
     if (dom.btnEveningProperCamp) {
-      dom.btnEveningProperCamp.addEventListener("click", function () {
-        withAdvanceLock(function () {
-          return runCampMacro(2, "proper");
-        });
-      });
+      on(
+        dom.btnEveningProperCamp,
+        "click",
+        function () {
+          withAdvanceLock(function () {
+            return runCampMacro(2, "proper");
+          });
+        },
+        null,
+        "proper camp"
+      );
     }
     if (dom.btnEveningRushedCamp) {
-      dom.btnEveningRushedCamp.addEventListener("click", function () {
-        withAdvanceLock(function () {
-          return runCampMacro(1, "rough");
-        });
-      });
+      on(
+        dom.btnEveningRushedCamp,
+        "click",
+        function () {
+          withAdvanceLock(function () {
+            return runCampMacro(1, "rough");
+          });
+        },
+        null,
+        "rushed camp"
+      );
     }
     if (dom.btnCampfireMoment) {
-      dom.btnCampfireMoment.addEventListener("click", function () {
-        withAdvanceLock(function () {
-          return triggerCampfireMoment();
-        });
-      });
+      on(
+        dom.btnCampfireMoment,
+        "click",
+        function () {
+          withAdvanceLock(function () {
+            return triggerCampfireMoment();
+          });
+        },
+        null,
+        "campfire moment"
+      );
     }
 
     if (dom.btnOpenCamp && dom.campOverlay) {
-      dom.btnOpenCamp.addEventListener("click", function () {
-        openCampOverlay();
-      });
+      on(
+        dom.btnOpenCamp,
+        "click",
+        function () {
+          openCampOverlay();
+        },
+        null,
+        "open camp"
+      );
     }
     if (dom.btnCloseCamp && dom.campOverlay) {
-      dom.btnCloseCamp.addEventListener("click", closeCampOverlay);
-      dom.campOverlay.addEventListener("click", function (e) {
-        if (e.target === dom.campOverlay) closeCampOverlay();
-      });
+      on(dom.btnCloseCamp, "click", closeCampOverlay, null, "close camp");
+      on(
+        dom.campOverlay,
+        "click",
+        function (e) {
+          if (e.target === dom.campOverlay) closeCampOverlay();
+        },
+        null,
+        "camp overlay backdrop"
+      );
     }
     if (dom.btnCampConfirm) {
-      dom.btnCampConfirm.addEventListener("click", function () {
-        withAdvanceLock(function () {
-          return confirmCampTasks();
-        });
-      });
+      on(
+        dom.btnCampConfirm,
+        "click",
+        function () {
+          withAdvanceLock(function () {
+            return confirmCampTasks();
+          });
+        },
+        null,
+        "camp confirm"
+      );
     }
     if (dom.btnCampAuto) {
-      dom.btnCampAuto.addEventListener("click", autoPlanCampTasks);
+      on(dom.btnCampAuto, "click", autoPlanCampTasks, null, "camp auto");
     }
 
     document.addEventListener("keydown", function (evt) {
@@ -24090,7 +24766,7 @@
       }
     });
 
-    dom.btnReset.addEventListener("click", resetGame);
+    on(dom.btnReset, "click", resetGame, null, "reset game");
   }
 
 
@@ -24705,6 +25381,23 @@
     }
     const block = getScheduleBlock(gameState.date);
     const key = getDayKey(gameState.date) + ":" + block;
+    const people = getAllPeople();
+    const mythicOn = ensureStoryState().mythicEnabled !== false;
+    const omenTraits = ["omen_reader", "dream_touched", "ghost_hearer", "starbound", "thin_place", "tall_tale"];
+    const omenCandidates = people.filter(function (p) {
+      return omenTraits.some(function (t) {
+        return hasTrait(p, t, { includeHidden: true });
+      });
+    });
+    const omenAvailable = mythicOn && omenCandidates.length && getEventFlag("campfire_omen_key") !== key;
+    const options = [
+      { id: "join", label: "Join the song and stories", tone: "warm", hint: "Raise morale; a kind word costs little." },
+      { id: "mediate", label: "Check in on simmering tensions", tone: "neutral", hint: "Smooth frayed nerves before morning." },
+      { id: "turn_in", label: "Call for early rest", tone: "danger", hint: "Rest first, talk later." },
+    ];
+    if (omenAvailable) {
+      options.push({ id: "omens", label: "Listen for omens", tone: "warning", hint: "Quiet the fire and let signs speak." });
+    }
     const choice = await presentEncounter({
       id: "campfire_moment",
       title: "Campfire moment",
@@ -24713,21 +25406,26 @@
         "The fire burns low. A hymn hums from one wagon, while another shuffles cards. Tempers and hopes could be nudged by how you spend this hour.",
       ],
       tags: ["camp"],
-      options: [
-        { id: "join", label: "Join the song and stories", tone: "warm", hint: "Raise morale; a kind word costs little." },
-        { id: "mediate", label: "Check in on simmering tensions", tone: "neutral", hint: "Smooth frayed nerves before morning." },
-        { id: "turn_in", label: "Call for early rest", tone: "danger", hint: "Rest first, talk later." },
-      ],
+      options: options,
       defaultId: "turn_in",
     });
-
-    const people = getAllPeople();
+    const storyLead = people.find(function (p) {
+      return (
+        hasTrait(p, "trail_teller") ||
+        hasTrait(p, "harmonica_hand") ||
+        hasTrait(p, "camp_poet") ||
+        hasTrait(p, "pious")
+      );
+    });
     if (choice === "join") {
       people.forEach(function (p) {
         adjustPersonStat(p, "morale", 3);
       });
       adjustReputation(2, "Warm campfire welcome", { flag: "campfire_kind" });
-      addLog("You share stories and a hymn. Spirits lift as embers drift up into the dark.", { tone: "morale" });
+      const detail = storyLead
+        ? `${storyLead.name} leads a low song that turns complaints into a shared grin.`
+        : "Cards and song make the wagons feel like a single circle for a moment.";
+      addLog(`You settle near the embers; ${detail} Spirits lift as the hour drifts by.`, { tone: "morale" });
     } else if (choice === "mediate") {
       const pair = pickRivalPair() || (people.length >= 2 ? { a: people[0], b: people[1] } : null);
       if (pair && pair.a && pair.b) {
@@ -24738,14 +25436,45 @@
         adjustPersonStat(p, "morale", 1);
       });
       adjustReputation(1, "Settled disputes by the fire", { flag: "campfire_mediator" });
-      addLog("You listen more than you speak, easing small grudges before they harden.", { tone: "social" });
-    } else {
+      const sparring = pair && (hasTrait(pair.a, "argumentative") || hasTrait(pair.b, "argumentative") || hasTrait(pair.a, "hotheaded") || hasTrait(pair.b, "hotheaded"));
+      const line = pair
+        ? `${pair.a.name} and ${pair.b.name} trade their barbs for bargains; you steer them toward swapping chores instead of insults.`
+        : "You listen more than you speak, easing small grudges before they harden.";
+      addLog(sparring ? line : `You steady voices until the air cools. ${line}`, { tone: "social" });
+    } else if (choice === "turn_in") {
       people.forEach(function (p) {
         adjustPersonStat(p, "energy", 2);
         adjustPersonStat(p, "morale", -1);
       });
       adjustReputation(-1, "Sent everyone to their bedrolls early");
-      addLog("You bank the fire early. Rest comes, but a few mutter into their blankets.", { tone: "warning" });
+      const mutterer = people.find(function (p) {
+        return hasTrait(p, "anxious") || hasTrait(p, "gossip");
+      });
+      const detail = mutterer
+        ? `${mutterer.name} mutters into a blanket while the watch takes shape.`
+        : "Bedrolls rustle while the last watch is posted.";
+      addLog(`You bank the fire early. ${detail}`, { tone: "warning" });
+    } else if (choice === "omens") {
+      const seer = omenCandidates[0];
+      setEventFlag("campfire_omen_key", key);
+      setEventFlag("campfire_omen_time", getCurrentTrailHour(gameState));
+      if (seer) {
+        addThought(seer, { id: "listened_for_omens", label: "Listened for omens", value: 2, hoursLeft: 10, source: "mythic" });
+      }
+      people
+        .filter(function (p) {
+          return p && (!seer || p.id !== seer.id);
+        })
+        .forEach(function (p) {
+          addThought(p, { id: "eerie_watch", label: "Eerie stillness", value: -1, hoursLeft: 8, source: "social" });
+        });
+      const omenLine = seer
+        ? `${seer.name} hushes the circle to hear night birds and wind between wagon wheels.`
+        : "The camp holds its breath, listening for anything beyond crackling coals.";
+      addLog(`You dim the fire and listen for omens; ${omenLine} An uneasy silence settles before the hour moves on.`, {
+        tone: "warning",
+        characters: seer ? [seer.id] : undefined,
+      });
     }
 
     gameState.lastCampfireMomentKey = key;
@@ -25800,10 +26529,8 @@
     renderAll();
   }
 
-  try {
-    init();
-  } catch (err) {
-    console.error("Old Trail fatal init error:", err);
+  function showFatalInitBanner(err) {
+    if (err) console.error("Old Trail fatal init error:", err);
     var root = document.getElementById("oldtrail-root") || document.body;
     if (root) {
       var banner = document.createElement("div");
@@ -25818,6 +26545,51 @@
       root.appendChild(banner);
     }
   }
+
+  function bootOldTrail(attempt) {
+    if (window.__oldTrailBooted) return;
+    const attemptNum = attempt || 0;
+    const maxAttempts = 120;
+    const domReady = document.readyState === "interactive" || document.readyState === "complete";
+
+    if (!domReady) {
+      const retryOnReady = function () {
+        document.removeEventListener("DOMContentLoaded", retryOnReady);
+        bootOldTrail(attemptNum);
+      };
+      document.addEventListener("DOMContentLoaded", retryOnReady);
+      return;
+    }
+
+    const root = document.getElementById("oldtrail-root");
+    const startScreen = document.getElementById("ot-screen-start");
+    const beginBtn = document.getElementById("ot-btn-begin-outfit");
+    if (!root || !startScreen || !beginBtn) {
+      if (attemptNum < maxAttempts) {
+        requestAnimationFrame(function () {
+          bootOldTrail(attemptNum + 1);
+        });
+        return;
+      }
+      console.error("[ot] Boot failed: required DOM nodes missing.", {
+        root: !!root,
+        startScreen: !!startScreen,
+        beginBtn: !!beginBtn,
+      });
+      showFatalInitBanner();
+      return;
+    }
+
+    normalizeButtonTypes(root);
+    window.__oldTrailBooted = true;
+    try {
+      init();
+    } catch (err) {
+      showFatalInitBanner(err);
+    }
+  }
+
+  bootOldTrail();
 })();
 </script>
 <!-- Validation checklist (Fort ledger scarcity pass):
@@ -25858,4 +26630,14 @@
 - Inspect OFF: pinned tooltip clears/hides.
 - Performance: Explorer rendering is noticeably lighter (no per-tile art redraw each frame); no visual regressions.
 - Ensure no trail log spam introduced.
+-->
+<!-- Validation checklist (Campfire/social resilience pass):
+- Start a new run: no console errors; start screen buttons respond; “Begin outfitting” advances.
+- Generate party / reroll / lock work; no form-submit reload behavior.
+- Camp evening/night: daily social moments produce varied, trait-driven one-line vignettes; not more than ~2/day.
+- Missing rations chain: accuser/suspect stay consistent across steps; outcomes branch correctly; chain resets; no repeat spam.
+- Campfire moment: vignette appears; mythic-only “omens” option appears only when mythic ON and has cooldown; mythic OFF shows no omen option and no supernatural text.
+- New miracle/tonic chain: appears with long cooldown; follow-up triggers once and clears flags.
+- Trail log stays clean: one meaningful line per beat; extra flavor in thoughts.
+- Save/reload mid-run: no crashes.
 -->
