@@ -882,6 +882,58 @@
   transform: translate(-50%, -100%);
 }
 
+.ot-explorer-tooltip {
+  pointer-events: auto;
+  max-width: 240px;
+  line-height: 1.4;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+.ot-explorer-tooltip header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.ot-explorer-tooltip button {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #f7f2e6;
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.ot-explorer-controls {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.ot-explorer-controls .ot-mini-btn {
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(8, 10, 14, 0.65);
+  color: #f6f0e4;
+  padding: 4px 8px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.ot-explorer-controls .ot-mini-btn.ot-active {
+  background: radial-gradient(circle at top, #f4c982, #e5a95c);
+  color: #291608;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
 .ot-map-controls {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -2149,6 +2201,11 @@
 
           <div class="ot-travel-scene-wrapper ot-viewport-window">
             <div id="ot-explorer-chip" class="ot-explorer-chip"></div>
+            <div
+              id="ot-explorer-tooltip"
+              class="ot-map-tooltip ot-explorer-tooltip"
+              style="display: none"
+            ></div>
             <canvas
               id="ot-trail-canvas"
               class="ot-trail-canvas"
@@ -7833,6 +7890,7 @@
     dom.btnOpenTrade = document.getElementById("ot-btn-open-trade");
     dom.btnOpenCamp = document.getElementById("ot-btn-open-camp-tasks");
     dom.explorerChip = document.getElementById("ot-explorer-chip");
+    dom.explorerTooltip = document.getElementById("ot-explorer-tooltip");
     dom.btnCampfireMoment = document.getElementById("ot-btn-campfire-moment");
 
     dom.encounterModal = document.getElementById("ot-encounter-modal");
@@ -17598,15 +17656,26 @@
 
   function renderExplorerChip() {
     if (!dom.explorerChip) return;
+    const view = ensureExplorerViewState();
     const lines = [formatDateTime(gameState.date), gameState.locationName];
     const weatherLine = formatWeatherSummary(gameState.weatherState || {});
     if (weatherLine) lines.push(weatherLine);
-    dom.explorerChip.innerHTML = lines
-      .filter(Boolean)
-      .map(function (line) {
-        return "<div>" + line + "</div>";
-      })
-      .join("");
+    const controls =
+      '<div class="ot-explorer-controls">' +
+      `<button class="ot-mini-btn${view.showMinimap ? " ot-active" : ""}" data-action="toggle-minimap">${
+        view.showMinimap ? "Minimap On" : "Minimap Off"
+      }</button>` +
+      `<button class="ot-mini-btn${view.inspect ? " ot-active" : ""}" data-action="toggle-inspect">${
+        view.inspect ? "Inspect On" : "Inspect Off"
+      }</button>` +
+      "</div>";
+    dom.explorerChip.innerHTML =
+      lines
+        .filter(Boolean)
+        .map(function (line) {
+          return "<div>" + line + "</div>";
+        })
+        .join("") + controls;
   }
 
   function updateMapListVisibility() {
@@ -17730,6 +17799,13 @@
     lastDragX: 0,
     lastDragY: 0,
     hover: null,
+    dragMode: null,
+    dragMoved: false,
+    dragStartX: 0,
+    dragStartY: 0,
+    terrainCache: null,
+    minimapRect: null,
+    pinnedInspect: null,
   };
 
   function createExplorerWorld() {
@@ -17849,6 +17925,24 @@
       explorerRuntime.dragPointerId = evt.pointerId;
       explorerRuntime.lastDragX = evt.clientX;
       explorerRuntime.lastDragY = evt.clientY;
+      explorerRuntime.dragStartX = evt.clientX;
+      explorerRuntime.dragStartY = evt.clientY;
+      explorerRuntime.dragMoved = false;
+      explorerRuntime.dragMode = "pan";
+      const rect = canvas.getBoundingClientRect();
+      const mm = explorerRuntime.minimapRect;
+      if (view.showMinimap && mm) {
+        const px = evt.clientX - rect.left;
+        const py = evt.clientY - rect.top;
+        if (px >= mm.x && px <= mm.x + mm.w && py >= mm.y && py <= mm.y + mm.h) {
+          explorerRuntime.dragMode = "minimap";
+          explorerRuntime.hover = null;
+          view.camX = (px - mm.x) / mm.scaleX;
+          view.camY = (py - mm.y) / mm.scaleY;
+          clampExplorerCamera(view);
+          renderExplorerWorld();
+        }
+      }
       if (canvas.setPointerCapture) canvas.setPointerCapture(evt.pointerId);
     });
 
@@ -17871,12 +17965,33 @@
         const dy = evt.clientY - explorerRuntime.lastDragY;
         explorerRuntime.lastDragX = evt.clientX;
         explorerRuntime.lastDragY = evt.clientY;
-        view.follow = false;
-        view.camX -= dx / tileSize;
-        view.camY -= dy / tileSize;
-        explorerRuntime.hover = null;
-        clampExplorerCamera(view);
-        renderExplorerWorld();
+        const mm = explorerRuntime.minimapRect;
+        if (explorerRuntime.dragMode === "minimap" && mm) {
+          const px = evt.clientX - rect.left;
+          const py = evt.clientY - rect.top;
+          view.follow = false;
+          view.camX = (px - mm.x) / mm.scaleX;
+          view.camY = (py - mm.y) / mm.scaleY;
+          explorerRuntime.dragMoved =
+            explorerRuntime.dragMoved ||
+            Math.abs(evt.clientX - explorerRuntime.dragStartX) +
+              Math.abs(evt.clientY - explorerRuntime.dragStartY) >
+              3;
+          clampExplorerCamera(view);
+          renderExplorerWorld();
+        } else {
+          view.follow = false;
+          view.camX -= dx / tileSize;
+          view.camY -= dy / tileSize;
+          explorerRuntime.hover = null;
+          explorerRuntime.dragMoved =
+            explorerRuntime.dragMoved ||
+            Math.abs(evt.clientX - explorerRuntime.dragStartX) +
+              Math.abs(evt.clientY - explorerRuntime.dragStartY) >
+              3;
+          clampExplorerCamera(view);
+          renderExplorerWorld();
+        }
         return;
       }
 
@@ -17888,29 +18003,9 @@
         return;
       }
 
-      const visibleTilesX = Math.max(1, Math.ceil(rect.width / tileSize) + 1);
-      const visibleTilesY = Math.max(1, Math.ceil(rect.height / tileSize) + 1);
-      const startX = clamp(
-        Math.floor(view.camX - visibleTilesX / 2),
-        0,
-        Math.max(EXPLORER_WORLD.width - visibleTilesX, 0)
-      );
-      const startY = clamp(
-        Math.floor(view.camY - visibleTilesY / 2),
-        0,
-        Math.max(EXPLORER_WORLD.height - visibleTilesY, 0)
-      );
-
-      const px = evt.clientX - rect.left;
-      const py = evt.clientY - rect.top;
-      const localX = Math.floor(px / tileSize);
-      const localY = Math.floor((py - tileSize * 0.3) / tileSize);
-      if (
-        localX < 0 ||
-        localY < 0 ||
-        localX >= visibleTilesX ||
-        localY >= visibleTilesY
-      ) {
+      const hoverResult = getExplorerHoverFromClient(evt.clientX, evt.clientY);
+      const hover = hoverResult && hoverResult.hover;
+      if (!hover) {
         if (explorerRuntime.hover) {
           explorerRuntime.hover = null;
           renderExplorerWorld();
@@ -17918,60 +18013,8 @@
         return;
       }
 
-      const tx = startX + localX;
-      const ty = startY + localY;
-      const tile = getExplorerTile(tx, ty);
-      const totalMiles = gameState.totalTrailMiles || gameState.targetMiles || 1;
-      const mileAtTile = getExplorerMileForTile(tx, ty, totalMiles);
-      const geoAnchors = getActiveRouteGeoAnchors();
-      const bio = biomeAtMile(mileAtTile, geoAnchors);
-
-      const fogMiles =
-        (gameState.traillines && gameState.traillines.fogMaxMile) ||
-        gameState.milesTraveled ||
-        0;
-      const fogProgress = clamp(
-        fogMiles / Math.max(gameState.targetMiles || 1, 1),
-        0,
-        1
-      );
-      const frontierIdx = Math.floor(
-        fogProgress * Math.max(EXPLORER_WORLD.path.length - 1, 0)
-      );
-
-      let milestoneName = null;
-      const milestones = getActiveRouteMilestones();
-      milestones.forEach(function (m) {
-        if (milestoneName || m.mile == null) return;
-        const fraction = clamp(m.mile / Math.max(totalMiles, 1), 0, 1);
-        const idx = Math.round(
-          fraction * Math.max(EXPLORER_WORLD.path.length - 1, 0)
-        );
-        const pt = EXPLORER_WORLD.path[idx];
-        if (!pt || pt.x !== tx || pt.y !== ty) return;
-        const pathIdx = EXPLORER_WORLD.pathIndex[`${pt.x},${pt.y}`];
-        const seen = pathIdx == null || pathIdx <= frontierIdx + 1;
-        if (!seen) return;
-        const poi = HEX_WORLD.poiById[m.poiId];
-        if (!poi) return;
-        milestoneName = poi.name || poi.id || null;
-      });
-
-      const biomeKey = bio ? bio.biome : "";
-      const hoverKey = `${tx},${ty}:${milestoneName || ""}:${tile}:${biomeKey}:${Math.round(
-        mileAtTile || 0
-      )}`;
-      if (!explorerRuntime.hover || explorerRuntime.hover._k !== hoverKey) {
-        explorerRuntime.hover = {
-          tx: tx,
-          ty: ty,
-          tile: tile,
-          mile: mileAtTile,
-          biome: bio && bio.biome,
-          region: bio && bio.region,
-          milestoneName: milestoneName,
-          _k: hoverKey,
-        };
+      if (!explorerRuntime.hover || explorerRuntime.hover._k !== hover._k) {
+        explorerRuntime.hover = hover;
         renderExplorerWorld();
       }
     });
@@ -17985,12 +18028,31 @@
 
     function endDrag(evt) {
       if (evt && explorerRuntime.dragPointerId !== evt.pointerId) return;
+      const wasMode = explorerRuntime.dragMode;
+      const wasMoved = explorerRuntime.dragMoved;
+      explorerRuntime.dragMode = null;
+      explorerRuntime.dragMoved = false;
       if (canvas.releasePointerCapture && explorerRuntime.dragPointerId != null) {
         try {
           canvas.releasePointerCapture(explorerRuntime.dragPointerId);
         } catch (e) {}
       }
       explorerRuntime.dragPointerId = null;
+      if (evt && evt.type === "pointerup") {
+        const view = ensureExplorerViewState();
+        if (view.inspect && wasMode === "pan" && !wasMoved) {
+          const hoverResult = getExplorerHoverFromClient(evt.clientX, evt.clientY);
+          const hover = hoverResult && hoverResult.hover;
+          if (hover) {
+            explorerRuntime.pinnedInspect = {
+              hover: hover,
+              clientX: evt.clientX,
+              clientY: evt.clientY,
+            };
+            showExplorerTooltipAt(evt.clientX, evt.clientY, hover);
+          }
+        }
+      }
     }
 
     canvas.addEventListener("pointerup", endDrag);
@@ -18070,6 +18132,7 @@
         const cctx = c.getContext("2d");
         cctx.drawImage(img, 0, 0, size, size);
         explorerArtCache.canvases[canvasKey] = c;
+        explorerRuntime.terrainCache = null;
         if (gameState.travelView === "explorer") {
           renderExplorerWorld();
         }
@@ -18213,6 +18276,201 @@
     view.camY = clamp(view.camY, 0, Math.max(EXPLORER_WORLD.height - 1, 0));
   }
 
+  function ensureExplorerTerrainCache(force, options) {
+    const tilePx = 24;
+    const builtKey =
+      "v1:" +
+      EXPLORER_WORLD.width +
+      "x" +
+      EXPLORER_WORLD.height +
+      ":tilePx=" +
+      tilePx;
+    if (!force && explorerRuntime.terrainCache && explorerRuntime.terrainCache.builtKey === builtKey) {
+      return explorerRuntime.terrainCache;
+    }
+
+    const palette = (options && options.palette) || explorerPalette(gameState.region || "plains");
+    const totalMiles = (options && options.totalMiles) || gameState.totalTrailMiles || gameState.targetMiles || 1;
+    const geoAnchors = (options && options.geoAnchors) || getActiveRouteGeoAnchors();
+    const regionKey = (options && options.region) || gameState.region || "plains";
+    const fallbackColors = {
+      trail: palette.trail,
+      grass: palette.ground,
+      hill: shadeColor(palette.ground, 0.12),
+      forest: palette.forest,
+      water: palette.water,
+      void: "#111519",
+    };
+
+    const canvas = document.createElement("canvas");
+    canvas.width = EXPLORER_WORLD.width * tilePx;
+    canvas.height = EXPLORER_WORLD.height * tilePx;
+    const cacheCtx = canvas.getContext("2d");
+    cacheCtx.imageSmoothingEnabled = false;
+
+    for (let ty = 0; ty < EXPLORER_WORLD.height; ty++) {
+      for (let tx = 0; tx < EXPLORER_WORLD.width; tx++) {
+        const tile = getExplorerTile(tx, ty);
+        const mileAtTile = getExplorerMileForTile(tx, ty, totalMiles);
+        const bio = biomeAtMile(mileAtTile, geoAnchors);
+        const baseArtKey = bio && bio.biome ? bio.biome : getRegionBaseArtKey(regionKey);
+        const tileArtKey = getTileArtKey(tile, baseArtKey);
+        const tileArt = getArtCanvas(tileArtKey, tilePx);
+        const px = tx * tilePx;
+        const py = ty * tilePx;
+        if (tileArt) {
+          cacheCtx.drawImage(tileArt, px, py, tilePx + 1, tilePx + 1);
+        } else {
+          cacheCtx.fillStyle = fallbackColors[tile] || palette.ground;
+          cacheCtx.fillRect(px, py, tilePx + 1, tilePx + 1);
+        }
+        if (tile === "trail") {
+          cacheCtx.fillStyle = "rgba(0,0,0,0.18)";
+          cacheCtx.fillRect(px, py, tilePx + 1, tilePx * 0.12);
+        }
+      }
+    }
+
+    explorerRuntime.terrainCache = {
+      canvas: canvas,
+      ctx: cacheCtx,
+      tilePx: tilePx,
+      builtKey: builtKey,
+    };
+    return explorerRuntime.terrainCache;
+  }
+
+  function buildExplorerInspectHTML(hover) {
+    if (!hover) return "";
+    const lines = [];
+    if (hover.milestoneName) lines.push("Milestone: " + hover.milestoneName);
+    if (hover.biome || hover.region)
+      lines.push("Biome: " + (hover.biome || "?") + " (" + (hover.region || "?") + ")");
+    lines.push("Terrain: " + (hover.tile || "?"));
+    if (hover.tx != null && hover.ty != null) lines.push("Tile: " + hover.tx + ", " + hover.ty);
+    if (hover.mile != null) lines.push("Mile: ~" + Math.round(hover.mile));
+    return (
+      "<header><span>Inspect</span><button data-action=\"close-inspect\" type=\"button\">×</button></header>" +
+      lines.map(function (line) {
+        return "<div>" + line + "</div>";
+      }).join("")
+    );
+  }
+
+  function hideExplorerTooltip() {
+    if (dom.explorerTooltip) dom.explorerTooltip.style.display = "none";
+  }
+
+  function showExplorerTooltipAt(clientX, clientY, hover) {
+    if (!dom.explorerTooltip || !hover) return;
+    const rect = dom.trailCanvas ? dom.trailCanvas.getBoundingClientRect() : null;
+    if (!rect) return;
+    dom.explorerTooltip.innerHTML = buildExplorerInspectHTML(hover);
+    dom.explorerTooltip.style.display = "block";
+    const localX = clientX - rect.left;
+    const localY = clientY - rect.top;
+    const margin = 8;
+    const width = rect.width;
+    const height = rect.height;
+    let posX = clamp(localX, margin, width - margin);
+    let posY = clamp(localY, margin, height - margin);
+    dom.explorerTooltip.style.left = posX + "px";
+    dom.explorerTooltip.style.top = posY + "px";
+  }
+
+  function getExplorerHoverFromClient(clientX, clientY) {
+    if (!dom.trailCanvas) return null;
+    const rect = dom.trailCanvas.getBoundingClientRect();
+    const view = ensureExplorerViewState();
+    const baseTileSize = Math.min(
+      rect.width / EXPLORER_VIEWPORT.width,
+      rect.height / EXPLORER_VIEWPORT.height
+    );
+    const tileSize = baseTileSize * (view.zoom || 1);
+    if (!tileSize) return null;
+
+    const visibleTilesX = Math.max(1, Math.ceil(rect.width / tileSize) + 1);
+    const visibleTilesY = Math.max(1, Math.ceil(rect.height / tileSize) + 1);
+    const startX = clamp(
+      Math.floor(view.camX - visibleTilesX / 2),
+      0,
+      Math.max(EXPLORER_WORLD.width - visibleTilesX, 0)
+    );
+    const startY = clamp(
+      Math.floor(view.camY - visibleTilesY / 2),
+      0,
+      Math.max(EXPLORER_WORLD.height - visibleTilesY, 0)
+    );
+
+    const px = clientX - rect.left;
+    const py = clientY - rect.top;
+    const localX = Math.floor(px / tileSize);
+    const localY = Math.floor((py - tileSize * 0.3) / tileSize);
+    if (localX < 0 || localY < 0 || localX >= visibleTilesX || localY >= visibleTilesY)
+      return { hover: null };
+
+    const tx = startX + localX;
+    const ty = startY + localY;
+    const tile = getExplorerTile(tx, ty);
+    const totalMiles = gameState.totalTrailMiles || gameState.targetMiles || 1;
+    const mileAtTile = getExplorerMileForTile(tx, ty, totalMiles);
+    const geoAnchors = getActiveRouteGeoAnchors();
+    const bio = biomeAtMile(mileAtTile, geoAnchors);
+
+    const fogMiles =
+      (gameState.traillines && gameState.traillines.fogMaxMile) ||
+      gameState.milesTraveled ||
+      0;
+    const fogProgress = clamp(
+      fogMiles / Math.max(gameState.targetMiles || 1, 1),
+      0,
+      1
+    );
+    const frontierIdx = Math.floor(
+      fogProgress * Math.max(EXPLORER_WORLD.path.length - 1, 0)
+    );
+
+    let milestoneName = null;
+    const milestones = getActiveRouteMilestones();
+    milestones.forEach(function (m) {
+      if (milestoneName || m.mile == null) return;
+      const fraction = clamp(m.mile / Math.max(totalMiles, 1), 0, 1);
+      const idx = Math.round(
+        fraction * Math.max(EXPLORER_WORLD.path.length - 1, 0)
+      );
+      const pt = EXPLORER_WORLD.path[idx];
+      if (!pt || pt.x !== tx || pt.y !== ty) return;
+      const pathIdx = EXPLORER_WORLD.pathIndex[`${pt.x},${pt.y}`];
+      const seen = pathIdx == null || pathIdx <= frontierIdx + 1;
+      if (!seen) return;
+      const poi = HEX_WORLD.poiById[m.poiId];
+      if (!poi) return;
+      milestoneName = poi.name || poi.id || null;
+    });
+
+    const biomeKey = bio ? bio.biome : "";
+    const hoverKey = `${tx},${ty}:${milestoneName || ""}:${tile}:${biomeKey}:${Math.round(
+      mileAtTile || 0
+    )}`;
+    return {
+      hover: {
+        tx: tx,
+        ty: ty,
+        tile: tile,
+        mile: mileAtTile,
+        biome: bio && bio.biome,
+        region: bio && bio.region,
+        milestoneName: milestoneName,
+        _k: hoverKey,
+      },
+      startX: startX,
+      startY: startY,
+      visibleTilesX: visibleTilesX,
+      visibleTilesY: visibleTilesY,
+      tileSize: tileSize,
+    };
+  }
+
   function getExplorerWagonProgress() {
     const totalMiles = gameState.totalTrailMiles || gameState.targetMiles || 1;
     const traveled = Math.max(0, gameState.milesTraveled || 0);
@@ -18251,8 +18509,10 @@
         0,
         0,
         explorerRuntime.canvas.width,
-      explorerRuntime.canvas.height
-    );
+        explorerRuntime.canvas.height
+      );
+      hideExplorerTooltip();
+      explorerRuntime.minimapRect = null;
       return;
     }
 
@@ -18339,42 +18599,72 @@
     };
 
     let tileCount = 0;
+    const terrainCache = ensureExplorerTerrainCache(false, {
+      palette: palette,
+      totalMiles: totalMiles,
+      geoAnchors: geoAnchors,
+      region: region,
+    });
+
+    if (terrainCache && terrainCache.canvas) {
+      const prevSmoothing = ctx.imageSmoothingEnabled;
+      ctx.imageSmoothingEnabled = false;
+      const tilePx = terrainCache.tilePx || 1;
+      const sx = startX * tilePx;
+      const sy = startY * tilePx;
+      const sw = visibleTilesX * tilePx;
+      const sh = visibleTilesY * tilePx;
+      const dx = 0;
+      const dy = tileSize * 0.3;
+      const dw = visibleTilesX * tileSize;
+      const dh = visibleTilesY * tileSize;
+      ctx.drawImage(terrainCache.canvas, sx, sy, sw, sh, dx, dy, dw, dh);
+      ctx.imageSmoothingEnabled = prevSmoothing;
+      tileCount = visibleTilesX * visibleTilesY;
+    } else {
+      for (let vy = 0; vy < visibleTilesY; vy++) {
+        for (let vx = 0; vx < visibleTilesX; vx++) {
+          const tx = startX + vx;
+          const ty = startY + vy;
+          const tile = getExplorerTile(tx, ty);
+          const mileAtTile = getExplorerMileForTile(tx, ty, totalMiles);
+          const bio = biomeAtMile(mileAtTile, geoAnchors);
+          const baseArtKey =
+            bio && bio.biome ? bio.biome : getRegionBaseArtKey(gameState.region || "plains");
+
+          const px = vx * tileSize;
+          const py = vy * tileSize + tileSize * 0.3;
+          const tileArtKey = getTileArtKey(tile, baseArtKey);
+          const tileArt = getArtCanvas(tileArtKey, 32);
+          if (tileArt) {
+            ctx.drawImage(tileArt, px, py, tileSize + 1, tileSize + 1);
+          } else {
+            ctx.fillStyle = fallbackColors[tile] || palette.ground;
+            ctx.fillRect(px, py, tileSize + 1, tileSize + 1);
+          }
+
+          tileCount++;
+
+          if (tile === "trail") {
+            ctx.fillStyle = "rgba(0,0,0,0.18)";
+            ctx.fillRect(px, py, tileSize + 1, tileSize * 0.12);
+          }
+        }
+      }
+    }
 
     for (let vy = 0; vy < visibleTilesY; vy++) {
       for (let vx = 0; vx < visibleTilesX; vx++) {
         const tx = startX + vx;
         const ty = startY + vy;
-        const tile = getExplorerTile(tx, ty);
         const key = `${tx},${ty}`;
         const pathIdx = EXPLORER_WORLD.pathIndex[key];
         const seen = pathIdx == null || pathIdx <= frontierIdx + 1;
-
-        const mileAtTile = getExplorerMileForTile(tx, ty, totalMiles);
-        const bio = biomeAtMile(mileAtTile, geoAnchors);
-        const baseArtKey =
-          bio && bio.biome ? bio.biome : getRegionBaseArtKey(gameState.region || "plains");
-
-        const px = vx * tileSize;
-        const py = vy * tileSize + tileSize * 0.3;
-        const tileArtKey = getTileArtKey(tile, baseArtKey);
-        const tileArt = getArtCanvas(tileArtKey, 32);
-        if (tileArt) {
-          ctx.drawImage(tileArt, px, py, tileSize + 1, tileSize + 1);
-        } else {
-          ctx.fillStyle = fallbackColors[tile] || palette.ground;
-          ctx.fillRect(px, py, tileSize + 1, tileSize + 1);
-        }
-
-        tileCount++;
-
         if (!seen) {
+          const px = vx * tileSize;
+          const py = vy * tileSize + tileSize * 0.3;
           ctx.fillStyle = "rgba(8, 10, 14, 0.45)";
           ctx.fillRect(px, py, tileSize + 1, tileSize + 1);
-        }
-
-        if (tile === "trail") {
-          ctx.fillStyle = "rgba(0,0,0,0.18)";
-          ctx.fillRect(px, py, tileSize + 1, tileSize * 0.12);
         }
       }
     }
@@ -18661,6 +18951,7 @@
       const mmY = mmMargin;
       const scaleX = mmWidth / EXPLORER_WORLD.width;
       const scaleY = mmHeight / EXPLORER_WORLD.height;
+      explorerRuntime.minimapRect = { x: mmX, y: mmY, w: mmWidth, h: mmHeight, scaleX: scaleX, scaleY: scaleY };
       ctx.save();
       ctx.fillStyle = "rgba(8, 10, 14, 0.35)";
       ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
@@ -18694,6 +18985,46 @@
       });
       ctx.stroke();
 
+      const minimapMilestones = getActiveRouteMilestones();
+      minimapMilestones.forEach(function (m) {
+        if (m.mile == null) return;
+        const fraction = clamp(m.mile / Math.max(totalMiles, 1), 0, 1);
+        const idx = Math.round(fraction * Math.max(EXPLORER_WORLD.path.length - 1, 0));
+        const pt = EXPLORER_WORLD.path[idx];
+        if (!pt) return;
+        const pathIdx = EXPLORER_WORLD.pathIndex[`${pt.x},${pt.y}`];
+        const seen = pathIdx == null || pathIdx <= frontierIdx + 1;
+        const poi = m.poiId ? HEX_WORLD.poiById[m.poiId] : null;
+        const px = pt.x * scaleX;
+        const py = pt.y * scaleY;
+        const alpha = seen ? 0.85 : 0.35;
+        const type = poi && poi.type ? poi.type : "";
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.fillStyle = `rgba(245, 215, 161, ${alpha})`;
+        ctx.strokeStyle = `rgba(20, 12, 8, ${alpha})`;
+        ctx.lineWidth = 1;
+        if (/fort|town|post/i.test(type)) {
+          ctx.fillRect(-2.5, -2.5, 5, 5);
+          ctx.strokeRect(-2.5, -2.5, 5, 5);
+        } else if (/river|crossing|ford|spring/i.test(type)) {
+          ctx.beginPath();
+          ctx.moveTo(0, -3);
+          ctx.lineTo(3, 0);
+          ctx.lineTo(0, 3);
+          ctx.lineTo(-3, 0);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        } else {
+          ctx.beginPath();
+          ctx.arc(0, 0, 3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+        ctx.restore();
+      });
+
       ctx.fillStyle = "#f5d7a1";
       ctx.beginPath();
       ctx.arc(wagonTile.x * scaleX, wagonTile.y * scaleY, 3, 0, Math.PI * 2);
@@ -18710,6 +19041,8 @@
 
       ctx.restore();
       ctx.restore();
+    } else {
+      explorerRuntime.minimapRect = null;
     }
 
     const renderMs = performance.now() - renderStart;
@@ -18762,6 +19095,19 @@
         ctx.fillText(line, panelX + padding, panelY + padding + idx * lineHeight);
       });
       ctx.restore();
+    }
+
+    if (!view.inspect) {
+      explorerRuntime.pinnedInspect = null;
+      hideExplorerTooltip();
+    } else if (explorerRuntime.pinnedInspect && explorerRuntime.pinnedInspect.hover) {
+      showExplorerTooltipAt(
+        explorerRuntime.pinnedInspect.clientX,
+        explorerRuntime.pinnedInspect.clientY,
+        explorerRuntime.pinnedInspect.hover
+      );
+    } else {
+      hideExplorerTooltip();
     }
   }
 
@@ -23164,6 +23510,35 @@
         closeMapModal();
       });
     }
+    if (dom.explorerChip) {
+      dom.explorerChip.addEventListener("click", function (e) {
+        const actionTarget = e.target.closest("[data-action]");
+        if (!actionTarget) return;
+        const view = ensureExplorerViewState();
+        if (actionTarget.dataset.action === "toggle-minimap") {
+          view.showMinimap = !view.showMinimap;
+          explorerRuntime.hover = null;
+          renderExplorerChip();
+          renderExplorerWorld();
+        } else if (actionTarget.dataset.action === "toggle-inspect") {
+          view.inspect = !view.inspect;
+          explorerRuntime.hover = null;
+          explorerRuntime.pinnedInspect = null;
+          hideExplorerTooltip();
+          renderExplorerChip();
+          renderExplorerWorld();
+        }
+      });
+    }
+    if (dom.explorerTooltip) {
+      dom.explorerTooltip.addEventListener("click", function (e) {
+        const target = e.target.closest("[data-action=\"close-inspect\"]");
+        if (target) {
+          explorerRuntime.pinnedInspect = null;
+          hideExplorerTooltip();
+        }
+      });
+    }
     if (dom.mapModal) {
       dom.mapModal.addEventListener("click", function (e) {
         if (e.target === dom.mapModal || e.target === dom.mapBackdrop) {
@@ -23381,12 +23756,16 @@
         if (evt.key === "i" || evt.key === "I") {
           view.inspect = !view.inspect;
           explorerRuntime.hover = null;
+          explorerRuntime.pinnedInspect = null;
+          hideExplorerTooltip();
+          renderExplorerChip();
           renderExplorerWorld();
           evt.preventDefault();
           return;
         } else if (evt.key === "m" || evt.key === "M") {
           view.showMinimap = !view.showMinimap;
           explorerRuntime.hover = null;
+          renderExplorerChip();
           renderExplorerWorld();
           evt.preventDefault();
           return;
@@ -25163,4 +25542,15 @@
 - Mythic OFF: no new mythic-only triggers were added; Men in Gray behaviors unchanged.
 - Save + reload mid-run; ledger still renders and events function without crashes.
 - Trail log: one line per seed run; smaller beats stay in pawn thoughts (no spam).
+-->
+<!-- Validation checklist (Explorer minimap/inspect caching pass):
+- Start a new run, switch to Explorer view: minimap visible, no console errors.
+- Drag-pan works as before; wheel zoom works as before.
+- Click/drag on minimap pans camera (no accidental main-drag conflicts).
+- Minimap POI markers render; unseen markers are visibly dimmer than seen.
+- Toggle Minimap/Inspect via explorer chip buttons; state persists during the session.
+- Inspect ON: tap on terrain pins tooltip; close button works; tooltip doesn’t block core interactions.
+- Inspect OFF: pinned tooltip clears/hides.
+- Performance: Explorer rendering is noticeably lighter (no per-tile art redraw each frame); no visual regressions.
+- Ensure no trail log spam introduced.
 -->
