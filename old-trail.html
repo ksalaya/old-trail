@@ -7794,9 +7794,12 @@
   function normalizeButtonTypes(rootEl) {
     const scope = rootEl && rootEl.querySelectorAll ? rootEl : document;
     const buttons = scope.querySelectorAll ? scope.querySelectorAll("button") : [];
-    buttons.forEach(function (btn) {
-      if (!btn.getAttribute("type")) btn.setAttribute("type", "button");
-    });
+    for (let i = 0; i < buttons.length; i++) {
+      const btn = buttons[i];
+      if (btn && !btn.getAttribute("type")) {
+        btn.setAttribute("type", "button");
+      }
+    }
   }
 
   function initDom() {
@@ -26548,41 +26551,43 @@
 
   function bootOldTrail(attempt) {
     if (window.__oldTrailBooted) return;
-    const attemptNum = attempt || 0;
-    const maxAttempts = 120;
-    const domReady = document.readyState === "interactive" || document.readyState === "complete";
+    try {
+      const attemptNum = attempt || 0;
+      const maxAttempts = 180;
+      const domReady =
+        document.readyState === "interactive" ||
+        document.readyState === "complete";
 
-    if (!domReady) {
-      const retryOnReady = function () {
-        document.removeEventListener("DOMContentLoaded", retryOnReady);
-        bootOldTrail(attemptNum);
-      };
-      document.addEventListener("DOMContentLoaded", retryOnReady);
-      return;
-    }
-
-    const root = document.getElementById("oldtrail-root");
-    const startScreen = document.getElementById("ot-screen-start");
-    const beginBtn = document.getElementById("ot-btn-begin-outfit");
-    if (!root || !startScreen || !beginBtn) {
-      if (attemptNum < maxAttempts) {
-        requestAnimationFrame(function () {
-          bootOldTrail(attemptNum + 1);
-        });
+      if (!domReady) {
+        const retryOnReady = function () {
+          document.removeEventListener("DOMContentLoaded", retryOnReady);
+          bootOldTrail(attemptNum);
+        };
+        document.addEventListener("DOMContentLoaded", retryOnReady);
         return;
       }
-      console.error("[ot] Boot failed: required DOM nodes missing.", {
-        root: !!root,
-        startScreen: !!startScreen,
-        beginBtn: !!beginBtn,
-      });
-      showFatalInitBanner();
-      return;
-    }
 
-    normalizeButtonTypes(root);
-    window.__oldTrailBooted = true;
-    try {
+      const root = document.getElementById("oldtrail-root");
+      const startScreen = document.getElementById("ot-screen-start");
+      const beginBtn = document.getElementById("ot-btn-begin-outfit");
+      if (!root || !startScreen || !beginBtn) {
+        if (attemptNum < maxAttempts) {
+          requestAnimationFrame(function () {
+            bootOldTrail(attemptNum + 1);
+          });
+          return;
+        }
+        console.error("[ot] Boot failed: required DOM nodes missing.", {
+          root: !!root,
+          startScreen: !!startScreen,
+          beginBtn: !!beginBtn,
+        });
+        showFatalInitBanner();
+        return;
+      }
+
+      normalizeButtonTypes(root);
+      window.__oldTrailBooted = true;
       init();
     } catch (err) {
       showFatalInitBanner(err);
