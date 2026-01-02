@@ -7982,12 +7982,68 @@
 
   }
 
-  function showScreen(name) {
-    Object.keys(dom.screens).forEach(function (key) {
-      dom.screens[key].classList.remove("ot-screen-active");
+  function validateRequiredDom() {
+    const requiredIds = [
+      "oldtrail-root",
+      "ot-screen-start",
+      "ot-screen-outfit",
+      "ot-screen-travel",
+      "ot-btn-begin-outfit",
+      "ot-btn-begin-journey",
+    ];
+    return requiredIds.filter(function (id) {
+      return !document.getElementById(id);
     });
-    if (dom.screens[name]) {
-      dom.screens[name].classList.add("ot-screen-active");
+  }
+
+  function showUiError(message, err) {
+    if (err) {
+      console.error("[ot] " + message, err);
+    } else {
+      console.error("[ot] " + message);
+    }
+
+    const status = dom.footerStatus || document.getElementById("ot-footer-status");
+    if (status) {
+      status.textContent = message;
+      status.style.color = "#f7bcbc";
+      status.style.fontWeight = "600";
+      status.setAttribute("aria-live", "polite");
+      return;
+    }
+
+    const root = dom.root || document.getElementById("oldtrail-root") || document.body;
+    if (!root) return;
+
+    let banner = root.querySelector(".ot-runtime-error");
+    if (!banner) {
+      banner = document.createElement("div");
+      banner.className = "ot-runtime-error";
+      banner.style.marginTop = "8px";
+      banner.style.padding = "10px 12px";
+      banner.style.background = "#4a1b1b";
+      banner.style.color = "#f1e9dd";
+      banner.style.border = "1px solid rgba(255, 121, 121, 0.6)";
+      banner.style.borderRadius = "10px";
+      banner.style.fontSize = "12px";
+      root.appendChild(banner);
+    }
+    banner.textContent = message;
+  }
+
+  function showScreen(name) {
+    const screens = dom.screens || {};
+    Object.keys(screens).forEach(function (key) {
+      const el = screens[key];
+      if (el && el.classList) {
+        el.classList.remove("ot-screen-active");
+      }
+    });
+    const target = screens[name];
+    if (target && target.classList) {
+      target.classList.add("ot-screen-active");
+    } else {
+      showUiError("Missing screen: " + name + ". Some UI may not render.");
     }
     gameState.phase = name;
 
@@ -8956,125 +9012,139 @@
   }
 
   function startNewGameFromForm() {
-    const draftState = ensurePartyDraftState();
+    try {
+      const draftState = ensurePartyDraftState();
 
-    const leaderName = dom.leaderName.value.trim() || "Unnamed leader";
-    const leaderDraft = draftState.people.leader;
-    const leaderProfile = computeLeaderStartProfile(leaderDraft);
-    const leaderBias = blendSkillBias({}, leaderDraft && leaderDraft.skillBias);
-    const leader = createPerson(leaderName, true, leaderBias, leaderDraft);
-
-    const companions = [];
-    const chosenDrafts = [{ slot: "leader", draft: leaderDraft }];
-    dom.companionInputs.forEach(function (input, idx) {
-      const v = input.value.trim();
-      if (v) {
-        const slot = "companion-" + idx;
-        const d = draftState.people[slot];
-        const bias = d ? blendSkillBias({}, d.skillBias) : null;
-        companions.push(createPerson(v, false, bias, d));
-        chosenDrafts.push({ slot: slot, draft: d });
+      if (!dom.leaderName) {
+        showUiError("Cannot start: missing leader name input.");
+        return;
       }
-    });
-    if (companions.length === 0) {
-      const fallback = draftState.people["companion-0"] || generateDraftForSlot("companion-0");
-      companions.push(
-        createPerson(
-          fallback && fallback.name ? fallback.name : "Unnamed companion",
-          false,
-          fallback ? blendSkillBias({}, fallback.skillBias) : null,
-          fallback
-        )
-      );
-      chosenDrafts.push({ slot: "companion-0", draft: fallback });
-    }
 
-    gameState.leader = leader;
-    gameState.companions = companions;
-    gameState.selectedIndex = 0;
+      const leaderName = dom.leaderName.value.trim() || "Unnamed leader";
+      const leaderDraft = draftState.people.leader;
+      const leaderProfile = computeLeaderStartProfile(leaderDraft);
+      const leaderBias = blendSkillBias({}, leaderDraft && leaderDraft.skillBias);
+      const leader = createPerson(leaderName, true, leaderBias, leaderDraft);
 
-    gameState.leader.task = "travel";
-    gameState.companions.forEach(function (c) {
-      c.task = "auto";
-    });
-
-    seedTraitsAndRelationships();
-
-    const presetId = dom.storytellerPreset
-      ? dom.storytellerPreset.value
-      : "classic";
-    gameState.storytellerPresetId = presetId;
-    gameState.mythicEnabled = !dom.mythicToggle || dom.mythicToggle.value !== "off";
-    ensureStoryState().mythicEnabled = gameState.mythicEnabled;
-
-    gameState.startingPoint = dom.departureSelect
-      ? dom.departureSelect.value
-      : gameState.startingPoint || "independence";
-
-    gameState.startingMoney = leaderProfile.startingMoney;
-    gameState.money = leaderProfile.startingMoney;
-    gameState.startingFreeSupplies = {};
-    gameState.startingFreeSuppliesNotes = [];
-    resetSupplies();
-
-    const carry = rollStartingCarryIns(draftState, chosenDrafts);
-    if (carry && carry.freeSupplies) {
-      gameState.startingFreeSupplies = carry.freeSupplies;
-      Object.keys(carry.freeSupplies).forEach(function (id) {
-        gameState.supplies[id] =
-          (gameState.supplies[id] || 0) + (carry.freeSupplies[id] || 0);
+      const companions = [];
+      const chosenDrafts = [{ slot: "leader", draft: leaderDraft }];
+      const inputs = Array.isArray(dom.companionInputs) ? dom.companionInputs : [];
+      inputs.forEach(function (input, idx) {
+        const v = (input && input.value ? input.value : "").trim();
+        if (v) {
+          const slot = "companion-" + idx;
+          const d = draftState.people[slot];
+          const bias = d ? blendSkillBias({}, d.skillBias) : null;
+          companions.push(createPerson(v, false, bias, d));
+          chosenDrafts.push({ slot: slot, draft: d });
+        }
       });
+      if (companions.length === 0) {
+        const fallback =
+          draftState.people["companion-0"] || generateDraftForSlot("companion-0");
+        companions.push(
+          createPerson(
+            fallback && fallback.name ? fallback.name : "Unnamed companion",
+            false,
+            fallback ? blendSkillBias({}, fallback.skillBias) : null,
+            fallback
+          )
+        );
+        chosenDrafts.push({ slot: "companion-0", draft: fallback });
+      }
+
+      gameState.leader = leader;
+      gameState.companions = companions;
+      gameState.selectedIndex = 0;
+
+      gameState.leader.task = "travel";
+      gameState.companions.forEach(function (c) {
+        c.task = "auto";
+      });
+
+      seedTraitsAndRelationships();
+
+      const presetId = dom.storytellerPreset
+        ? dom.storytellerPreset.value
+        : "classic";
+      gameState.storytellerPresetId = presetId;
+      gameState.mythicEnabled = !dom.mythicToggle || dom.mythicToggle.value !== "off";
+      ensureStoryState().mythicEnabled = gameState.mythicEnabled;
+
+      const departureValue = dom.departureSelect
+        ? dom.departureSelect.value
+        : gameState.startingPoint || "independence";
+      gameState.startingPoint = departureValue;
+
+      gameState.startingMoney = leaderProfile.startingMoney;
+      gameState.money = leaderProfile.startingMoney;
+      gameState.startingFreeSupplies = {};
+      gameState.startingFreeSuppliesNotes = [];
+      resetSupplies();
+
+      const carry = rollStartingCarryIns(draftState, chosenDrafts);
+      if (carry && carry.freeSupplies) {
+        gameState.startingFreeSupplies = carry.freeSupplies;
+        Object.keys(carry.freeSupplies).forEach(function (id) {
+          gameState.supplies[id] =
+            (gameState.supplies[id] || 0) + (carry.freeSupplies[id] || 0);
+        });
+      }
+      if (carry && carry.noteLines) {
+        gameState.startingFreeSuppliesNotes = carry.noteLines;
+      }
+
+      gameState.date = pickStartDateFromSeason();
+      const partyKey =
+        (leaderName + "-" + departureValue + "-" + gameState.startProfileId)
+          .replace(/\s+/g, "-")
+          .toLowerCase();
+      gameState.partyId = partyKey;
+      gameState.weatherSeed = hashToInt(partyKey + "-" + gameState.date.getFullYear());
+      initWeatherSystem(gameState.date.getFullYear(), partyKey);
+      gameState.weatherHistory = [];
+      gameState.milesTraveled = 0;
+      gameState.pace = "steady";
+      gameState.rations = "filling";
+      gameState.mode = "camp";
+      gameState.wagonCondition = 100;
+      gameState.guardLevel = 0;
+      gameState.log = [];
+      gameState.recentRainHours = 0;
+      gameState.mapListVisible = false;
+      gameState.mapOpen = false;
+      gameState.travelView = "journal";
+      gameState.traillines = defaultTraillinesState();
+      gameState.explorer = { x: 6, y: 20, hourBuffer: 0, initializedFromProgress: true };
+      rebuildActiveRoutePath();
+      recenterCameraOnPlayer();
+
+      updateRegionAndLocation();
+      refreshWeather();
+      addLog(
+        "You make camp near the Missouri River and begin preparing your wagon."
+      );
+
+      if (dom.leaderPill) {
+        dom.leaderPill.textContent =
+          "Leader — " +
+          leader.name +
+          (leader.backstoryLabel ? " · " + leader.backstoryLabel : "");
+      }
+
+      updateStartArt();
+      buildOutfitTable();
+      updateOutfitSummary();
+      updateOutfitIntro();
+      updateOutfitArt();
+
+      ensureDelegationState();
+      showScreen("outfit");
+      saveGame();
+      renderAll();
+    } catch (err) {
+      showUiError("Unable to start new game", err);
     }
-    if (carry && carry.noteLines) {
-      gameState.startingFreeSuppliesNotes = carry.noteLines;
-    }
-
-    gameState.date = pickStartDateFromSeason();
-    const partyKey =
-      (leaderName + "-" + dom.departureSelect.value + "-" + gameState.startProfileId)
-        .replace(/\s+/g, "-")
-        .toLowerCase();
-    gameState.partyId = partyKey;
-    gameState.weatherSeed = hashToInt(partyKey + "-" + gameState.date.getFullYear());
-    initWeatherSystem(gameState.date.getFullYear(), partyKey);
-    gameState.weatherHistory = [];
-    gameState.milesTraveled = 0;
-    gameState.pace = "steady";
-    gameState.rations = "filling";
-    gameState.mode = "camp";
-    gameState.wagonCondition = 100;
-    gameState.guardLevel = 0;
-    gameState.log = [];
-    gameState.recentRainHours = 0;
-    gameState.mapListVisible = false;
-    gameState.mapOpen = false;
-    gameState.travelView = "journal";
-    gameState.traillines = defaultTraillinesState();
-    gameState.explorer = { x: 6, y: 20, hourBuffer: 0, initializedFromProgress: true };
-    rebuildActiveRoutePath();
-    recenterCameraOnPlayer();
-
-    updateRegionAndLocation();
-    refreshWeather();
-    addLog(
-      "You make camp near the Missouri River and begin preparing your wagon."
-    );
-
-    dom.leaderPill.textContent =
-      "Leader — " +
-      leader.name +
-      (leader.backstoryLabel ? " · " + leader.backstoryLabel : "");
-
-    updateStartArt();
-    buildOutfitTable();
-    updateOutfitSummary();
-    updateOutfitIntro();
-    updateOutfitArt();
-
-    ensureDelegationState();
-    showScreen("outfit");
-    saveGame();
-    renderAll();
   }
 
   /* ========= REGION, WEATHER, LOG ========================================= */
@@ -10992,6 +11062,7 @@
   }
 
   function updateOutfitIntro() {
+    if (!dom.outfitIntro) return;
     const mouths = 1 + gameState.companions.length;
     let text =
       "You begin with " +
@@ -11033,6 +11104,7 @@
   }
 
   function updateStartArt() {
+    if (!dom.startArt || !dom.departureSelect) return;
     const dep = dom.departureSelect.value;
     let url = IMAGE_URLS.start_screen;
     if (dep === "independence") url = IMAGE_URLS.independence_start_edge;
@@ -11045,6 +11117,7 @@
   }
 
   function updateOutfitArt() {
+    if (!dom.outfitArt) return;
     dom.outfitArt.style.backgroundImage =
       "linear-gradient(to top, rgba(0,0,0,.7), rgba(0,0,0,.15)), url('" +
       IMAGE_URLS.generalstore_missouri +
@@ -11052,17 +11125,22 @@
   }
 
   function beginJourney() {
-    const barrels = gameState.supplies.water_barrels || 0;
-    if (!gameState.supplies.water) gameState.supplies.water = 0;
-    gameState.supplies.water += barrels * 30;
-    registerSpoilageForPerishables(gameState.supplies, gameState.supplies, {
-      note: "starting pantry",
-      acquiredHour: getCurrentTrailHour(gameState),
-    });
-    addLog("You roll out from " + gameState.locationName + " and head west.");
-    showScreen("travel");
-    saveGame();
-    renderAll();
+    try {
+      gameState.supplies = gameState.supplies || {};
+      const barrels = gameState.supplies.water_barrels || 0;
+      if (!gameState.supplies.water) gameState.supplies.water = 0;
+      gameState.supplies.water += barrels * 30;
+      registerSpoilageForPerishables(gameState.supplies, gameState.supplies, {
+        note: "starting pantry",
+        acquiredHour: getCurrentTrailHour(gameState),
+      });
+      addLog("You roll out from " + gameState.locationName + " and head west.");
+      showScreen("travel");
+      saveGame();
+      renderAll();
+    } catch (err) {
+      showUiError("Unable to begin journey", err);
+    }
   }
 
   /* ========= HOURLY SIMULATION ============================================ */
@@ -19836,17 +19914,6 @@
     }
   }
 
-  /* Validation checklist (Explorer view updates)
-    - Start new run → go to Travel → toggle Explorer.
-    - Explorer canvas spans full embed width; layout doesn’t break Journal view.
-    - Canvas resizes sharply when toggling views and when resizing the browser (no blur).
-    - Tile images load progressively; if they fail, fallback colors still render.
-    - Oxen count changes wagon team visuals (try buying/selling oxen); clamp works.
-    - No new trail log spam during rendering.
-    - Save/load still works (best effort).
-    - Any “mythic/secret” content never appears in normal logs/events as a side effect.
-  */
-
   function tickExplorerTimeForStep() {
     ensureExplorerState();
     const ex = gameState.explorer;
@@ -24029,6 +24096,16 @@
     await advanceHours(hours, { campQuality: campQuality });
   }
 
+  function safeWrap(label, fn) {
+    return function wrappedHandler(event) {
+      try {
+        return fn(event);
+      } catch (err) {
+        showUiError("Action failed: " + label, err);
+      }
+    };
+  }
+
   function wireEvents() {
     const on = function (el, evt, handler, opts, label) {
       if (!el) {
@@ -24090,9 +24167,27 @@
         "mythic toggle"
       );
     }
-    on(dom.btnBeginOutfit, "click", startNewGameFromForm, null, "begin outfit");
-    on(dom.btnAddRecommended, "click", addRecommendedLoad, null, "add recommended load");
-    on(dom.btnBeginJourney, "click", beginJourney, null, "begin journey");
+    on(
+      dom.btnBeginOutfit,
+      "click",
+      safeWrap("begin outfit", startNewGameFromForm),
+      null,
+      "begin outfit"
+    );
+    on(
+      dom.btnAddRecommended,
+      "click",
+      addRecommendedLoad,
+      null,
+      "add recommended load"
+    );
+    on(
+      dom.btnBeginJourney,
+      "click",
+      safeWrap("begin journey", beginJourney),
+      null,
+      "begin journey"
+    );
     renderStorytellerOptions(
       dom.storytellerPreset,
       gameState.storytellerPresetId || "classic"
@@ -26505,6 +26600,10 @@
 
   function init() {
     initDom();
+    const missingDom = validateRequiredDom();
+    if (missingDom.length) {
+      showUiError("Missing UI elements: " + missingDom.join(", "));
+    }
     initTrailLogWidget();
     initThoughtBubble();
     wireEvents();
@@ -26597,52 +26696,3 @@
   bootOldTrail();
 })();
 </script>
-<!-- Validation checklist (Fort ledger scarcity pass):
-- Start a new run; no console errors.
-- Enter travel phase and approach a fort; “Trading Post” button appears; modal opens/closes cleanly.
-- Buy/sell works; vendor stock decreases/increases; buy buttons disable when stock is insufficient.
-- Prices shift reasonably with scarcity (never negative/NaN; multipliers clamped).
-- Wait/advance 2–3 days and reopen trade; stock restocks toward caps (no duplication explosions).
-- Save + reload mid-run; trade modal still works; vendor inventories persist; no crashes.
-- Trail log remains clean (no spam per transaction); trade history shows in the trade ledger panel.
-- Mythic OFF: nothing new leaks into Men in Gray behaviors (this pass should not add mythic triggers at all).
--->
-<!-- Validation checklist (Barter tab):
-- Start new run; no console errors.
-- Reach a fort and open Trade; Buy/Sell tabs still function and haggle offers spend attempts.
-- Switch to Barter tab; Offer/Request bundles update totals; Clear empties baskets.
-- Propose Barter consumes a haggle attempt, applies accepted/countered trades without negative stocks or dupes, and refuses cleanly.
-- Haggle attempts exhausted disables proposing; panel explains remaining attempts.
-- Trade ledger shows “Barter — …” lines; no trail log spam.
-- Save/reload mid-run; trade modal and barter baskets open without crashes.
--->
-<!-- Validation checklist (Dream-West B11/B12/B13 seeds):
-- Start new run; no console errors.
-- Fast-forward 5–10 days; B-11/B-12/B-13 seeds surface with seed_lastHour + seed_b_global_time + per-seed cooldown spacing.
-- B-11 follow-up triggers once after dispute/forge at a fort or mission; clears pending flags; no repeats.
-- B-13 follow-up triggers once at a fort/mission before deadline; clears pending flags; no repeats.
-- Mythic OFF: no new mythic-only triggers were added; Men in Gray behaviors unchanged.
-- Save + reload mid-run; ledger still renders and events function without crashes.
-- Trail log: one line per seed run; smaller beats stay in pawn thoughts (no spam).
--->
-<!-- Validation checklist (Explorer minimap/inspect caching pass):
-- Start a new run, switch to Explorer view: minimap visible, no console errors.
-- Drag-pan works as before; wheel zoom works as before.
-- Click/drag on minimap pans camera (no accidental main-drag conflicts).
-- Minimap POI markers render; unseen markers are visibly dimmer than seen.
-- Toggle Minimap/Inspect via explorer chip buttons; state persists during the session.
-- Inspect ON: tap on terrain pins tooltip; close button works; tooltip doesn’t block core interactions.
-- Inspect OFF: pinned tooltip clears/hides.
-- Performance: Explorer rendering is noticeably lighter (no per-tile art redraw each frame); no visual regressions.
-- Ensure no trail log spam introduced.
--->
-<!-- Validation checklist (Campfire/social resilience pass):
-- Start a new run: no console errors; start screen buttons respond; “Begin outfitting” advances.
-- Generate party / reroll / lock work; no form-submit reload behavior.
-- Camp evening/night: daily social moments produce varied, trait-driven one-line vignettes; not more than ~2/day.
-- Missing rations chain: accuser/suspect stay consistent across steps; outcomes branch correctly; chain resets; no repeat spam.
-- Campfire moment: vignette appears; mythic-only “omens” option appears only when mythic ON and has cooldown; mythic OFF shows no omen option and no supernatural text.
-- New miracle/tonic chain: appears with long cooldown; follow-up triggers once and clears flags.
-- Trail log stays clean: one meaningful line per beat; extra flavor in thoughts.
-- Save/reload mid-run: no crashes.
--->
