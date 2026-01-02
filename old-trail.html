@@ -17811,43 +17811,182 @@
   function createExplorerWorld() {
     const width = 64;
     const height = 32;
+    const world = {
+      width: width,
+      height: height,
+      map: [],
+      path: [],
+      pathIndex: {},
+      nearestPathIdx: [],
+      columnCorridors: [],
+      seed: hashToInt((gameState.partyId || "party") + ":explorer"),
+      routeSignature: null,
+    };
+    rebuildExplorerWorld(world, { force: true });
+    return world;
+  }
+
+  function computeExplorerRouteSignature(totalMilesOverride) {
+    const anchors = getActiveRouteGeoAnchors();
+    const milestones = getActiveRouteMilestones();
+    const totalMiles = totalMilesOverride || gameState.totalTrailMiles || gameState.targetMiles || 1;
+    const anchorSig = anchors
+      .map(function (a) {
+        return `${Math.round(a.mile || 0)}:${Math.round((a.lat || 0) * 1000) / 1000},${
+          Math.round((a.lon || 0) * 1000) / 1000
+        }`;
+      })
+      .join("|");
+    const milestoneSig = milestones
+      .map(function (m) {
+        return `${Math.round((m && m.mile) || 0)}:${(m && m.region) || ""}:${(m && m.poiId) || ""}`;
+      })
+      .join("|");
+    return `${gameState.routeId || "route"}:${Math.round(totalMiles || 0)}:${anchorSig}:${milestoneSig}`;
+  }
+
+  function rebuildExplorerWorld(world, options) {
+    if (!world) return;
+    const totalMiles = gameState.totalTrailMiles || gameState.targetMiles || 1;
+    const signature = computeExplorerRouteSignature(totalMiles);
+    if (!options || !options.force) {
+      if (world.routeSignature === signature && world.map && world.map.length) return;
+    }
+
+    world.routeSignature = signature;
+    world.seed = hashToInt(`${signature || "route"}:${gameState.partyId || "party"}`);
+
+    const width = world.width;
+    const height = world.height;
     const map = Array.from({ length: height }, function () {
       return Array.from({ length: width }, function () {
         return "grass";
       });
     });
 
+    const columnCorridors = [];
+    for (let x = 0; x < width; x++) {
+      const mileAlong = (x / Math.max(width - 1, 1)) * Math.max(totalMiles, 1);
+      columnCorridors[x] = getExplorerCorridorAtMile(mileAlong, totalMiles);
+    }
+
+    const rngBase = world.seed || 1;
+    for (let ty = 0; ty < height; ty++) {
+      for (let tx = 0; tx < width; tx++) {
+        const v = hashToInt(`${rngBase}:${tx},${ty}`) % 100;
+        if (v < 7) map[ty][tx] = "forest";
+        else if (v < 16) map[ty][tx] = "hill";
+        else map[ty][tx] = "grass";
+      }
+    }
+
     const path = [];
     const pathIndex = {};
+    const pathYByX = {};
     let y = Math.floor(height * 0.65);
     for (let x = 2; x < width - 4; x++) {
       if (x % 7 === 0) y -= 1;
       if (x % 11 === 0) y += 1;
       y = clamp(y, 6, height - 6);
-      map[y][x] = "trail";
       path.push({ x: x, y: y });
-      pathIndex[`${x},${y}`] = path.length - 1;
-      if (x % 10 === 0 && y + 1 < height) {
-        map[y + 1][x] = "trail";
+      pathYByX[x] = y;
+    }
+
+    function applySnakeRiverColumn(x) {
+      const baseY = pathYByX[x] != null ? pathYByX[x] - 1 : Math.floor(height * 0.55);
+      const wobble = Math.floor(Math.sin(x * 0.28) * 2);
+      const center = clamp(baseY + wobble, 2, height - 3);
+      const thickness = 1 + (hashToInt(`${rngBase}:snake:${x}`) % 2);
+      for (let dy = -thickness; dy <= thickness; dy++) {
+        const yy = center + dy;
+        if (yy >= 0 && yy < height) map[yy][x] = "water";
+      }
+      for (let dy = -(thickness + 1); dy <= thickness + 1; dy++) {
+        const yy = center + dy;
+        if (yy < 0 || yy >= height) continue;
+        if (Math.abs(dy) === thickness + 1) {
+          if (hashToInt(`${rngBase}:snakebank:${x}:${yy}`) % 3 === 0) map[yy][x] = "forest";
+        }
       }
     }
 
-    // River winding near the center
-    for (let r = 0; r < height; r++) {
-      const riverX = 18 + Math.floor(Math.sin(r * 0.35) * 2);
-      map[r][riverX] = "water";
-      if (riverX + 1 < width) map[r][riverX + 1] = "water";
+    function applyHumboldtColumn(x) {
+      const baseY = pathYByX[x] != null ? pathYByX[x] : Math.floor(height * 0.62);
+      const wobble = Math.floor(Math.sin(x * 0.22) * 1.4);
+      const center = clamp(baseY + wobble, 3, height - 4);
+      const thickness = 1;
+      for (let dy = -thickness; dy <= thickness; dy++) {
+        const yy = center + dy;
+        if (yy >= 0 && yy < height) map[yy][x] = "water";
+      }
+      for (let dy = -(thickness + 2); dy <= thickness + 2; dy++) {
+        const yy = center + dy;
+        if (yy < 0 || yy >= height) continue;
+        if (Math.abs(dy) >= thickness + 1) {
+          const dryness = hashToInt(`${rngBase}:humboldt:${x}:${yy}`) % 4;
+          if (dryness < 2) map[yy][x] = "void";
+          else if (dryness === 2) map[yy][x] = "hill";
+        }
+      }
     }
 
-    // Forest and hill patches
-    for (let i = 10; i < 26; i++) {
-      map[8][i] = "forest";
-      if (i % 3 === 0) map[9][i] = "forest";
+    function applyColumbiaColumn(x) {
+      const baseY = pathYByX[x] != null ? pathYByX[x] - 1 : Math.floor(height * 0.52);
+      const wobble = Math.floor(Math.sin(x * 0.18) * 2.5);
+      const center = clamp(baseY + wobble, 2, height - 3);
+      const thickness = 2 + (hashToInt(`${rngBase}:columbia:${x}`) % 2);
+      for (let dy = -thickness; dy <= thickness; dy++) {
+        const yy = center + dy;
+        if (yy >= 0 && yy < height) map[yy][x] = "water";
+      }
+      for (let dy = -(thickness + 2); dy <= thickness + 2; dy++) {
+        const yy = center + dy;
+        if (yy < 0 || yy >= height) continue;
+        if (Math.abs(dy) === thickness + 1 || Math.abs(dy) === thickness + 2) {
+          map[yy][x] = "hill";
+        } else if (map[yy][x] === "forest") {
+          map[yy][x] = "grass";
+        }
+      }
     }
-    for (let i = 38; i < 54; i++) {
-      map[height - 10][i] = "hill";
-      if (i % 2 === 0 && height - 11 >= 0) map[height - 11][i] = "hill";
+
+    function applySubletteColumn(x, mods) {
+      for (let ty = 0; ty < height; ty++) {
+        const dryness = hashToInt(`${rngBase}:sublette:${x}:${ty}`) % 5;
+        if (dryness < 2) map[ty][x] = "void";
+        else if (dryness < 4) map[ty][x] = "hill";
+        else map[ty][x] = "grass";
+      }
+      if (mods && mods.atBigSandy) {
+        const trailY = pathYByX[x];
+        if (trailY != null) {
+          const oasisY = clamp(trailY + 1, 0, height - 1);
+          map[oasisY][x] = "water";
+        }
+      }
     }
+
+    for (let x = 0; x < width; x++) {
+      const corridor = columnCorridors[x] || { tags: [], mods: null };
+      const tags = corridor.tags || [];
+      const mods = corridor.mods || {};
+      if (tags.indexOf("sublette_desert") !== -1) {
+        applySubletteColumn(x, mods);
+        continue;
+      }
+      if (tags.indexOf("snake_river") !== -1) applySnakeRiverColumn(x);
+      if (tags.indexOf("humboldt_river") !== -1) applyHumboldtColumn(x);
+      if (tags.indexOf("columbia_river") !== -1) applyColumbiaColumn(x);
+    }
+
+    path.forEach(function (p, idx) {
+      const key = `${p.x},${p.y}`;
+      map[p.y][p.x] = "trail";
+      pathIndex[key] = idx;
+      if (p.y + 1 < height && map[p.y + 1][p.x] !== "trail" && idx % 3 === 0) {
+        map[p.y + 1][p.x] = "trail";
+      }
+    });
 
     const nearestPathIdx = [];
     const pathLen = path.length;
@@ -17872,14 +18011,15 @@
       nearestPathIdx.push(row);
     }
 
-    return {
-      width: width,
-      height: height,
-      map: map,
-      path: path,
-      pathIndex: pathIndex,
-      nearestPathIdx: nearestPathIdx,
-    };
+    world.map = map;
+    world.path = path;
+    world.pathIndex = pathIndex;
+    world.nearestPathIdx = nearestPathIdx;
+    world.columnCorridors = columnCorridors;
+  }
+
+  function refreshExplorerWorldIfNeeded() {
+    rebuildExplorerWorld(EXPLORER_WORLD, {});
   }
 
   function resizeTrailCanvas() {
@@ -18212,6 +18352,33 @@
     return regionKey || "prairie";
   }
 
+  function getExplorerCorridorAtMile(mile, totalMiles) {
+    try {
+      const path = HEX_WORLD.activePath || [];
+      const pathMiles = HEX_WORLD.activePathMiles || [];
+      if (!path.length) return { mods: null, tags: [] };
+      const total = Math.max(totalMiles || pathMiles[pathMiles.length - 1] || 1, 1);
+      let idx = Math.round(clamp(mile / total, 0, 1) * Math.max(path.length - 1, 0));
+      if (pathMiles.length === path.length) {
+        idx = Math.round(clamp(mile / total, 0, 1) * Math.max(pathMiles.length - 1, 0));
+      }
+      const hex = path[idx] || path[path.length - 1];
+      if (!hex || typeof getHexWorldModifiers !== "function") return { mods: null, tags: [] };
+      const mods = getHexWorldModifiers(hex) || null;
+      const tags = [];
+      if (mods) {
+        if (mods.nearSnakeRiver) tags.push("snake_river");
+        if (mods.nearColumbiaRiver) tags.push("columbia_river");
+        if (mods.nearHumboldtRiver) tags.push("humboldt_river");
+        if (mods.inSubletteDesert) tags.push("sublette_desert");
+        if (mods.atBigSandy) tags.push("big_sandy");
+      }
+      return { mods: mods, tags: tags };
+    } catch (e) {
+      return { mods: null, tags: [] };
+    }
+  }
+
   function getExplorerTile(x, y) {
     if (y < 0 || y >= EXPLORER_WORLD.height) return "void";
     if (x < 0 || x >= EXPLORER_WORLD.width) return "void";
@@ -18277,14 +18444,24 @@
   }
 
   function ensureExplorerTerrainCache(force, options) {
+    refreshExplorerWorldIfNeeded();
     const tilePx = 24;
+    const cacheWidth = EXPLORER_WORLD.width;
+    const cacheHeight = EXPLORER_WORLD.height;
+    const routeSignature =
+      EXPLORER_WORLD.routeSignature || computeExplorerRouteSignature(options && options.totalMiles);
+    const seedSignature = EXPLORER_WORLD.seed || 0;
     const builtKey =
-      "v1:" +
-      EXPLORER_WORLD.width +
+      "v2:" +
+      cacheWidth +
       "x" +
-      EXPLORER_WORLD.height +
+      cacheHeight +
       ":tilePx=" +
-      tilePx;
+      tilePx +
+      ":seed=" +
+      seedSignature +
+      ":route=" +
+      hashToInt(String(routeSignature || "route"));
     if (!force && explorerRuntime.terrainCache && explorerRuntime.terrainCache.builtKey === builtKey) {
       return explorerRuntime.terrainCache;
     }
@@ -18303,13 +18480,55 @@
     };
 
     const canvas = document.createElement("canvas");
-    canvas.width = EXPLORER_WORLD.width * tilePx;
-    canvas.height = EXPLORER_WORLD.height * tilePx;
+    canvas.width = cacheWidth * tilePx;
+    canvas.height = cacheHeight * tilePx;
     const cacheCtx = canvas.getContext("2d");
     cacheCtx.imageSmoothingEnabled = false;
 
-    for (let ty = 0; ty < EXPLORER_WORLD.height; ty++) {
-      for (let tx = 0; tx < EXPLORER_WORLD.width; tx++) {
+    const milestones = getActiveRouteMilestones();
+
+    function drawTileWithVariant(tileArt, px, py, tileKey, variantSeed, alpha) {
+      if (!tileArt) return false;
+      const allowVariant = tileKey !== "trail" && tileKey !== "water";
+      const v = allowVariant ? hashToInt(`${variantSeed}`) : 0;
+      const rotationQuarter = allowVariant ? v % 4 : 0;
+      const flip = allowVariant ? (v >> 2) & 1 : 0;
+      const rotation = rotationQuarter * (Math.PI / 2);
+      cacheCtx.save();
+      cacheCtx.globalAlpha *= alpha == null ? 1 : alpha;
+      cacheCtx.translate(px + tilePx / 2, py + tilePx / 2);
+      if (flip) cacheCtx.scale(-1, 1);
+      if (rotation && allowVariant) cacheCtx.rotate(rotation);
+      cacheCtx.drawImage(tileArt, -tilePx / 2, -tilePx / 2, tilePx + 1, tilePx + 1);
+      cacheCtx.restore();
+      return true;
+    }
+
+    function getBlendForTile(tx, mileAtTile, baseArtKey) {
+      if (!milestones || !milestones.length) return null;
+      const totalWidth = Math.max(cacheWidth - 1, 1);
+      let best = null;
+      milestones.forEach(function (m) {
+        if (!m || m.mile == null) return;
+        const col = Math.round(clamp(m.mile / Math.max(totalMiles || 1, 1), 0, 1) * totalWidth);
+        const dist = Math.abs(tx - col);
+        const blendWindow = 2;
+        if (dist > blendWindow) return;
+        const t = 1 - dist / blendWindow;
+        if (t <= 0) return;
+        const aheadMile = Math.min(Math.max(totalMiles || 1, 1), m.mile + Math.max(totalMiles / cacheWidth, 1));
+        const aheadBio = biomeAtMile(aheadMile, geoAnchors);
+        const blendKey = aheadBio && aheadBio.biome ? aheadBio.biome : getRegionBaseArtKey(m.region || regionKey);
+        if (!blendKey || blendKey === baseArtKey) return;
+        if (!best || t > best.alpha) {
+          best = { key: blendKey, alpha: Math.min(0.6, t) };
+        }
+      });
+      return best;
+    }
+
+    for (let ty = 0; ty < cacheHeight; ty++) {
+      for (let tx = 0; tx < cacheWidth; tx++) {
         const tile = getExplorerTile(tx, ty);
         const mileAtTile = getExplorerMileForTile(tx, ty, totalMiles);
         const bio = biomeAtMile(mileAtTile, geoAnchors);
@@ -18318,12 +18537,25 @@
         const tileArt = getArtCanvas(tileArtKey, tilePx);
         const px = tx * tilePx;
         const py = ty * tilePx;
+        const variantSeed = `${seedSignature}:${tx},${ty}:${tileArtKey}`;
+        let drawn = false;
         if (tileArt) {
-          cacheCtx.drawImage(tileArt, px, py, tilePx + 1, tilePx + 1);
-        } else {
+          drawn = drawTileWithVariant(tileArt, px, py, tile, variantSeed);
+        }
+        if (!drawn) {
           cacheCtx.fillStyle = fallbackColors[tile] || palette.ground;
           cacheCtx.fillRect(px, py, tilePx + 1, tilePx + 1);
         }
+
+        const blend = getBlendForTile(tx, mileAtTile, baseArtKey);
+        if (blend) {
+          const blendArtKey = getTileArtKey(tile, blend.key);
+          const blendArt = getArtCanvas(blendArtKey, tilePx);
+          if (blendArt) {
+            drawTileWithVariant(blendArt, px, py, tile, variantSeed, blend.alpha);
+          }
+        }
+
         if (tile === "trail") {
           cacheCtx.fillStyle = "rgba(0,0,0,0.18)";
           cacheCtx.fillRect(px, py, tilePx + 1, tilePx * 0.12);
@@ -18347,6 +18579,8 @@
     if (hover.biome || hover.region)
       lines.push("Biome: " + (hover.biome || "?") + " (" + (hover.region || "?") + ")");
     lines.push("Terrain: " + (hover.tile || "?"));
+    const corridorLine = formatExplorerCorridorLine(hover.corridorTags);
+    if (corridorLine) lines.push(corridorLine);
     if (hover.tx != null && hover.ty != null) lines.push("Tile: " + hover.tx + ", " + hover.ty);
     if (hover.mile != null) lines.push("Mile: ~" + Math.round(hover.mile));
     return (
@@ -18355,6 +18589,18 @@
         return "<div>" + line + "</div>";
       }).join("")
     );
+  }
+
+  function formatExplorerCorridorLine(tags) {
+    if (!tags || !tags.length) return null;
+    const names = [];
+    if (tags.indexOf("snake_river") !== -1) names.push("Snake River");
+    if (tags.indexOf("columbia_river") !== -1) names.push("Columbia Gorge");
+    if (tags.indexOf("humboldt_river") !== -1) names.push("Humboldt River");
+    if (tags.indexOf("sublette_desert") !== -1) names.push("Sublette Desert");
+    if (!names.length) return null;
+    const label = tags.indexOf("sublette_desert") !== -1 ? "Hazard" : "Corridor";
+    return `${label}: ${names.join(", ")}`;
   }
 
   function hideExplorerTooltip() {
@@ -18416,6 +18662,10 @@
     const mileAtTile = getExplorerMileForTile(tx, ty, totalMiles);
     const geoAnchors = getActiveRouteGeoAnchors();
     const bio = biomeAtMile(mileAtTile, geoAnchors);
+    const corridorInfo =
+      (EXPLORER_WORLD.columnCorridors && EXPLORER_WORLD.columnCorridors[tx]) ||
+      getExplorerCorridorAtMile(mileAtTile, totalMiles);
+    const corridorTags = (corridorInfo && corridorInfo.tags) || [];
 
     const fogMiles =
       (gameState.traillines && gameState.traillines.fogMaxMile) ||
@@ -18451,7 +18701,7 @@
     const biomeKey = bio ? bio.biome : "";
     const hoverKey = `${tx},${ty}:${milestoneName || ""}:${tile}:${biomeKey}:${Math.round(
       mileAtTile || 0
-    )}`;
+    )}:${corridorTags.join("|")}`;
     return {
       hover: {
         tx: tx,
@@ -18461,6 +18711,7 @@
         biome: bio && bio.biome,
         region: bio && bio.region,
         milestoneName: milestoneName,
+        corridorTags: corridorTags,
         _k: hoverKey,
       },
       startX: startX,
@@ -18518,6 +18769,7 @@
 
     const renderStart = performance.now();
     ensureExplorerState();
+    refreshExplorerWorldIfNeeded();
     const view = ensureExplorerViewState();
     const rect = explorerRuntime.canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
@@ -18943,6 +19195,54 @@
       ctx.fillRect(0, 0, width, height);
     }
 
+    const now = gameState.date || new Date();
+    const month = typeof now.getMonth === "function" ? now.getMonth() : 0;
+    let seasonTint = null;
+    if (month >= 2 && month <= 4) seasonTint = "rgba(70, 120, 90, 0.05)";
+    else if (month >= 8 && month <= 9) seasonTint = "rgba(170, 130, 70, 0.05)";
+    else if (month === 11 || month === 0) seasonTint = "rgba(180, 210, 240, 0.04)";
+    if (seasonTint) {
+      ctx.fillStyle = seasonTint;
+      ctx.fillRect(0, 0, width, height);
+    }
+
+    const hour = typeof now.getHours === "function" ? now.getHours() + now.getMinutes() / 60 : 12;
+    let nightFactor = 0;
+    if (hour < 6) nightFactor = (6 - hour) / 6;
+    else if (hour > 18) nightFactor = Math.min(1, (hour - 18) / 6);
+    nightFactor = clamp(nightFactor, 0, 1);
+    if (nightFactor > 0) {
+      ctx.fillStyle = `rgba(10, 14, 24, ${0.35 * nightFactor})`;
+      ctx.fillRect(0, 0, width, height);
+      const glowRadius = tileSize * 3.5;
+      const grad = ctx.createRadialGradient(wagonX, wagonY, tileSize * 0.2, wagonX, wagonY, glowRadius);
+      grad.addColorStop(0, `rgba(255, 240, 200, ${0.28 * nightFactor})`);
+      grad.addColorStop(0.6, `rgba(90, 120, 150, ${0.08 * nightFactor})`);
+      grad.addColorStop(1, "rgba(30, 40, 60, 0)");
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.fillStyle = grad;
+      ctx.fillRect(wagonX - glowRadius, wagonY - glowRadius, glowRadius * 2, glowRadius * 2);
+      ctx.restore();
+    }
+
+    const stormy =
+      w.precip === "rain" || w.precip === "snow" || w.precip === "sleet" || (w.windKph || 0) > 35;
+    if (stormy) {
+      const vignette = ctx.createRadialGradient(
+        width / 2,
+        height / 2,
+        Math.max(width, height) * 0.35,
+        width / 2,
+        height / 2,
+        Math.max(width, height) * 0.7
+      );
+      vignette.addColorStop(0, "rgba(0, 0, 0, 0)");
+      vignette.addColorStop(1, "rgba(10, 14, 20, 0.25)");
+      ctx.fillStyle = vignette;
+      ctx.fillRect(0, 0, width, height);
+    }
+
     if (view.showMinimap) {
       const mmMargin = Math.max(6, width * 0.01);
       const mmWidth = Math.max(90, Math.min(180, width * 0.3));
@@ -19067,6 +19367,8 @@
       if (hover.milestoneName) lines.push(`Milestone: ${hover.milestoneName}`);
       if (hover.biome || hover.region) lines.push(`Biome: ${hover.biome || "?"} (${hover.region || "?"})`);
       lines.push(`Terrain: ${hover.tile || "?"}`);
+      const corridorLine = formatExplorerCorridorLine(hover.corridorTags);
+      if (corridorLine) lines.push(corridorLine);
       lines.push(`Tile: ${hover.tx}, ${hover.ty}`);
       if (hover.mile != null) lines.push(`Mile: ~${Math.round(hover.mile)}`);
       const padding = 8;

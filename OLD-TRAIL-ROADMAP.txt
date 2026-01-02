@@ -409,3 +409,10 @@ Deferred from this pass
 - Dream-West B-seed expansions with multi-region callbacks tied to ledger changes and faction reputation deltas.
 - Tactical hunting/ambush encounter resolution covering cover/volley choices, oxen risk, injuries, and loot tables.
 - Seasonal grading plus night overlay, lantern glow, and weather vignette polish across explorer and UI layers.
+
+Deferred from explorer corridor pass
+- Consolidate explorer terrain caching into multi-buffer chunk buffers and LOD streaming beyond the single offscreen blit; keep route/seed signatures in the cache key so new runs invalidate correctly.
+- Build rival-fort quest chain missions (delivery, smuggling, audit) with ledger-aware outcomes and rivalry policy hooks; reuse the existing fort politics scaffolding when wiring the ledger.
+- Expand Dream-West B-seeds with ledger and reputation delta callbacks across regions, gated by cooldowns to avoid seed spam, and surface ledger deltas in the callback payloads.
+- Ship tactical hunting/ambush encounter resolution (cover/volley choices, oxen risk, injuries, loot tables) through the encounter modal rather than trail-log shortcuts.
+- Finish full-season grading + weather/night overlay polish as UI-wide toggles (accessibility-friendly), keeping explorer canvas grading optional when HUD/minimap readability is at risk.
