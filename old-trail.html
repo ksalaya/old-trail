@@ -18354,6 +18354,7 @@
 
   function getExplorerCorridorAtMile(mile, totalMiles) {
     try {
+      if (typeof HEX_WORLD === "undefined") return { mods: null, tags: [] };
       const path = HEX_WORLD.activePath || [];
       const pathMiles = HEX_WORLD.activePathMiles || [];
       if (!path.length) return { mods: null, tags: [] };
@@ -18400,6 +18401,7 @@
   }
 
   function getActiveRouteGeoAnchors() {
+    if (typeof HEX_WORLD === "undefined") return [];
     const anchors = [];
     const milestones = getActiveRouteMilestones();
     milestones.forEach(function (m) {
@@ -20231,6 +20233,7 @@
   }
 
   function getActiveRouteMilestones() {
+    if (typeof HEX_WORLD === "undefined") return [];
     if (!HEX_WORLD.activeRouteMilestones || !HEX_WORLD.activeRouteMilestones.length) {
       buildActiveRouteMilestones();
     }
