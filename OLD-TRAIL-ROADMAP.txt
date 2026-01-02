@@ -400,3 +400,12 @@ Square Tile Map + Sprites (Deferred)
 - Feature-corridor-driven terrain placement (Snake/Columbia/Humboldt rivers, deserts) using tags
 - Touch-friendly inspect: tap to pin tooltip + close button
 - Biome transition smoothing + seasonal tinting + variant tile set rotations
+
+Deferred from this pass
+- Corridor tag-driven terrain overrides for Snake/Columbia/Humboldt/Sublette desert stretches in the explorer world generator.
+- Multi-buffer terrain chunk caching and LOD streaming beyond the new single offscreen terrain blit.
+- Blended biome boundaries with seasonal tinting and rotated tile variants across explorer tiles.
+- Rival-fort quest chain missions (policy/tariff delivery, smuggling, audit arcs) with ledger-reactive outcomes.
+- Dream-West B-seed expansions with multi-region callbacks tied to ledger changes and faction reputation deltas.
+- Tactical hunting/ambush encounter resolution covering cover/volley choices, oxen risk, injuries, and loot tables.
+- Seasonal grading plus night overlay, lantern glow, and weather vignette polish across explorer and UI layers.
