@@ -5725,6 +5725,9 @@
 
   const dom = {};
 
+  let bootRootEl = null;
+  let wiredRootEl = null;
+
   let PERSON_ID_COUNTER = 1;
   let isAdvancingTime = false;
   let encounterActive = false;
@@ -7802,183 +7805,191 @@
     }
   }
 
+  function byId(id) {
+    if (!id) return null;
+    if (dom.root && dom.root.querySelector) {
+      const withinRoot = dom.root.querySelector("#" + id);
+      if (withinRoot) return withinRoot;
+    }
+    return document.getElementById(id);
+  }
+
   function initDom() {
-    dom.root = document.getElementById("oldtrail-root");
+    dom.root = bootRootEl || document.getElementById("oldtrail-root");
+    const lookup = byId;
     dom.screens = {
-      start: document.getElementById("ot-screen-start"),
-      outfit: document.getElementById("ot-screen-outfit"),
-      travel: document.getElementById("ot-screen-travel"),
+      start: lookup("ot-screen-start"),
+      outfit: lookup("ot-screen-outfit"),
+      travel: lookup("ot-screen-travel"),
     };
-    dom.leaderPill = document.getElementById("ot-leader-pill");
-    dom.btnReset = document.getElementById("ot-btn-reset");
+    dom.leaderPill = lookup("ot-leader-pill");
+    dom.btnReset = lookup("ot-btn-reset");
 
-    dom.leaderName = document.getElementById("ot-leader-name");
-    dom.leaderCallingPreview = document.getElementById("ot-leader-calling");
-    dom.leaderFundsPreview = document.getElementById("ot-leader-starting-funds");
-    dom.departureSelect = document.getElementById("ot-departure");
-    dom.departureSeason = document.getElementById("ot-departure-season");
-    dom.departureSeasonDesc = document.getElementById(
-      "ot-departure-season-desc"
-    );
-    dom.storytellerPreset = document.getElementById("ot-storyteller-preset");
-    dom.draftRows = document.getElementById("ot-draft-rows");
-    dom.draftInfo = { leader: document.getElementById("ot-draft-info-leader") };
-    dom.btnGenerateParty = document.getElementById("ot-btn-generate-party");
-    dom.mythicToggle = document.getElementById("ot-mythic-toggle");
+    dom.leaderName = lookup("ot-leader-name");
+    dom.leaderCallingPreview = lookup("ot-leader-calling");
+    dom.leaderFundsPreview = lookup("ot-leader-starting-funds");
+    dom.departureSelect = lookup("ot-departure");
+    dom.departureSeason = lookup("ot-departure-season");
+    dom.departureSeasonDesc = lookup("ot-departure-season-desc");
+    dom.storytellerPreset = lookup("ot-storyteller-preset");
+    dom.draftRows = lookup("ot-draft-rows");
+    dom.draftInfo = { leader: lookup("ot-draft-info-leader") };
+    dom.btnGenerateParty = lookup("ot-btn-generate-party");
+    dom.mythicToggle = lookup("ot-mythic-toggle");
     buildDraftRows();
-    dom.startArt = document.getElementById("ot-start-art");
-    dom.btnBeginOutfit = document.getElementById("ot-btn-begin-outfit");
+    dom.startArt = lookup("ot-start-art");
+    dom.btnBeginOutfit = lookup("ot-btn-begin-outfit");
 
-    dom.outfitIntro = document.getElementById("ot-outfit-intro");
-    dom.outfitBody = document.getElementById("ot-outfit-body");
-    dom.outfitTable = document.getElementById("ot-outfit-table");
-    dom.outfitArt = document.getElementById("ot-outfit-art");
-    dom.btnAddRecommended = document.getElementById("ot-btn-add-recommended");
-    dom.btnBeginJourney = document.getElementById("ot-btn-begin-journey");
-    dom.sumStarting = document.getElementById("ot-sum-starting");
-    dom.sumMoney = document.getElementById("ot-sum-money");
-    dom.sumLoad = document.getElementById("ot-sum-load");
-    dom.sumDraft = document.getElementById("ot-sum-draft");
-    dom.sumRatio = document.getElementById("ot-sum-ratio");
+    dom.outfitIntro = lookup("ot-outfit-intro");
+    dom.outfitBody = lookup("ot-outfit-body");
+    dom.outfitTable = lookup("ot-outfit-table");
+    dom.outfitArt = lookup("ot-outfit-art");
+    dom.btnAddRecommended = lookup("ot-btn-add-recommended");
+    dom.btnBeginJourney = lookup("ot-btn-begin-journey");
+    dom.sumStarting = lookup("ot-sum-starting");
+    dom.sumMoney = lookup("ot-sum-money");
+    dom.sumLoad = lookup("ot-sum-load");
+    dom.sumDraft = lookup("ot-sum-draft");
+    dom.sumRatio = lookup("ot-sum-ratio");
 
-    dom.ontrailPace = document.getElementById("ot-ontrail-pace");
-    dom.ontrailRations = document.getElementById("ot-ontrail-rations");
-    dom.ontrailMode = document.getElementById("ot-ontrail-mode");
-    dom.ontrailBlock = document.getElementById("ot-ontrail-block");
-    dom.weatherSummary = document.getElementById("ot-weather-summary");
-    dom.weatherNote = document.getElementById("ot-weather-note");
-    dom.reputationChip = document.getElementById("ot-reputation-chip");
+    dom.ontrailPace = lookup("ot-ontrail-pace");
+    dom.ontrailRations = lookup("ot-ontrail-rations");
+    dom.ontrailMode = lookup("ot-ontrail-mode");
+    dom.ontrailBlock = lookup("ot-ontrail-block");
+    dom.weatherSummary = lookup("ot-weather-summary");
+    dom.weatherNote = lookup("ot-weather-note");
+    dom.reputationChip = lookup("ot-reputation-chip");
     dom.factionChips = {
-      forts: document.getElementById("ot-faction-forts"),
-      caravans: document.getElementById("ot-faction-caravans"),
-      open_eye: document.getElementById("ot-faction-open-eye"),
-      men_in_gray: document.getElementById("ot-faction-men-in-gray"),
+      forts: lookup("ot-faction-forts"),
+      caravans: lookup("ot-faction-caravans"),
+      open_eye: lookup("ot-faction-open-eye"),
+      men_in_gray: lookup("ot-faction-men-in-gray"),
     };
-    dom.leaderStatus = document.getElementById("ot-leader-status");
-    dom.partyManifest = document.getElementById("ot-party-manifest");
-    dom.hourTasks = document.getElementById("ot-hour-tasks");
-    dom.scene = document.getElementById("ot-scene");
-    dom.sceneCaption = document.getElementById("ot-scene-caption");
-    dom.afflictionAlerts = document.getElementById("ot-affliction-alerts");
-    dom.trailCanvas = document.getElementById("ot-trail-canvas");
-    dom.btnViewJournal = document.getElementById("ot-btn-view-journal");
-    dom.btnViewExplorer = document.getElementById("ot-btn-view-explorer");
-    dom.trailHeader = document.getElementById("ot-trail-header");
-    dom.trailMap = document.getElementById("ot-trail-map");
-    dom.mapViewport = document.getElementById("ot-map-viewport");
+    dom.leaderStatus = lookup("ot-leader-status");
+    dom.partyManifest = lookup("ot-party-manifest");
+    dom.hourTasks = lookup("ot-hour-tasks");
+    dom.scene = lookup("ot-scene");
+    dom.sceneCaption = lookup("ot-scene-caption");
+    dom.afflictionAlerts = lookup("ot-affliction-alerts");
+    dom.trailCanvas = lookup("ot-trail-canvas");
+    dom.btnViewJournal = lookup("ot-btn-view-journal");
+    dom.btnViewExplorer = lookup("ot-btn-view-explorer");
+    dom.trailHeader = lookup("ot-trail-header");
+    dom.trailMap = lookup("ot-trail-map");
+    dom.mapViewport = lookup("ot-map-viewport");
     dom.mapCanvas = null;
-    dom.mapTooltip = document.getElementById("ot-map-tooltip");
-    dom.btnOpenMap = document.getElementById("ot-btn-open-map");
-    dom.btnCloseMap = document.getElementById("ot-btn-close-map");
-    dom.mapModal = document.getElementById("ot-map-modal");
+    dom.mapTooltip = lookup("ot-map-tooltip");
+    dom.btnOpenMap = lookup("ot-btn-open-map");
+    dom.btnCloseMap = lookup("ot-btn-close-map");
+    dom.mapModal = lookup("ot-map-modal");
     dom.mapBackdrop = dom.mapModal
       ? dom.mapModal.querySelector(".ot-modal-backdrop")
       : null;
-    dom.btnToggleMapList = document.getElementById("ot-btn-toggle-maplist");
-    dom.btnTravel1h = document.getElementById("ot-btn-travel-1h");
-    dom.btnTravel4h = document.getElementById("ot-btn-travel-4h");
-    dom.btnAutoTravel = document.getElementById("ot-btn-auto-travel");
-    dom.btnClearTarget = document.getElementById("ot-btn-clear-target");
-    dom.targetMeta = document.getElementById("ot-target-meta");
-    dom.localConditions = document.getElementById("ot-local-conditions");
-    dom.toggleFog = document.getElementById("ot-toggle-fog");
-    dom.toggleSilhouettes = document.getElementById("ot-toggle-silhouettes");
-    dom.companionDetail = document.getElementById("ot-companion-detail");
-    dom.trailLog = document.getElementById("old-trail-log-widget");
-    dom.suppliesOverview = document.getElementById("ot-supplies-overview");
-    dom.cascadePanel = document.getElementById("ot-cascade-panel");
-    dom.cascadeSummary = document.getElementById("ot-cascade-summary");
-    dom.cascadeHighlights = document.getElementById("ot-cascade-highlights");
-    dom.cascadeTimeline = document.getElementById("ot-cascade-timeline");
-    dom.cascadePeople = document.getElementById("ot-cascade-people");
-    dom.footerStatus = document.getElementById("ot-footer-status");
-    dom.btnAdvance1 = document.getElementById("ot-btn-advance-1");
-    dom.btnAdvance4 = document.getElementById("ot-btn-advance-4");
-    dom.btnToggleMode = document.getElementById("ot-btn-toggle-mode");
-    dom.btnChangePace = document.getElementById("ot-btn-change-pace");
-    dom.btnChangeRations = document.getElementById("ot-btn-change-rations");
-    dom.btnOpenInventory = document.getElementById("ot-btn-open-inventory");
-    dom.btnOpenTrade = document.getElementById("ot-btn-open-trade");
-    dom.btnOpenCamp = document.getElementById("ot-btn-open-camp-tasks");
-    dom.explorerChip = document.getElementById("ot-explorer-chip");
-    dom.explorerTooltip = document.getElementById("ot-explorer-tooltip");
-    dom.btnCampfireMoment = document.getElementById("ot-btn-campfire-moment");
+    dom.btnToggleMapList = lookup("ot-btn-toggle-maplist");
+    dom.btnTravel1h = lookup("ot-btn-travel-1h");
+    dom.btnTravel4h = lookup("ot-btn-travel-4h");
+    dom.btnAutoTravel = lookup("ot-btn-auto-travel");
+    dom.btnClearTarget = lookup("ot-btn-clear-target");
+    dom.targetMeta = lookup("ot-target-meta");
+    dom.localConditions = lookup("ot-local-conditions");
+    dom.toggleFog = lookup("ot-toggle-fog");
+    dom.toggleSilhouettes = lookup("ot-toggle-silhouettes");
+    dom.companionDetail = lookup("ot-companion-detail");
+    dom.trailLog = lookup("old-trail-log-widget");
+    dom.suppliesOverview = lookup("ot-supplies-overview");
+    dom.cascadePanel = lookup("ot-cascade-panel");
+    dom.cascadeSummary = lookup("ot-cascade-summary");
+    dom.cascadeHighlights = lookup("ot-cascade-highlights");
+    dom.cascadeTimeline = lookup("ot-cascade-timeline");
+    dom.cascadePeople = lookup("ot-cascade-people");
+    dom.footerStatus = lookup("ot-footer-status");
+    dom.btnAdvance1 = lookup("ot-btn-advance-1");
+    dom.btnAdvance4 = lookup("ot-btn-advance-4");
+    dom.btnToggleMode = lookup("ot-btn-toggle-mode");
+    dom.btnChangePace = lookup("ot-btn-change-pace");
+    dom.btnChangeRations = lookup("ot-btn-change-rations");
+    dom.btnOpenInventory = lookup("ot-btn-open-inventory");
+    dom.btnOpenTrade = lookup("ot-btn-open-trade");
+    dom.btnOpenCamp = lookup("ot-btn-open-camp-tasks");
+    dom.explorerChip = lookup("ot-explorer-chip");
+    dom.explorerTooltip = lookup("ot-explorer-tooltip");
+    dom.btnCampfireMoment = lookup("ot-btn-campfire-moment");
 
-    dom.encounterModal = document.getElementById("ot-encounter-modal");
+    dom.encounterModal = lookup("ot-encounter-modal");
     dom.encounterContent = dom.encounterModal
       ? dom.encounterModal.querySelector(".ot-encounter-content")
       : null;
-    dom.encounterTitle = document.getElementById("ot-encounter-title");
-    dom.encounterSubtitle = document.getElementById("ot-encounter-subtitle");
-    dom.encounterBody = document.getElementById("ot-encounter-body");
-    dom.encounterOptions = document.getElementById("ot-encounter-options");
-    dom.encounterImage = document.getElementById("ot-encounter-image");
-    dom.encounterCompanions = document.getElementById("ot-encounter-companions");
+    dom.encounterTitle = lookup("ot-encounter-title");
+    dom.encounterSubtitle = lookup("ot-encounter-subtitle");
+    dom.encounterBody = lookup("ot-encounter-body");
+    dom.encounterOptions = lookup("ot-encounter-options");
+    dom.encounterImage = lookup("ot-encounter-image");
+    dom.encounterCompanions = lookup("ot-encounter-companions");
 
-    dom.inventoryModal = document.getElementById("ot-inventory-modal");
+    dom.inventoryModal = lookup("ot-inventory-modal");
     dom.modalBackdrop = dom.inventoryModal
       ? dom.inventoryModal.querySelector(".ot-modal-backdrop")
       : null;
-    dom.inventorySub = document.getElementById("ot-inventory-sub");
-    dom.inventoryBody = document.getElementById("ot-inventory-body");
-    dom.btnCloseInventory = document.getElementById("ot-btn-close-inventory");
+    dom.inventorySub = lookup("ot-inventory-sub");
+    dom.inventoryBody = lookup("ot-inventory-body");
+    dom.btnCloseInventory = lookup("ot-btn-close-inventory");
 
-    dom.tradeModal = document.getElementById("ot-trade-modal");
+    dom.tradeModal = lookup("ot-trade-modal");
     dom.tradeBackdrop = dom.tradeModal
       ? dom.tradeModal.querySelector(".ot-modal-backdrop")
       : null;
-    dom.tradeTitle = document.getElementById("ot-trade-title");
-    dom.tradeSub = document.getElementById("ot-trade-sub");
-    dom.tradeSummary = document.getElementById("ot-trade-summary");
-    dom.tradeBody = document.getElementById("ot-trade-body");
-    dom.tradeMsg = document.getElementById("ot-trade-msg");
-    dom.barterPanel = document.getElementById("ot-barter-panel");
-    dom.tradeLedgerNotes = document.getElementById("ot-trade-ledger-notes");
-    dom.tradeLedgerBody = document.getElementById("ot-trade-ledger-body");
-    dom.btnTradeBuyTab = document.getElementById("ot-trade-tab-buy");
-    dom.btnTradeSellTab = document.getElementById("ot-trade-tab-sell");
-    dom.btnTradeBarterTab = document.getElementById("ot-trade-tab-barter");
-    dom.btnCloseTrade = document.getElementById("ot-btn-close-trade");
+    dom.tradeTitle = lookup("ot-trade-title");
+    dom.tradeSub = lookup("ot-trade-sub");
+    dom.tradeSummary = lookup("ot-trade-summary");
+    dom.tradeBody = lookup("ot-trade-body");
+    dom.tradeMsg = lookup("ot-trade-msg");
+    dom.barterPanel = lookup("ot-barter-panel");
+    dom.tradeLedgerNotes = lookup("ot-trade-ledger-notes");
+    dom.tradeLedgerBody = lookup("ot-trade-ledger-body");
+    dom.btnTradeBuyTab = lookup("ot-trade-tab-buy");
+    dom.btnTradeSellTab = lookup("ot-trade-tab-sell");
+    dom.btnTradeBarterTab = lookup("ot-trade-tab-barter");
+    dom.btnCloseTrade = lookup("ot-btn-close-trade");
 
-    dom.btnOpenPriorities = document.getElementById("ot-btn-open-priorities");
-    dom.prioritiesModal = document.getElementById("ot-priorities-modal");
+    dom.btnOpenPriorities = lookup("ot-btn-open-priorities");
+    dom.prioritiesModal = lookup("ot-priorities-modal");
     dom.prioritiesBackdrop = dom.prioritiesModal
       ? dom.prioritiesModal.querySelector(".ot-modal-backdrop")
       : null;
-    dom.prioritiesHeadRow = document.getElementById("ot-priorities-head-row");
-    dom.prioritiesBody = document.getElementById("ot-priorities-body");
-    dom.prioritiesWarnings = document.getElementById("ot-priorities-warnings");
-    dom.btnClosePriorities = document.getElementById("ot-btn-close-priorities");
-    dom.socialModal = document.getElementById("ot-social-modal");
+    dom.prioritiesHeadRow = lookup("ot-priorities-head-row");
+    dom.prioritiesBody = lookup("ot-priorities-body");
+    dom.prioritiesWarnings = lookup("ot-priorities-warnings");
+    dom.btnClosePriorities = lookup("ot-btn-close-priorities");
+    dom.socialModal = lookup("ot-social-modal");
     dom.socialBackdrop = dom.socialModal
       ? dom.socialModal.querySelector(".ot-modal-backdrop")
       : null;
-    dom.socialBody = document.getElementById("ot-social-body");
-    dom.btnOpenSocial = document.getElementById("ot-btn-open-social");
-    dom.btnEveningProperCamp = document.getElementById("ot-btn-evening-proper-camp");
-    dom.btnEveningRushedCamp = document.getElementById("ot-btn-evening-rushed-camp");
-    dom.campOverlay = document.getElementById("ot-camp-overlay");
-    dom.btnCloseCamp = document.getElementById("ot-btn-close-camp");
-    dom.btnCampConfirm = document.getElementById("ot-btn-camp-confirm");
-    dom.btnCampAuto = document.getElementById("ot-btn-camp-auto");
-    dom.campSummaryNote = document.getElementById("ot-camp-summary-note");
-    dom.campRolesSummary = document.getElementById("ot-camp-roles-summary");
-    dom.campChoreStrips = document.getElementById("ot-camp-chore-strips");
-    dom.btnEditRoles = document.getElementById("ot-btn-edit-roles");
-    dom.craftingWidget = document.getElementById("oldtrail-crafting-widget");
-    dom.thoughtsBubble = document.getElementById("oldtrail-thoughts-bubble");
+    dom.socialBody = lookup("ot-social-body");
+    dom.btnOpenSocial = lookup("ot-btn-open-social");
+    dom.btnEveningProperCamp = lookup("ot-btn-evening-proper-camp");
+    dom.btnEveningRushedCamp = lookup("ot-btn-evening-rushed-camp");
+    dom.campOverlay = lookup("ot-camp-overlay");
+    dom.btnCloseCamp = lookup("ot-btn-close-camp");
+    dom.btnCampConfirm = lookup("ot-btn-camp-confirm");
+    dom.btnCampAuto = lookup("ot-btn-camp-auto");
+    dom.campSummaryNote = lookup("ot-camp-summary-note");
+    dom.campRolesSummary = lookup("ot-camp-roles-summary");
+    dom.campChoreStrips = lookup("ot-camp-chore-strips");
+    dom.btnEditRoles = lookup("ot-btn-edit-roles");
+    dom.craftingWidget = lookup("oldtrail-crafting-widget");
+    dom.thoughtsBubble = lookup("oldtrail-thoughts-bubble");
 
-    dom.storytellerDesc = document.getElementById("ot-storyteller-desc");
-    dom.storytellerMidrun = document.getElementById("ot-storyteller-midrun");
-    dom.narratorLabel = document.getElementById("ot-narrator-label");
-    dom.narratorPicker = document.getElementById("ot-narrator-picker");
-    dom.narratorHint = document.getElementById("ot-narrator-hint");
-    dom.narratorRules = document.getElementById("ot-narrator-rules");
-    dom.btnToggleNarrator = document.getElementById("ot-btn-toggle-narrator");
-    dom.storytellerCards = document.getElementById("ot-storyteller-cards");
-    dom.storytellerExample = document.getElementById("ot-storyteller-example");
-    dom.tensionDebug = document.getElementById("ot-tension-debug");
-    dom.tensionReadout = document.getElementById("ot-tension-readout");
+    dom.storytellerDesc = lookup("ot-storyteller-desc");
+    dom.storytellerMidrun = lookup("ot-storyteller-midrun");
+    dom.narratorLabel = lookup("ot-narrator-label");
+    dom.narratorPicker = lookup("ot-narrator-picker");
+    dom.narratorHint = lookup("ot-narrator-hint");
+    dom.narratorRules = lookup("ot-narrator-rules");
+    dom.btnToggleNarrator = lookup("ot-btn-toggle-narrator");
+    dom.storytellerCards = lookup("ot-storyteller-cards");
+    dom.storytellerExample = lookup("ot-storyteller-example");
+    dom.tensionDebug = lookup("ot-tension-debug");
+    dom.tensionReadout = lookup("ot-tension-readout");
 
   }
 
@@ -7992,7 +8003,7 @@
       "ot-btn-begin-journey",
     ];
     return requiredIds.filter(function (id) {
-      return !document.getElementById(id);
+      return !byId(id);
     });
   }
 
@@ -8518,14 +8529,22 @@
       dom.draftRows.appendChild(row);
       dom.companionInputs.push(input);
       dom.draftButtons[slot] = { lockBtn: lockBtn, rerollBtn: rerollBtn, info: info };
-      lockBtn.addEventListener("click", function () {
-        toggleDraftLock(slot);
-      });
-      rerollBtn.addEventListener("click", function () {
-        rerollDraft(slot);
-      });
+      if (!lockBtn.dataset.otBound) {
+        lockBtn.dataset.otBound = "1";
+        lockBtn.addEventListener("click", function () {
+          toggleDraftLock(slot);
+        });
+      }
+      if (!rerollBtn.dataset.otBound) {
+        rerollBtn.dataset.otBound = "1";
+        rerollBtn.addEventListener("click", function () {
+          rerollDraft(slot);
+        });
+      }
     }
-    const leaderRow = document.querySelector('.ot-draft-row[data-slot="leader"]');
+    const leaderRow = dom.root
+      ? dom.root.querySelector('.ot-draft-row[data-slot="leader"]')
+      : document.querySelector('.ot-draft-row[data-slot="leader"]');
     if (leaderRow) {
       const lockBtn = leaderRow.querySelector('[data-action="lock"]');
       const rerollBtn = leaderRow.querySelector('[data-action="reroll"]');
@@ -8534,14 +8553,18 @@
         rerollBtn: rerollBtn,
         info: dom.draftInfo ? dom.draftInfo.leader : null,
       };
-      if (lockBtn)
+      if (lockBtn && !lockBtn.dataset.otBound) {
+        lockBtn.dataset.otBound = "1";
         lockBtn.addEventListener("click", function () {
           toggleDraftLock("leader");
         });
-      if (rerollBtn)
+      }
+      if (rerollBtn && !rerollBtn.dataset.otBound) {
+        rerollBtn.dataset.otBound = "1";
         rerollBtn.addEventListener("click", function () {
           rerollDraft("leader");
         });
+      }
     }
   }
 
@@ -24107,6 +24130,8 @@
   }
 
   function wireEvents() {
+    if (wiredRootEl && wiredRootEl === dom.root) return;
+    wiredRootEl = dom.root;
     const on = function (el, evt, handler, opts, label) {
       if (!el) {
         if (label) console.error("[ot] Missing element for", label, "binding");
@@ -26631,68 +26656,168 @@
     renderAll();
   }
 
+  const BOOT_REQUIRED_IDS = ["ot-screen-start", "ot-btn-begin-outfit"];
+  const BOOT_MAX_WAIT_MS = 30000;
+
+  function rootHasRequiredChildren(root) {
+    if (!root || !root.querySelector) return false;
+    return BOOT_REQUIRED_IDS.every(function (id) {
+      return !!root.querySelector("#" + id);
+    });
+  }
+
+  function getRootCandidates() {
+    return Array.from(document.querySelectorAll("#oldtrail-root"));
+  }
+
+  function rootArea(root) {
+    if (!root || !root.getBoundingClientRect) return 0;
+    const rect = root.getBoundingClientRect();
+    return Math.max(0, rect.width) * Math.max(0, rect.height);
+  }
+
+  function rootIsVisible(root) {
+    if (!root || !root.getBoundingClientRect) return false;
+    const rect = root.getBoundingClientRect();
+    return !!root.isConnected && rect.width > 0 && rect.height > 0;
+  }
+
+  function pickBestRoot(requireChildren) {
+    const roots = getRootCandidates();
+    let filtered = requireChildren
+      ? roots.filter(rootHasRequiredChildren)
+      : roots.slice();
+    if (!filtered.length) return null;
+
+    const visible = filtered.filter(rootIsVisible);
+    let pool = visible.length ? visible : filtered.filter(function (r) {
+      return r && r.isConnected;
+    });
+    if (!pool.length) pool = filtered;
+
+    const unbooted = pool.filter(function (r) {
+      return !(r.dataset && (r.dataset.otReady || r.dataset.otBooted));
+    });
+    if (unbooted.length) pool = unbooted;
+
+    return pool.reduce(function (best, root) {
+      if (!best) return root;
+      const area = rootArea(root);
+      const bestArea = rootArea(best);
+      return area > bestArea ? root : best;
+    }, null);
+  }
+
   function showFatalInitBanner(err) {
-    if (err) console.error("Old Trail fatal init error:", err);
-    var root = document.getElementById("oldtrail-root") || document.body;
-    if (root) {
-      var banner = document.createElement("div");
-      banner.textContent = "Old Trail failed to start — open console for details.";
-      banner.style.marginTop = "8px";
-      banner.style.padding = "10px 12px";
-      banner.style.background = "#4a1b1b";
-      banner.style.color = "#f1e9dd";
-      banner.style.border = "1px solid rgba(255, 121, 121, 0.6)";
-      banner.style.borderRadius = "10px";
-      banner.style.fontSize = "12px";
+    if (err && err !== true && err !== false && typeof err !== "string") {
+      console.error("Old Trail fatal init error:", err);
+    }
+    const message =
+      typeof err === "string"
+        ? err
+        : "Old Trail failed to start — open console for details.";
+    const root =
+      bootRootEl || pickBestRoot(false) || document.getElementById("oldtrail-root") || document.body;
+    if (!root) return;
+    const banner = document.createElement("div");
+    banner.textContent = message;
+    banner.style.position = "sticky";
+    banner.style.top = "0";
+    banner.style.zIndex = "9999";
+    banner.style.padding = "10px 12px";
+    banner.style.background = "#4a1b1b";
+    banner.style.color = "#f1e9dd";
+    banner.style.border = "1px solid rgba(255, 121, 121, 0.6)";
+    banner.style.borderRadius = "10px";
+    banner.style.fontSize = "12px";
+    banner.style.boxShadow = "0 2px 6px rgba(0,0,0,0.35)";
+    banner.style.marginBottom = "8px";
+    banner.style.display = "block";
+    try {
+      root.insertBefore(banner, root.firstChild || null);
+    } catch (e) {
       root.appendChild(banner);
     }
   }
 
-  function bootOldTrail(attempt) {
-    if (window.__oldTrailBooted) return;
-    try {
-      const attemptNum = attempt || 0;
-      const maxAttempts = 180;
-      const domReady =
-        document.readyState === "interactive" ||
-        document.readyState === "complete";
+  function bootOldTrail() {
+    const bootStart = Date.now();
+    let booted = false;
+    let timeoutNoted = false;
 
-      if (!domReady) {
-        const retryOnReady = function () {
-          document.removeEventListener("DOMContentLoaded", retryOnReady);
-          bootOldTrail(attemptNum);
-        };
-        document.addEventListener("DOMContentLoaded", retryOnReady);
-        return;
-      }
+    const stopWatchers = function () {
+      if (bootObserver) bootObserver.disconnect();
+      if (bootInterval) clearInterval(bootInterval);
+    };
 
-      const root = document.getElementById("oldtrail-root");
-      const startScreen = document.getElementById("ot-screen-start");
-      const beginBtn = document.getElementById("ot-btn-begin-outfit");
-      if (!root || !startScreen || !beginBtn) {
-        if (attemptNum < maxAttempts) {
-          requestAnimationFrame(function () {
-            bootOldTrail(attemptNum + 1);
-          });
-          return;
+    const attemptBoot = function () {
+      if (booted) return;
+      const elapsed = Date.now() - bootStart;
+      const root = pickBestRoot(true);
+      if (!root) {
+        if (elapsed >= BOOT_MAX_WAIT_MS && !timeoutNoted) {
+          timeoutNoted = true;
+          stopWatchers();
+          console.error("[ot] Boot failed: required DOM nodes missing after wait.");
+          showFatalInitBanner("Old Trail failed to start (timed out waiting for UI).");
         }
-        console.error("[ot] Boot failed: required DOM nodes missing.", {
-          root: !!root,
-          startScreen: !!startScreen,
-          beginBtn: !!beginBtn,
-        });
-        showFatalInitBanner();
         return;
       }
+      if (root.dataset && root.dataset.otReady === "1") {
+        booted = true;
+        stopWatchers();
+        return;
+      }
+      bootRootEl = root;
+      root.dataset.otReady = "1";
+      try {
+        normalizeButtonTypes(root);
+        init();
+        root.dataset.otBooted = "1";
+        booted = true;
+        stopWatchers();
+      } catch (err) {
+        booted = true;
+        stopWatchers();
+        showFatalInitBanner(err);
+      }
+    };
 
-      normalizeButtonTypes(root);
-      window.__oldTrailBooted = true;
-      init();
-    } catch (err) {
-      showFatalInitBanner(err);
+    const bootObserver = new MutationObserver(function () {
+      attemptBoot();
+    });
+    if (document.documentElement) {
+      bootObserver.observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+      });
+    }
+
+    const bootInterval = setInterval(function () {
+      attemptBoot();
+    }, 400);
+
+    if (document.readyState === "complete" || document.readyState === "interactive") {
+      attemptBoot();
+    } else {
+      document.addEventListener("DOMContentLoaded", attemptBoot, {
+        once: true,
+      });
+      attemptBoot();
     }
   }
 
   bootOldTrail();
 })();
 </script>
+<!--
+Validation checklist:
+- Hard reload the page: narrator dropdown populated; narrator cards visible; 4 companion rows visible.
+- Click Generate Party: names populate; reroll changes unlocked slots; lock prevents reroll for that slot.
+- Click Begin Outfitting: transitions to outfitting screen; buttons on outfitting screen respond.
+- Click Begin Journey: reaches travel screen without console errors.
+- Click Reset Journey: returns to start and remains interactive.
+- Confirm no “trail log spam” was introduced by these fixes.
+- Mythic OFF: no mythic-only UI leaks at start; mythic toggle still functions.
+- If boot fails (simulate by temporarily breaking a required node during testing), the fatal banner is visible at the top of the game UI.
+-->
