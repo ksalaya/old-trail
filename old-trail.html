@@ -26763,7 +26763,7 @@
         }
         return;
       }
-      if (root.dataset && root.dataset.otReady === "1") {
+      if (root.dataset && root.dataset.otBooted === "1") {
         booted = true;
         stopWatchers();
         return;
@@ -26777,6 +26777,7 @@
         booted = true;
         stopWatchers();
       } catch (err) {
+        delete root.dataset.otReady;
         booted = true;
         stopWatchers();
         showFatalInitBanner(err);
