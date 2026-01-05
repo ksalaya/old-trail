@@ -26657,7 +26657,8 @@
   }
 
   const BOOT_REQUIRED_IDS = ["ot-screen-start", "ot-btn-begin-outfit"];
-  const BOOT_MAX_WAIT_MS = 30000;
+  const BOOT_MAX_WAIT_MS = 10000;
+  const BOOT_RETRY_MS = 320;
 
   function rootHasRequiredChildren(root) {
     if (!root || !root.querySelector) return false;
@@ -26740,71 +26741,110 @@
     }
   }
 
+  function postBootSanityCheck() {
+    const issues = [];
+    const beginOutfit = byId("ot-btn-begin-outfit");
+    const btnReset = byId("ot-btn-reset");
+    if (!beginOutfit) {
+      issues.push("begin outfitting button missing");
+    } else if (beginOutfit.disabled) {
+      issues.push("begin outfitting button disabled");
+    }
+    if (!btnReset) {
+      issues.push("reset button missing");
+    }
+    if (issues.length) {
+      showUiError("Boot completed but UI bindings missing: " + issues.join(", "));
+    }
+  }
+
+  function bootOnce(reason) {
+    if (window.__OLDTRAIL_BOOTED) return true;
+    const root =
+      pickBestRoot(true) || document.getElementById("oldtrail-root") || document.body;
+    if (!root || !rootHasRequiredChildren(root)) return false;
+    if (root.dataset && root.dataset.otBooted === "1") {
+      window.__OLDTRAIL_BOOTED = true;
+      return true;
+    }
+
+    bootRootEl = root;
+    if (root.dataset) root.dataset.otReady = "1";
+
+    try {
+      normalizeButtonTypes(root);
+      init();
+      if (root.dataset) root.dataset.otBooted = "1";
+      window.__OLDTRAIL_BOOTED = true;
+      postBootSanityCheck();
+      return true;
+    } catch (err) {
+      if (root.dataset) delete root.dataset.otReady;
+      window.__OLDTRAIL_BOOTED = true;
+      showFatalInitBanner(err);
+      return true;
+    }
+  }
+
   function bootOldTrail() {
     const bootStart = Date.now();
-    let booted = false;
+    let bootInterval = null;
+    let bootObserver = null;
     let timeoutNoted = false;
 
     const stopWatchers = function () {
       if (bootObserver) bootObserver.disconnect();
       if (bootInterval) clearInterval(bootInterval);
+      bootObserver = null;
+      bootInterval = null;
     };
 
-    const attemptBoot = function () {
-      if (booted) return;
+    const attemptBoot = function (reason) {
+      if (window.__OLDTRAIL_BOOTED) {
+        stopWatchers();
+        return;
+      }
       const elapsed = Date.now() - bootStart;
-      const root = pickBestRoot(true);
-      if (!root) {
-        if (elapsed >= BOOT_MAX_WAIT_MS && !timeoutNoted) {
-          timeoutNoted = true;
-          stopWatchers();
-          console.error("[ot] Boot failed: required DOM nodes missing after wait.");
-          showFatalInitBanner("Old Trail failed to start (timed out waiting for UI).");
-        }
-        return;
-      }
-      if (root.dataset && root.dataset.otBooted === "1") {
-        booted = true;
+      const booted = bootOnce(reason);
+      if (booted) {
         stopWatchers();
         return;
       }
-      bootRootEl = root;
-      root.dataset.otReady = "1";
-      try {
-        normalizeButtonTypes(root);
-        init();
-        root.dataset.otBooted = "1";
-        booted = true;
+      if (elapsed >= BOOT_MAX_WAIT_MS && !timeoutNoted) {
+        timeoutNoted = true;
         stopWatchers();
-      } catch (err) {
-        delete root.dataset.otReady;
-        booted = true;
-        stopWatchers();
-        showFatalInitBanner(err);
+        console.error("[ot] Boot failed: required DOM nodes missing after wait.");
+        showFatalInitBanner("Old Trail failed to start (timed out waiting for UI).");
       }
     };
 
-    const bootObserver = new MutationObserver(function () {
-      attemptBoot();
-    });
-    if (document.documentElement) {
-      bootObserver.observe(document.documentElement, {
-        childList: true,
-        subtree: true,
-      });
+    if (typeof MutationObserver !== "undefined") {
+      try {
+        bootObserver = new MutationObserver(function () {
+          attemptBoot("mutation");
+        });
+        if (document.documentElement) {
+          bootObserver.observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+          });
+        }
+      } catch (err) {
+        console.warn("[ot] MutationObserver unavailable", err);
+      }
     }
 
-    const bootInterval = setInterval(function () {
-      attemptBoot();
-    }, 400);
+    bootInterval = setInterval(function () {
+      attemptBoot("interval");
+    }, BOOT_RETRY_MS);
 
     if (document.readyState === "complete" || document.readyState === "interactive") {
-      attemptBoot();
+      attemptBoot("readyState");
     } else {
-      document.addEventListener("DOMContentLoaded", attemptBoot, {
-        once: true,
+      document.addEventListener("DOMContentLoaded", function () {
+        attemptBoot("domcontentloaded");
       });
-      attemptBoot();
+      attemptBoot("early");
     }
   }
 
