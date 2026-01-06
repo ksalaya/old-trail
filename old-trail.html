@@ -115,6 +115,10 @@
   color: #f4f1ea;
 }
 
+.ot-start-hidden {
+  display: none !important;
+}
+
 .ot-panel-body-sm {
   font-size: 11px;
 }
@@ -226,6 +230,10 @@
   padding: 2px 8px;
   font-size: 10px;
   color: #f6f3ea;
+}
+
+.ot-draft-tag[data-tip] {
+  cursor: help;
 }
 
 .ot-social-grid {
@@ -354,16 +362,17 @@
   margin-top: 4px;
 }
 
-.ot-preset-detail {
-  display: none;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 8px;
-  border-radius: 8px;
-  font-size: 11px;
-  line-height: 1.5;
-  margin-top: 6px;
-}
+  .ot-preset-detail {
+    display: none;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 11px;
+    line-height: 1.5;
+    margin-top: 6px;
+    grid-column: 1 / -1;
+  }
 
 .ot-preset-card:hover .ot-preset-detail,
 .ot-preset-card:focus .ot-preset-detail,
@@ -1963,7 +1972,7 @@
               ></div>
             </div>
 
-            <div class="ot-field">
+            <div class="ot-field ot-start-hidden">
               <div class="ot-label">Trail narrator</div>
               <select id="ot-storyteller-preset" class="ot-select"></select>
               <div
@@ -1972,17 +1981,6 @@
                 style="margin-top: 4px;"
               >
                 Shapes how quickly tension rises, how often dramatic events strike, and how generous breathers feel.
-              </div>
-            </div>
-
-            <div class="ot-field">
-              <div class="ot-label">Mythic encounters</div>
-              <select id="ot-mythic-toggle" class="ot-select">
-                <option value="on">On – rare tall tales may cross your path</option>
-                <option value="off">Off – keep to grounded happenings</option>
-              </select>
-              <div class="ot-panel-body-sm ot-text-muted" style="margin-top: 4px;">
-                Tall-tale encounters are rare, branchy, and can be toggled off for a strictly grounded trek.
               </div>
             </div>
 
@@ -2024,7 +2022,7 @@
           </div>
         </div>
         <div class="ot-panel">
-          <div class="ot-panel-header">Narrator &amp; difficulty</div>
+          <div class="ot-panel-header">Narrator &amp; tone</div>
           <div class="ot-panel-body ot-panel-body-sm">
             <div id="ot-storyteller-cards" class="ot-preset-cards"></div>
             <div
@@ -2033,8 +2031,8 @@
               aria-live="polite"
             ></div>
             <div class="ot-panel-body-sm ot-text-muted" style="margin-top: 6px;">
-              Tap or click a card to select a narrator. The dropdown on the left
-              will follow along for accessibility and saved games.
+              Tap or click a card to select a narrator. Your choice persists
+              into the run and in saves.
             </div>
           </div>
         </div>
@@ -2850,6 +2848,30 @@
       "Jonah",
       "Sabine",
       "Owen",
+      "Hannah",
+      "Margaret",
+      "Eliza",
+      "Caroline",
+      "Sarah",
+      "Eleanor",
+      "Phoebe",
+      "Martha",
+      "Mary",
+      "Harriet",
+      "Henry",
+      "Isaac",
+      "Levi",
+      "Samuel",
+      "Asa",
+      "Thomas",
+      "Charles",
+      "Alonzo",
+      "Jesse",
+      "Felix",
+      "Oscar",
+      "Ezra",
+      "Jonas",
+      "Jeb",
     ],
     last: [
       "Knight",
@@ -2868,6 +2890,26 @@
       "Pruitt",
       "Glass",
       "Addison",
+      "Carver",
+      "Holliday",
+      "Porter",
+      "Brannan",
+      "Boone",
+      "Sinclair",
+      "Chamberlain",
+      "Applegate",
+      "Whitaker",
+      "Telford",
+      "Ridley",
+      "Hastings",
+      "Burnham",
+      "Crowe",
+      "Dalton",
+      "Hume",
+      "Ives",
+      "Farnsworth",
+      "Carson",
+      "Bannister",
     ],
   };
 
@@ -2880,6 +2922,16 @@
     "Josephine",
     "Abigail",
     "Sabine",
+    "Hannah",
+    "Margaret",
+    "Eliza",
+    "Caroline",
+    "Sarah",
+    "Eleanor",
+    "Phoebe",
+    "Martha",
+    "Mary",
+    "Harriet",
   ]);
 
   const BACKSTORY_DEFS = [
@@ -6261,7 +6313,7 @@
         lastRiskSnapshot: {},
         recentEvents: [],
         presetId: gameState.storytellerPresetId || "classic",
-        mythicEnabled: gameState.mythicEnabled !== false,
+        mythicEnabled: true,
         presetSwapsTotal: 0,
         presetSwapsThisWeek: 0,
         lastPresetSwapDayKey: null,
@@ -6301,8 +6353,8 @@
     if (!ss.lastRiskSnapshot) ss.lastRiskSnapshot = {};
     if (!Array.isArray(ss.recentEvents)) ss.recentEvents = [];
     if (!ss.presetId) ss.presetId = gameState.storytellerPresetId || "classic";
-    if (typeof ss.mythicEnabled !== "boolean") ss.mythicEnabled = gameState.mythicEnabled !== false;
-    gameState.mythicEnabled = ss.mythicEnabled !== false;
+    ss.mythicEnabled = true;
+    gameState.mythicEnabled = true;
     if (typeof ss.presetSwapsTotal !== "number") ss.presetSwapsTotal = 0;
     if (typeof ss.presetSwapsThisWeek !== "number") ss.presetSwapsThisWeek = 0;
     if (!ss.lastPresetSwapDayKey) ss.lastPresetSwapDayKey = null;
@@ -6533,6 +6585,31 @@
     return v < min ? min : v > max ? max : v;
   }
 
+  const SKILL_MIN = 1;
+  const SKILL_MAX = 20;
+  const SKILL_TIER_MAX = 5;
+  const TRAIT_SKILL_SCALE = 3;
+
+  function clampSkill(v) {
+    return clamp(Math.round(v), SKILL_MIN, SKILL_MAX);
+  }
+
+  function getSkillRaw(person, id) {
+    if (!person || !person.skills) return SKILL_MIN;
+    return clampSkill(person.skills[id] == null ? SKILL_MIN : person.skills[id]);
+  }
+
+  function getSkillTier(person, id) {
+    const raw = getSkillRaw(person, id);
+    return clamp(Math.ceil(raw / 4), 1, SKILL_TIER_MAX);
+  }
+
+  function getSkillScore(person, id) {
+    const raw = getSkillRaw(person, id);
+    // Map 1–20 roughly onto the old 10–50 band used in task math.
+    return 10 + ((raw - SKILL_MIN) / (SKILL_MAX - SKILL_MIN)) * 40;
+  }
+
   function randFloat(min, max) {
     return min + Math.random() * (max - min);
   }
@@ -6628,13 +6705,20 @@
       const def = getTraitDef(tid);
       if (!def) return;
       Object.keys(def.skillMods || {}).forEach(function (k) {
-        person.skills[k] = clamp((person.skills[k] || 0) + def.skillMods[k], 0, 6);
+        const delta = (def.skillMods[k] || 0) * TRAIT_SKILL_SCALE;
+        person.skills[k] = clampSkill((person.skills[k] || SKILL_MIN) + delta);
       });
       if (def.moraleBias) {
         person.morale = clamp((person.morale || 60) + def.moraleBias, 0, 100);
       }
-      if (def.guardBonus) person.skills.guard = clamp((person.skills.guard || 0) + def.guardBonus, 0, 6);
-      if (def.guardPenalty) person.skills.guard = clamp((person.skills.guard || 0) - def.guardPenalty, 0, 6);
+      if (def.guardBonus)
+        person.skills.guard = clampSkill(
+          (person.skills.guard || SKILL_MIN) + def.guardBonus * TRAIT_SKILL_SCALE
+        );
+      if (def.guardPenalty)
+        person.skills.guard = clampSkill(
+          (person.skills.guard || SKILL_MIN) - def.guardPenalty * TRAIT_SKILL_SCALE
+        );
       applied.push(tid);
     });
     person._traitApplied = true;
@@ -7554,6 +7638,17 @@
 
   function ensurePersonDelegationFields(person) {
     if (!person) return;
+    const keys = [
+      "travel",
+      "hunting",
+      "cooking",
+      "woodcutting",
+      "doctoring",
+      "repair",
+      "guard",
+      "craft",
+      "foraging",
+    ];
     if (!person.priorities) {
       person.priorities = {};
     }
@@ -7570,23 +7665,31 @@
         foraging: 0,
       };
     }
-    [
-      "travel",
-      "hunting",
-      "cooking",
-      "woodcutting",
-      "doctoring",
-      "repair",
-      "guard",
-      "craft",
-      "foraging",
-    ].forEach(function (k) {
+    keys.forEach(function (k) {
       if (typeof person.skillXP[k] !== "number") {
         person.skillXP[k] = 0;
       }
-      if (!person.skills) person.skills = {};
-      if (typeof person.skills[k] !== "number") person.skills[k] = 1;
     });
+
+    if (!person.skills) person.skills = {};
+    const skillVals = keys.map(function (k) {
+      return typeof person.skills[k] === "number" ? person.skills[k] : null;
+    });
+    const hasLegacyScale = skillVals.every(function (v) {
+      return v == null || v <= 6;
+    });
+
+    keys.forEach(function (k, idx) {
+      let val = person.skills[k];
+      if (hasLegacyScale && val != null) {
+        val = 1 + ((val || 0) / 6) * (SKILL_MAX - 1);
+      }
+      person.skills[k] = clampSkill(val == null ? SKILL_MIN : val);
+    });
+    if (hasLegacyScale) {
+      person.skillScale = "v2";
+    }
+    if (!person.skillScale) person.skillScale = "v2";
   }
 
   function skillIdLabel(id) {
@@ -7606,26 +7709,28 @@
     if (!person || !skillId) return;
     ensurePersonDelegationFields(person);
     const skills = person.skills || {};
-    let level = typeof skills[skillId] === "number" ? skills[skillId] : 0;
+    let level = getSkillRaw(person, skillId);
     let xp = person.skillXP[skillId] || 0;
+    const beforeTier = getSkillTier(person, skillId);
     xp += amount || 1;
     let leveled = false;
-    while (level < 5) {
-      const needed = 12 + level * 10;
+    while (level < SKILL_MAX) {
+      const needed = 12 + level * 6;
       if (xp < needed) break;
       xp -= needed;
       level += 1;
       leveled = true;
-      addLog(
-        person.name +
-          "'s " +
-          skillIdLabel(skillId) +
-          " improves from hard use."
-      );
     }
     person.skillXP[skillId] = xp;
-    skills[skillId] = level;
+    skills[skillId] = clampSkill(level);
     person.skills = skills;
+    const afterTier = clamp(Math.ceil(level / 4), 1, SKILL_TIER_MAX);
+    if (leveled && afterTier > beforeTier) {
+      addLog(
+        `${person.name}'s ${skillIdLabel(skillId)} moves up to tier ${afterTier}.`,
+        { importance: 1 }
+      );
+    }
   }
 
   function initializePartyPriorities() {
@@ -8153,15 +8258,15 @@
       traits: [],
       id: "p" + PERSON_ID_COUNTER++,
       skills: {
-        travel: 1,
-        hunting: 1,
-        cooking: 1,
-        woodcutting: 1,
-        doctoring: 1,
-        repair: 1,
-        guard: 1,
-        craft: 1,
-        foraging: 1,
+        travel: SKILL_MIN,
+        hunting: SKILL_MIN,
+        cooking: SKILL_MIN,
+        woodcutting: SKILL_MIN,
+        doctoring: SKILL_MIN,
+        repair: SKILL_MIN,
+        guard: SKILL_MIN,
+        craft: SKILL_MIN,
+        foraging: SKILL_MIN,
       },
       task: "travel",
       alive: true,
@@ -8179,10 +8284,11 @@
       },
       afflictions: [],
       lastBreakHour: 0,
+      skillScale: "v2",
     };
     if (bias) {
       Object.keys(bias).forEach(function (k) {
-        person.skills[k] = clamp(person.skills[k] + bias[k], 0, 5);
+        person.skills[k] = clampSkill((person.skills[k] || SKILL_MIN) + bias[k]);
       });
     }
     if (draft) {
@@ -8195,7 +8301,7 @@
       if (draft.hiddenTraits) person.hiddenTraits = draft.hiddenTraits.slice();
       if (draft.skillBias) {
         Object.keys(draft.skillBias).forEach(function (k) {
-          person.skills[k] = clamp((person.skills[k] || 0) + draft.skillBias[k], 0, 6);
+          person.skills[k] = clampSkill((person.skills[k] || SKILL_MIN) + draft.skillBias[k]);
         });
       }
     }
@@ -8313,7 +8419,24 @@
     return candidates[Math.floor(rng() * candidates.length)];
   }
 
-  function pickTraits(rng, count, existing) {
+  const FRAILTY_TRAITS = ["frail", "stiff_joints", "cold_sickly"];
+
+  function traitPolarity(def) {
+    if (!def) return 0;
+    let score = 0;
+    Object.keys(def.skillMods || {}).forEach(function (k) {
+      score += (def.skillMods[k] || 0) * TRAIT_SKILL_SCALE * 0.4;
+    });
+    if (def.guardBonus) score += def.guardBonus * TRAIT_SKILL_SCALE * 0.4;
+    if (def.guardPenalty) score -= def.guardPenalty * TRAIT_SKILL_SCALE * 0.4;
+    if (def.moraleBias) score += def.moraleBias * 0.6;
+    if (def.socialBonus) score += def.socialBonus * 0.5;
+    if (def.opinionBias) score += def.opinionBias * 0.5;
+    if (def.taskPenalty) score -= def.taskPenalty * 0.6;
+    return score;
+  }
+
+  function pickTraits(rng, count, existing, opts) {
     const picked = existing ? existing.slice() : [];
     const draft = ensurePartyDraftState();
     let rareCount = picked.filter(function (id) {
@@ -8322,18 +8445,53 @@
     let mythicCount = picked.filter(function (id) {
       return bucketForTrait(id) === "mythic";
     }).length;
-    while (picked.length < count) {
+    let safety = 0;
+    while (picked.length < count && safety < 60) {
+      safety += 1;
       const allowMythic = !!gameState.mythicEnabled && mythicCount < 1 && !draft.mythicTraitUsed;
       const bucket = rollTraitBucket(rng, allowMythic);
       if (bucket === "rare" && rareCount >= 1) continue;
       if (bucket === "mythic" && (!allowMythic || mythicCount >= 1)) continue;
       const id = pickTraitFromBucket(bucket, rng, picked, allowMythic);
-      if (!id) continue;
+      const def = getTraitDef(id);
+      if (!id || !def) continue;
+      if (opts && opts.avoidYoungHealth && FRAILTY_TRAITS.indexOf(id) >= 0 && rng() < 0.85)
+        continue;
       picked.push(id);
       if (bucket === "rare") rareCount += 1;
       if (bucket === "mythic") {
         mythicCount += 1;
         draft.mythicTraitUsed = true;
+      }
+    }
+
+    if (count >= 3 && !(opts && opts.allowExtreme)) {
+      const hasPositive = picked.some(function (tid) {
+        return traitPolarity(getTraitDef(tid)) > 0.4;
+      });
+      const hasNegative = picked.some(function (tid) {
+        return traitPolarity(getTraitDef(tid)) < -0.4;
+      });
+      if (!hasPositive || !hasNegative) {
+        for (let i = 0; i < picked.length; i++) {
+          const wantPositive = !hasPositive;
+          const swapTarget = picked[i];
+          if (wantPositive && traitPolarity(getTraitDef(swapTarget)) > 0) continue;
+          if (!wantPositive && traitPolarity(getTraitDef(swapTarget)) < 0) continue;
+          const desiredPolarity = wantPositive ? 1 : -1;
+          let swapId = null;
+          for (let tries = 0; tries < 12 && !swapId; tries++) {
+            const id = pickTraitFromBucket("common", rng, picked, true);
+            const pol = traitPolarity(getTraitDef(id));
+            if ((desiredPolarity > 0 && pol > 0.4) || (desiredPolarity < 0 && pol < -0.4)) {
+              swapId = id;
+            }
+          }
+          if (swapId) {
+            picked.splice(i, 1, swapId);
+            break;
+          }
+        }
       }
     }
     return picked;
@@ -8371,22 +8529,69 @@
     craft: "Craft",
   };
 
+  function traitSkillDelta(traits) {
+    const delta = {};
+    (traits || []).forEach(function (tid) {
+      const def = getTraitDef(tid);
+      if (!def) return;
+      Object.keys(def.skillMods || {}).forEach(function (k) {
+        delta[k] = (delta[k] || 0) + (def.skillMods[k] || 0) * TRAIT_SKILL_SCALE;
+      });
+      if (def.guardBonus)
+        delta.guard = (delta.guard || 0) + def.guardBonus * TRAIT_SKILL_SCALE;
+      if (def.guardPenalty)
+        delta.guard = (delta.guard || 0) - def.guardPenalty * TRAIT_SKILL_SCALE;
+    });
+    return delta;
+  }
+
+  function buildTraitTooltip(traitId) {
+    const def = typeof traitId === "string" ? getTraitDef(traitId) : traitId;
+    if (!def) return "";
+    const parts = [];
+    const hint = def.hint || def.personality || def.summary;
+    if (hint) parts.push(hint);
+    const mods = [];
+    Object.keys(def.skillMods || {}).forEach(function (k) {
+      const lbl = SKILL_LABELS[k] || k;
+      const delta = (def.skillMods[k] || 0) * TRAIT_SKILL_SCALE;
+      if (delta) mods.push((delta > 0 ? "+" : "") + delta + " " + lbl);
+    });
+    if (def.guardBonus)
+      mods.push("+" + def.guardBonus * TRAIT_SKILL_SCALE + " Guard");
+    if (def.guardPenalty)
+      mods.push("-" + def.guardPenalty * TRAIT_SKILL_SCALE + " Guard");
+    if (def.moraleBias)
+      mods.push((def.moraleBias > 0 ? "+" : "") + def.moraleBias + " morale");
+    if (def.socialBonus)
+      mods.push((def.socialBonus > 0 ? "+" : "") + def.socialBonus + " social");
+    if (def.opinionBias)
+      mods.push((def.opinionBias > 0 ? "+" : "") + def.opinionBias + " opinion");
+    if (def.taskPenalty)
+      mods.push("-" + def.taskPenalty + " task efficiency");
+    const mech = mods.length ? "Effects: " + mods.join(" · ") : null;
+    if (mech) parts.push(mech);
+    return parts.join("\n");
+  }
+
   function previewSkillsFromDraft(draft) {
     const baseSkills = {
-      travel: 1,
-      hunting: 1,
-      cooking: 1,
-      woodcutting: 1,
-      doctoring: 1,
-      repair: 1,
-      guard: 1,
-      craft: 1,
-      foraging: 1,
+      travel: SKILL_MIN,
+      hunting: SKILL_MIN,
+      cooking: SKILL_MIN,
+      woodcutting: SKILL_MIN,
+      doctoring: SKILL_MIN,
+      repair: SKILL_MIN,
+      guard: SKILL_MIN,
+      craft: SKILL_MIN,
+      foraging: SKILL_MIN,
     };
+    const traitMods = traitSkillDelta(draft && draft.traits);
     const out = {};
     SKILL_PREVIEW_ORDER.forEach(function (key) {
       const bias = (draft && draft.skillBias && draft.skillBias[key]) || 0;
-      out[key] = clamp((baseSkills[key] || 0) + bias, 0, 6);
+      const tmod = traitMods[key] || 0;
+      out[key] = clampSkill((baseSkills[key] || SKILL_MIN) + bias + tmod);
     });
     return out;
   }
@@ -8449,21 +8654,43 @@
     const draft = ensurePartyDraftState();
     if (draft.locks[slot]) return draft.people[slot];
     const rng = draftRng(slot);
-    const name = rollName(rng);
+    const existingFirsts = Object.values(draft.people || {})
+      .map(function (p) {
+        return p && p.name ? p.name.split(" ")[0] : null;
+      })
+      .filter(Boolean);
+    let name = rollName(rng);
+    for (let i = 0; i < 3; i++) {
+      const first = name.split(" ")[0];
+      if (existingFirsts.indexOf(first) < 0) break;
+      name = rollName(rng);
+    }
     const genderHint = deriveGenderHint(name);
     const backstory = pickBackstory(rng, { genderHint: genderHint });
-    const traits = pickTraits(rng, 3, []);
-    const skillBias = blendSkillBias(backstory.skillBias, traits.reduce(function (acc, tid) {
-      const def = getTraitDef(tid);
-      Object.keys((def && def.skillMods) || {}).forEach(function (k) {
-        acc[k] = (acc[k] || 0) + def.skillMods[k];
-      });
-      return acc;
-    }, {}));
+    const age = 16 + Math.floor(rng() * 32);
+    const allowExtreme = rng() < 0.12;
+    const traitCountRoll = rng();
+    const traitCount =
+      traitCountRoll < 0.62 ? 3 : traitCountRoll < 0.85 ? 2 : traitCountRoll < 0.94 ? 1 : 4;
+    const traits = pickTraits(rng, traitCount, [], {
+      avoidYoungHealth: age < 22,
+      allowExtreme: allowExtreme,
+    });
+    const baseAnchor = 4 + Math.round(rng() * 3);
+    const ageMod = age < 20 ? -2 : age < 24 ? -1 : age > 45 ? 2 : age > 38 ? 1 : 0;
+    const skillBias = {};
+    SKILL_PREVIEW_ORDER.forEach(function (key) {
+      const backBias = ((backstory.skillBias && backstory.skillBias[key]) || 0) * TRAIT_SKILL_SCALE;
+      const perSkillNoise = Math.round((rng() - 0.45) * 6);
+      const desired = clampSkill(
+        SKILL_MIN + baseAnchor + ageMod + perSkillNoise + backBias
+      );
+      skillBias[key] = desired - SKILL_MIN;
+    });
     draft.people[slot] = {
       name: name,
       genderHint: genderHint,
-      age: 18 + Math.floor(rng() * 28),
+      age: age,
       origin: backstory.origin,
       backstoryId: backstory.id,
       backstoryLabel: backstory.label,
@@ -8500,7 +8727,10 @@
       `<div class="ot-draft-tags">${(draft.traits || [])
         .map(function (t) {
           const def = getTraitDef(t);
-          return `<span class="ot-draft-tag">${def ? def.label : t}</span>`;
+          const tip = (buildTraitTooltip(def || t) || "").replace(/"/g, "&quot;");
+          return `<span class="ot-draft-tag" title="${tip}" data-tip="${tip}">${
+            def ? def.label : t
+          }</span>`;
         })
         .join("")}</div>` +
       `<div class="ot-draft-skills ot-text-muted">Skills — ${skillsLine}</div>`;
@@ -9134,8 +9364,8 @@
       ? dom.storytellerPreset.value
       : "classic";
     gameState.storytellerPresetId = presetId;
-    gameState.mythicEnabled = !dom.mythicToggle || dom.mythicToggle.value !== "off";
-    ensureStoryState().mythicEnabled = gameState.mythicEnabled;
+    gameState.mythicEnabled = true;
+    ensureStoryState().mythicEnabled = true;
 
     gameState.startingPoint = dom.departureSelect
       ? dom.departureSelect.value
@@ -11929,13 +12159,13 @@
   function rollSkillOutcome(person, taskId, difficulty, context) {
     ensurePersonDelegationFields(person);
     const skillTag = taskId === "repair" ? "repair" : taskId === "guard" ? "guard" : taskId === "craft" ? "craft" : taskId === "doctor" ? "doctoring" : taskId === "forage" ? "foraging" : taskId === "cook" ? "cooking" : taskId;
-    const skill = (person.skills && person.skills[skillTag]) || 0;
+    const skillScore = getSkillScore(person, skillTag);
     const moraleBonus = ((person.morale || 50) - 50) / 8;
     const fatiguePenalty = Math.max(0, 60 - (person.energy || 50)) / 6;
     const weather = context && context.weather ? context.weather : gameState.weatherState || {};
     const weatherPenalty = weather.storm ? 6 : weather.precip === "rain" ? 3 : 0;
-    const base = skill * 10 + moraleBonus - fatiguePenalty - weatherPenalty;
-    const luck = (Math.random() - 0.5) * 20;
+    const base = skillScore - 20 + moraleBonus - fatiguePenalty - weatherPenalty;
+    const luck = (Math.random() - 0.5) * 18;
     const target = (difficulty || 0) * 10;
     const score = base - target + luck;
     let outcome = "partial";
@@ -11961,7 +12191,7 @@
       return;
     }
 
-    const skill    = person.skills.cooking || 1;
+    const skillTier = getSkillTier(person, "cooking");
     const block    = getScheduleBlock(gameState.date);
     const rationId = gameState.rations || "filling";
     const wState   = gameState.weatherState || {};
@@ -11977,16 +12207,16 @@
     });
 
     // How many meals can we plausibly turn out in this hour?
-    let maxMealsBase = 1 + skill;
+    let maxMealsBase = 1 + skillTier;
     if (block === "evening") maxMealsBase += 1;
-    if (effort === "proper") maxMealsBase += 1 + skill * 0.7;
+    if (effort === "proper") maxMealsBase += 1 + skillTier * 0.7;
     const maxMeals = clamp(maxMealsBase, 1, 10);
 
     // Fuel and burn chance tuned by fuel condition and effort.
     let fuelPerMeal   = effort === "proper" ? 0.25 : 0.18;
     let fuelAvailable = fuelBefore;
 
-    let burnChance = 0.32 - skill * 0.05;
+    let burnChance = 0.32 - skillTier * 0.04;
     burnChance -= skillOutcome.quality * 0.003;
     if (wetFuel) burnChance += 0.12;
     if (effort === "proper") burnChance -= 0.07;
@@ -12069,7 +12299,7 @@
       if (recipe.regionTags && recipe.regionTags.indexOf(gameState.region) >= 0) w += 0.8;
       if (effort === "proper") w += 0.5;
       if (skillOutcome.outcome === "success") w += 0.4;
-      if (recipe.tier === "meal_feast") w += skill * 0.35;
+      if (recipe.tier === "meal_feast") w += skillTier * 0.5;
       return w;
     }
 
@@ -12255,7 +12485,7 @@
 
     const bullets = ammoBoxes * 20;
     const shots = Math.min(10, bullets);
-    const skill = person.skills.hunting || 1;
+    const skillTier = getSkillTier(person, "hunting");
     const local = getLocalResourceProfile();
     const envNote = local.tags && local.tags.length ? " (" + local.tags[0] + ")" : "";
 
@@ -12271,12 +12501,12 @@
 
     let meat = 0;
     for (let i = 0; i < shots; i++) {
-      if (Math.random() < regionBase + skill * 0.03) {
+      if (Math.random() < regionBase + skillTier * 0.025) {
         meat += randFloat(4, 18);
       }
     }
 
-    const inefficiency = skill <= 1 ? 1.3 : skill >= 4 ? 0.8 : 1.0;
+    const inefficiency = skillTier <= 1 ? 1.25 : skillTier >= 4 ? 0.85 : 1.0;
     const usedBullets = Math.min(Math.round(shots * inefficiency), bullets);
     const boxesUsed = usedBullets / 20;
     gameState.supplies.ammo = Math.max(0, ammoBoxes - boxesUsed);
@@ -12298,7 +12528,7 @@
       addLog(person.name + " returns from the hunt empty-handed" + envNote + ".");
     }
 
-    const injuryChance = clamp(0.08 - skill * 0.012, 0.02, 0.08);
+    const injuryChance = clamp(0.08 - skillTier * 0.012, 0.02, 0.08);
     if (Math.random() < injuryChance) {
       person.condition = clamp(person.condition - 8, 0, 100);
       addAffliction(person, "sprain", { severity: 1 });
@@ -12319,8 +12549,8 @@
         ? 10
         : 5);
     const richness = clamp(0.45 + (local.wood || 0.25) * 0.9, 0.3, 1.5);
-    const skill = person.skills.woodcutting || 1;
-    const bundles = yieldBase * richness * (0.3 + skill * 0.2);
+    const skillTier = getSkillTier(person, "woodcutting");
+    const bundles = yieldBase * richness * (0.35 + skillTier * 0.25);
     const envNote = local.tags && local.tags.length ? " (" + local.tags[0] + ")" : "";
     if (!gameState.supplies.firewood) gameState.supplies.firewood = 0;
     gameState.supplies.firewood += bundles * 0.2;
@@ -12341,7 +12571,7 @@
         envNote
     );
 
-    const mishapChance = clamp(0.05 - skill * 0.01, 0.01, 0.05);
+    const mishapChance = clamp(0.05 - skillTier * 0.009, 0.01, 0.05);
     if (Math.random() < mishapChance) {
       person.condition = clamp(person.condition - 5, 0, 100);
       addLog(
@@ -12501,11 +12731,14 @@
         (gameState.supplies.axles || 0) +
         (gameState.supplies.tongues || 0) >
       0;
-    const skill = person.skills.repair || person.skills.woodcutting || 1;
+    const repairTier = Math.max(
+      getSkillTier(person, "repair"),
+      getSkillTier(person, "woodcutting")
+    );
     const outcome = rollSkillOutcome(person, "repair", hasParts ? 1 : 0, {
       weather: gameState.weatherState,
     });
-    let gain = hasParts ? 4 + skill * 1.5 : 2 + skill;
+    let gain = hasParts ? 4 + repairTier * 1.3 : 2 + repairTier;
     if (outcome.outcome === "success") gain += 2;
     if (outcome.outcome === "fail") gain = Math.max(1, gain * 0.5);
     gameState.wagonCondition = clamp(
@@ -12558,10 +12791,10 @@
       return;
     }
     const target = patients[0];
-    const skill = (person.skills && person.skills.doctoring) || 0;
+    const skillTier = getSkillTier(person, "doctoring");
     const outcome = rollSkillOutcome(person, "doctor", 1, { weather: gameState.weatherState });
     const hasMedicine = (gameState.supplies && gameState.supplies.med_kits) > 0;
-    let relief = 0.4 + skill * 0.25;
+    let relief = 0.4 + skillTier * 0.22;
     if (outcome.outcome === "success") relief += 0.6;
     if (outcome.outcome === "fail") relief *= 0.6;
     let usedMedicine = false;
@@ -12577,7 +12810,7 @@
         aff.medicineUsed = true;
         usedMedicine = true;
       }
-      if (aff.severity > 1 && Math.random() < 0.15 + skill * 0.05) {
+      if (aff.severity > 1 && Math.random() < 0.15 + skillTier * 0.05) {
         aff.severity = Math.max(1, aff.severity - 1);
       }
     });
@@ -14152,7 +14385,7 @@
         return 5 + (ctx.risk.behind_schedule ? 2 : 0);
       },
       run: async function (ctx) {
-        const travelSkill = (gameState.leader && gameState.leader.skills && gameState.leader.skills.travel) || 1;
+        const travelTier = getSkillTier(gameState.leader, "travel");
         const choice = await presentEncounter({
           id: "shortcut_guide_offer",
           title: "Dubious shortcut guide",
@@ -14170,7 +14403,7 @@
         });
         if (choice === "pay") {
           gameState.money = Math.max(0, (gameState.money || 0) - 5);
-          const lucky = Math.random() < 0.35 + travelSkill * 0.05;
+          const lucky = Math.random() < 0.35 + travelTier * 0.05;
           if (lucky) {
             gameState.lastHourMiles = (gameState.lastHourMiles || 0) + 1.2;
             addLog("The guide threads a hidden draw; you make rare quick miles through the ridges.", { tone: "event" });
@@ -20772,15 +21005,15 @@
     skillsLine.style.marginTop = "6px";
     skillsLine.textContent =
       "Travel: " +
-      (skills.travel || 0) +
+      getSkillRaw(person, "travel") +
       " · Hunting: " +
-      (skills.hunting || 0) +
+      getSkillRaw(person, "hunting") +
       " · Cooking: " +
-      (skills.cooking || 0) +
+      getSkillRaw(person, "cooking") +
       " · Woodcutting: " +
-      (skills.woodcutting || 0) +
+      getSkillRaw(person, "woodcutting") +
       " · Doctoring: " +
-      (skills.doctoring || 0);
+      getSkillRaw(person, "doctoring");
     dom.companionDetail.appendChild(skillsLine);
 
     const bio = document.createElement("div");
@@ -20802,7 +21035,10 @@
     traitsRow.innerHTML = (person.traits || [])
       .map(function (t) {
         const def = getTraitDef(t);
-        return `<span class="ot-draft-tag">${def ? def.label : t}</span>`;
+        const tip = (buildTraitTooltip(def || t) || "").replace(/"/g, "&quot;");
+        return `<span class="ot-draft-tag" title="${tip}" data-tip="${tip}">${
+          def ? def.label : t
+        }</span>`;
       })
       .join(" ") || "No quirks noted.";
     dom.companionDetail.appendChild(traitsRow);
@@ -23178,13 +23414,6 @@
         saveGame();
       });
     }
-    if (dom.mythicToggle) {
-      dom.mythicToggle.value = gameState.mythicEnabled === false ? "off" : "on";
-      dom.mythicToggle.addEventListener("change", function () {
-        gameState.mythicEnabled = dom.mythicToggle.value !== "off";
-        ensureStoryState().mythicEnabled = gameState.mythicEnabled;
-      });
-    }
     dom.btnBeginOutfit.addEventListener("click", startNewGameFromForm);
     dom.btnAddRecommended.addEventListener("click", addRecommendedLoad);
     dom.btnBeginJourney.addEventListener("click", beginJourney);
@@ -25371,4 +25600,14 @@
 - Global B-seed pacing holds (>=36h between B-seeds/callbacks).
 - Mythic OFF: Men in Gray callback never triggers; Mirror echo stays mundane and never grants curios.
 - Trail log stays lean: one meaningful log per new event path (plus curio gain log when applicable).
+-->
+<!-- Validation checklist (mythic-only + 1–20 skills + narrator UI):
+- Start a new run: start screen loads; no console errors.
+- Mythic toggle is gone; mythic content is always enabled; old saves with mythicOff load and are forced mythicOn.
+- Narrator selection appears only once via cards; hover detail text reads at normal width; selection persists into play/save.
+- Party rerolls show skills on a 1–20 scale with noticeable variation; 3 traits are most common but not guaranteed.
+- Younger characters generally roll lower baselines and fewer frailty traits; older characters can show higher skills and health quirks.
+- Trait hover tooltips display clear summaries in draft and in-run views.
+- Fast-forward several days/hours: task odds remain sane on the new scale; no trail log spam from skill-ups.
+- Save/load mid-run works without crashing (best-effort).
 -->

@@ -49,3 +49,30 @@ UI / Polish
 Audio / Art
 - Ambient audio loops (prairie wind, storms, river crossings, night campfire, fort bustle) with lightweight Web Audio sprite system.
 - Optional lightning/rain/snow overlay tied to weather events; Bierstadt/Remington/Maggiori-inspired mood palettes per region and block.
+
+UPDATED VISION — DREAM-WEST CORE
+- Mythic-only Dream-West baseline: tall tales, omens, and X-files-on-the-frontier weirdness always simmering beneath the grit.
+- Dark humor and replayable runs anchored by storyteller pacing, with tension swings and strange curiosities as expected texture.
+- Single-file, save-friendly delivery that keeps choices legible even as the world drifts uncanny.
+
+DONE (THIS PASS)
+- Mythic encounters always on; toggle removed and saves migrated.
+- Narrator UI polish: card detail layout fixed and dropdown duplication hidden.
+- Skills scaled to 1–20 with tiered formulas, XP tuning, and migration.
+- Party generation refreshed with expanded names, varied trait counts/mix, age-aware skills, and better randomness.
+- Trait hover tooltips added across draft and in-run views.
+
+NEXT / DEFERRED
+- Rapid-fire seed events pack (B-set filler beats) with hard cooldowns.
+- Tier B big setpieces (B-01..B-05 etc.).
+- Remaining chain followups: EX-01..EX-10, H-01/H-02/H-04/H-05/H-07, S-01/S-05/S-06/S-08, mythic M-01/M-02/M-05/M-08.
+- Deeper faction politics arcs (rival forts, Open Eye Revival cult, Men in Gray full arc).
+- Wire Open Eye / Men in Gray rep into trade modifiers + UI surfacing.
+- Fill remaining Dream-West B-set seeds/callbacks with region variants and tuned tension.
+- Extend Open Eye into later-tier confrontations/aid (escort/delivery) once chains support it.
+- Full mental-break/meltdown loop tied to morale/stress (multi-state, escalating).
+- Deeper multi-step mythic questlines across regions/days with callbacks.
+- Recurring NPC caravans/factions over time (return visits, remembered favors/grudges).
+- Event overlap/queue rules to avoid conflicting incidents in same block.
+- Expanded storyteller roster/weirdness slider UI + pacing rules.
+- Broader social arc varieties (long rivalries/romance/campfire followups) with trait-driven hooks.
