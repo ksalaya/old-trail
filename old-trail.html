@@ -4534,6 +4534,328 @@
         recordStoryBeat("seed", "trade", "Open-eye receipt delivered", { choice: selection });
       },
     },
+    {
+      id: "seed_b14_telegraph_choir",
+      kind: "breather",
+      condition: function (ctx) {
+        return (
+          ctx.mode === "travel" &&
+          ctx.block === "evening" &&
+          hoursSinceFlag("seed_b14_telegraph_choir_time") >= 168 &&
+          hoursSinceFlag("seed_b_global_time") >= 36
+        );
+      },
+      weight: function () {
+        return 2;
+      },
+      run: async function (ctx) {
+        const selection = await presentEncounter({
+          id: "seed_b14_telegraph_choir",
+          title: "Telegraph wire choir",
+          subtitle: ctx.location,
+          body: [
+            "A sagging telegraph line hums in the dusk. The wire vibrates like a choir of kettle whistles and ghostly hymns.",
+          ],
+          tags: ["travel", "omen"],
+          options: [
+            { id: "listen", label: "Listen to the song", tone: "warm", hint: "Morale lifts; tension eases." },
+            { id: "clip", label: "Clip a length for scrap", tone: "danger", hint: "Pocket copper; unsettles the team." },
+            { id: "ignore", label: "Ignore it", tone: "neutral", hint: "Keep rolling." },
+          ],
+          defaultId: "listen",
+        });
+        const nowHour = getCurrentTrailHour(gameState);
+        setEventFlag("seed_b_global_time", nowHour);
+        setEventFlag("seed_b14_telegraph_choir_time", nowHour);
+        let logText = "";
+        if (selection === "listen") {
+          (ctx.people || getAllPeople()).forEach(function (p) {
+            adjustPersonStat(p, "morale", 1);
+          });
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) - 2, 0, 100);
+          logText = "You rein in and listen. The wire sings until the last light fades and nerves settle.";
+        } else if (selection === "clip") {
+          gameState.money = (gameState.money || 0) + 3;
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) + 1, 0, 100);
+          logText = "You snip a gleaming length of wire, coil it, and feel eyes on your back until camp.";
+        } else if (selection === "ignore") {
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) - 1, 0, 100);
+          logText = "You keep the team steady while the wire wails past.";
+        }
+        if (logText) addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("seed", "seed_b14_telegraph_choir", "Telegraph wire hummed along the trail", {
+          choice: selection,
+        });
+      },
+    },
+    {
+      id: "seed_b15_black_dog_in_snow",
+      kind: "minor",
+      condition: function (ctx) {
+        return (
+          ctx.mode === "camp" &&
+          ctx.block === "night" &&
+          hoursSinceFlag("seed_b15_black_dog_in_snow_time") >= 168 &&
+          hoursSinceFlag("seed_b_global_time") >= 36
+        );
+      },
+      weight: function () {
+        return 2;
+      },
+      run: async function (ctx) {
+        const selection = await presentEncounter({
+          id: "seed_b15_black_dog_in_snow",
+          title: "Black dog in the snow",
+          subtitle: ctx.location,
+          body: [
+            "Frost rims the wagons. A black dog sits beyond the firelight, silent, eyes reflecting sparks as snow drifts settle.",
+          ],
+          tags: ["camp", "omen"],
+          options: [
+            { id: "feed", label: "Feed the dog", tone: "warm", hint: "Costs a meal; lifts morale." },
+            { id: "chase", label: "Chase it off", tone: "danger", hint: "Risk a stumble in the dark." },
+            { id: "dismiss", label: "Let it watch", tone: "neutral", hint: "Move on uneasily." },
+          ],
+          defaultId: "feed",
+        });
+        const nowHour = getCurrentTrailHour(gameState);
+        setEventFlag("seed_b_global_time", nowHour);
+        setEventFlag("seed_b15_black_dog_in_snow_time", nowHour);
+        let logText = "";
+        if (selection === "feed") {
+          if ((gameState.supplies.meal_simple || 0) > 0) {
+            gameState.supplies.meal_simple = Math.max(0, (gameState.supplies.meal_simple || 0) - 1);
+          }
+          (ctx.people || getAllPeople()).forEach(function (p) {
+            adjustPersonStat(p, "morale", 1);
+          });
+          logText = "You slide a ration toward the dog. It eats, leaves a warm patch in the snow, and vanishes.";
+        } else if (selection === "chase") {
+          const target = choice(ctx.people || getAllPeople());
+          if (target) {
+            target.energy = clamp((target.energy || 50) - 4, 0, 100);
+            target.condition = clamp((target.condition || 50) - 3, 0, 100);
+          }
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) + 1, 0, 100);
+          logText = target
+            ? target.name + " slips in the snow driving the omen-hound away."
+            : "You chase the dog; the snow hides the ruts and someone stumbles.";
+        } else if (selection === "dismiss") {
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) + 1, 0, 100);
+          logText = "You let the dog watch until it melts into the snow and unease settles in.";
+        }
+        if (logText) addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("seed", "seed_b15_black_dog_in_snow", "Encountered a black dog omen", { choice: selection });
+      },
+    },
+    {
+      id: "seed_b16_dead_mailbag",
+      kind: "minor",
+      condition: function (ctx) {
+        return (
+          (ctx.mode === "camp" || ctx.mode === "travel") &&
+          (ctx.block === "evening" || ctx.block === "night") &&
+          hoursSinceFlag("seed_b16_dead_mailbag_time") >= 168 &&
+          hoursSinceFlag("seed_b_global_time") >= 36
+        );
+      },
+      weight: function () {
+        return 2;
+      },
+      run: async function (ctx) {
+        const selection = await presentEncounter({
+          id: "seed_b16_dead_mailbag",
+          title: "Mailbag from nowhere",
+          subtitle: ctx.location,
+          body: [
+            "A torn mailbag lies in the ruts. Letters spill out addressed to people not yet born, postmarks a decade ahead.",
+          ],
+          tags: ["omen", "trade"],
+          options: [
+            { id: "read", label: "Read a handful", tone: "neutral", hint: "Raises tension; earns a stray clue." },
+            { id: "burn", label: "Burn the lot", tone: "warm", hint: "Lower tension; lose a little faith with someone." },
+            { id: "keep", label: "Tie it shut and keep", tone: "danger", hint: "Pocket a curiosity; risks gossip." },
+          ],
+          defaultId: "read",
+        });
+        const nowHour = getCurrentTrailHour(gameState);
+        setEventFlag("seed_b_global_time", nowHour);
+        setEventFlag("seed_b16_dead_mailbag_time", nowHour);
+        let logText = "";
+        if (selection === "read") {
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) + 2, 0, 100);
+          const pair = ctx.rivalPair || null;
+          if (pair) adjustOpinion(pair[0], pair[1], 1, "mailbag_secret");
+          logText = "You read enough to know the dates are wrong. The letters whisper until the fire drowns them out.";
+        } else if (selection === "burn") {
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) - 2, 0, 100);
+          adjustFactionRep("men_in_gray", -2, null, ctx);
+          logText = "You burn the future mail. The smoke twists oddly and a gray-coated rider on the ridge turns away.";
+        } else if (selection === "keep") {
+          setEventFlag("seed_b16_mailbag_kept", true);
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) + 1, 0, 100);
+          logText = "You tie the bag shut and stow it. Someone mutters that debts might come due later.";
+        }
+        if (logText) addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("seed", "seed_b16_dead_mailbag", "Found a mailbag with future dates", { choice: selection });
+      },
+    },
+    {
+      id: "seed_b17_campfire_census",
+      kind: "minor",
+      condition: function (ctx) {
+        return (
+          ctx.mode === "camp" &&
+          ctx.block === "night" &&
+          hoursSinceFlag("seed_b17_campfire_census_time") >= 168 &&
+          hoursSinceFlag("seed_b_global_time") >= 36
+        );
+      },
+      weight: function () {
+        return 2;
+      },
+      run: async function (ctx) {
+        const selection = await presentEncounter({
+          id: "seed_b17_campfire_census",
+          title: "Campfire census",
+          subtitle: ctx.location,
+          body: [
+            "Men in Gray step into the light with a leather ledger. They ask absurd questions: number of dreams per night, how many times you've bitten your tongue this week.",
+          ],
+          tags: ["camp", "mythic"],
+          options: [
+            { id: "cooperate", label: "Answer straight", tone: "warm", hint: "Builds standing with them." },
+            { id: "lie", label: "Feed them nonsense", tone: "danger", hint: "Might amuse; might offend." },
+            { id: "refuse", label: "Refuse the ledger", tone: "danger", hint: "Raises tension." },
+          ],
+          defaultId: "cooperate",
+        });
+        const nowHour = getCurrentTrailHour(gameState);
+        setEventFlag("seed_b_global_time", nowHour);
+        setEventFlag("seed_b17_campfire_census_time", nowHour);
+        let logText = "";
+        if (selection === "cooperate") {
+          adjustFactionRep("men_in_gray", 4, null, ctx);
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) - 1, 0, 100);
+          logText = "You answer every strange question. The ledgers snap shut with a nod.";
+        } else if (selection === "lie") {
+          adjustFactionRep("men_in_gray", -2, null, ctx);
+          (ctx.people || getAllPeople()).forEach(function (p) {
+            adjustPersonStat(p, "morale", 1);
+          });
+          logText = "You spin tall tales until the gray coats close the book in irritation.";
+        } else if (selection === "refuse") {
+          adjustFactionRep("men_in_gray", -4, null, ctx);
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) + 2, 0, 100);
+          logText = "You bar the ledger from the firelight. The men in gray leave without a word.";
+        }
+        if (logText) addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("seed", "seed_b17_campfire_census", "Men in Gray took a census", { choice: selection });
+      },
+    },
+    {
+      id: "seed_b18_open_eye_leaflet",
+      kind: "breather",
+      condition: function (ctx) {
+        return (
+          ctx.mode === "camp" &&
+          ctx.block === "evening" &&
+          hoursSinceFlag("seed_b18_open_eye_leaflet_time") >= 168 &&
+          hoursSinceFlag("seed_b_global_time") >= 36
+        );
+      },
+      weight: function () {
+        return 2;
+      },
+      run: async function (ctx) {
+        const selection = await presentEncounter({
+          id: "seed_b18_open_eye_leaflet",
+          title: "Open Eye hymn leaflet",
+          subtitle: ctx.location,
+          body: [
+            "Wind pushes a crumpled leaflet against a wagon wheel. It holds a hymn to the Open Eye written in careful hand.",
+          ],
+          tags: ["camp", "cult"],
+          options: [
+            { id: "memorize", label: "Memorize the verse", tone: "warm", hint: "Bolsters morale; pleases the Open Eye." },
+            { id: "mock", label: "Mock it by the fire", tone: "danger", hint: "Risks offense." },
+            { id: "trade", label: "Trade it for coin", tone: "neutral", hint: "A peddler pays for curios." },
+          ],
+          defaultId: "memorize",
+        });
+        const nowHour = getCurrentTrailHour(gameState);
+        setEventFlag("seed_b_global_time", nowHour);
+        setEventFlag("seed_b18_open_eye_leaflet_time", nowHour);
+        let logText = "";
+        if (selection === "memorize") {
+          (ctx.people || getAllPeople()).forEach(function (p) {
+            adjustPersonStat(p, "morale", 1);
+          });
+          adjustFactionRep("open_eye", 3, null, ctx);
+          logText = "You hum the hymn softly; the campfire feels warmer for a spell.";
+        } else if (selection === "mock") {
+          adjustFactionRep("open_eye", -4, null, ctx);
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) + 1, 0, 100);
+          logText = "You make jokes over the hymn; someone snuffs the leaflet and the fire cracks sharply.";
+        } else if (selection === "trade") {
+          gameState.money = (gameState.money || 0) + 4;
+          logText = "A passing peddler gives a few coins for the curious hymn sheet.";
+        }
+        if (logText) addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("seed", "seed_b18_open_eye_leaflet", "Found an Open Eye hymn", { choice: selection });
+      },
+    },
+    {
+      id: "seed_b19_mirror_wagon_sign",
+      kind: "breather",
+      condition: function (ctx) {
+        return (
+          ctx.mode === "travel" &&
+          (ctx.block === "noon" || ctx.block === "evening") &&
+          hoursSinceFlag("seed_b19_mirror_wagon_sign_time") >= 168 &&
+          hoursSinceFlag("seed_b_global_time") >= 36
+        );
+      },
+      weight: function () {
+        return 2;
+      },
+      run: async function (ctx) {
+        const selection = await presentEncounter({
+          id: "seed_b19_mirror_wagon_sign",
+          title: "Mirrored wagon sign",
+          subtitle: ctx.location,
+          body: [
+            "A nailed board flashes in a puddle like a mirror. Its painted arrow points toward a \"shorter\" path that shouldn't be there.",
+          ],
+          tags: ["travel", "omen"],
+          options: [
+            { id: "follow", label: "Follow the sign", tone: "danger", hint: "Push for extra miles; risk a mishap." },
+            { id: "ignore", label: "Ignore it", tone: "neutral", hint: "Stay on the mapped trail." },
+            { id: "mark", label: "Mark it on your map", tone: "warm", hint: "Flag it for later." },
+          ],
+          defaultId: "ignore",
+        });
+        const nowHour = getCurrentTrailHour(gameState);
+        setEventFlag("seed_b_global_time", nowHour);
+        setEventFlag("seed_b19_mirror_wagon_sign_time", nowHour);
+        let logText = "";
+        if (selection === "follow") {
+          gameState.lastHourMiles = (gameState.lastHourMiles || 0) + 0.8;
+          if (Math.random() < 0.4) {
+            gameState.wagonCondition = clamp((gameState.wagonCondition || 50) - 4, 0, 100);
+          }
+          logText = "You push onto the gleaming side path. The team makes good time but the wagon creaks in protest.";
+        } else if (selection === "ignore") {
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) - 1, 0, 100);
+          logText = "You stick to the ruts you know, letting the mirrored arrow fade behind.";
+        } else if (selection === "mark") {
+          setEventFlag("seed_b19_mirror_mark", true);
+          logText = "You sketch the strange sign on your map for later, then roll on.";
+        }
+        if (logText) addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("seed", "seed_b19_mirror_wagon_sign", "Spotted a mirrored wagon sign", { choice: selection });
+      },
+    },
   ];
 
   const ROUTE_MILESTONES = [
@@ -17052,6 +17374,148 @@
         });
       },
     },
+    // B-01 medicine show setpiece
+    {
+      id: "setpiece_b01_medicine_show",
+      kind: "major",
+      condition: function (ctx) {
+        const step = getEventFlag("b01_medicine_show_step") || 0;
+        const miles = gameState.milesTraveled || 0;
+        const mileOk = miles >= 200 && miles <= 1400;
+        const regionOk = ctx.regionKey !== "columbia";
+        const cooldownOk = hoursSinceFlag("b01_medicine_show_last") >= 240;
+        const blockOk = ctx.block === "evening" || ctx.block === "noon";
+        return step === 0 && ctx.mode === "travel" && blockOk && mileOk && regionOk && cooldownOk;
+      },
+      weight: function () {
+        return 2;
+      },
+      run: async function (ctx) {
+        const selection = await presentEncounter({
+          id: "setpiece_b01_medicine_show",
+          title: "Traveling medicine show",
+          subtitle: ctx.location,
+          body: [
+            "Painted wagons form a crooked circle off the trail. A barker in a sequined coat promises cures for every ailment while smoke pots hiss behind him.",
+          ],
+          tags: ["travel", "trade", "omen"],
+          options: [
+            { id: "pay", label: "Pay for the show", tone: "warm", hint: "Spend coin; morale rises." },
+            { id: "tonic", label: "Buy the miracle tonic", tone: "neutral", hint: "Costs coin; gain supplies; tension up." },
+            { id: "skulk", label: "Skulk behind the wagons", tone: "danger", hint: "Chance at coin; risk trouble." },
+          ],
+          defaultId: "pay",
+        });
+        const nowHour = getCurrentTrailHour(gameState);
+        let variant = "pay";
+        let logText = "You steer past the gaudy circle, letting the show fade behind.";
+        if (selection === "pay") {
+          gameState.money = Math.max(0, (gameState.money || 0) - 5);
+          (ctx.people || getAllPeople()).forEach(function (p) {
+            adjustPersonStat(p, "morale", 2);
+          });
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) - 1, 0, 100);
+          variant = "pay";
+          logText = "You pay for the spectacle. Music, snake oil, and laughter ease the road for an evening.";
+        } else if (selection === "tonic") {
+          const cost = 4;
+          gameState.money = Math.max(0, (gameState.money || 0) - cost);
+          gameState.supplies.med_kits = (gameState.supplies.med_kits || 0) + 1;
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) + 2, 0, 100);
+          variant = "tonic";
+          logText = "You buy a crate of \"miracle tonic\". The label glows faintly and everyone side-eyes the bottles.";
+        } else if (selection === "skulk") {
+          variant = "skulk";
+          if (Math.random() < 0.5) {
+            gameState.money = (gameState.money || 0) + 5;
+            logText = "You slip behind the stage wagons and find a tipped cash box before hurrying off.";
+          } else {
+            adjustFactionRep("men_in_gray", -3, null, ctx);
+            const target = choice(ctx.people || getAllPeople());
+            if (target) target.condition = clamp((target.condition || 50) - 4, 0, 100);
+            logText = "A watcher in gray spots you skulking. You escape with bruises and a cold stare.";
+          }
+        }
+        setEventFlag("b01_medicine_show_last", nowHour);
+        setEventFlag("b01_medicine_show_variant", variant);
+        advanceChain("b01_medicine_show", 1);
+        addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("setpiece", "b01_medicine_show", "Visited a traveling medicine show", {
+          choice: selection,
+          variant: variant,
+        });
+      },
+    },
+    {
+      id: "b01_medicine_show_followup",
+      kind: "minor",
+      condition: function (ctx) {
+        const step = getEventFlag("b01_medicine_show_step");
+        const waited = hoursSinceFlag("b01_medicine_show_time");
+        return step === 1 && waited >= 24 && waited <= 96;
+      },
+      weight: function () {
+        return 3;
+      },
+      run: async function (ctx) {
+        const variant = getEventFlag("b01_medicine_show_variant");
+        const selection = await presentEncounter({
+          id: "b01_medicine_show_followup",
+          title: "Medicine show echoes",
+          subtitle: ctx.location,
+          body: [
+            variant === "tonic"
+              ? "The crate rattles as you travel. Bottles leak a sweet smell; someone complains of a metallic aftertaste."
+              : variant === "skulk"
+              ? "A lone performer limps along the trail behind you, carrying a ledger and looking displeased."
+              : "A jaunty fiddle tune drifts from the trees; the medicine troupe seems to have followed for a spell.",
+          ],
+          tags: ["omen", "travel"],
+          options: [
+            { id: "engage", label: "Face it head on", tone: "warm", hint: "Settle nerves; minor cost." },
+            { id: "shake", label: "Shake them off", tone: "danger", hint: "Raise tension; keep moving." },
+          ],
+          defaultId: "engage",
+        });
+        let logText = "You hum the tune away and keep rolling.";
+        if (selection === "engage") {
+          if (variant === "tonic") {
+            ctx.storyState.tension = clamp((ctx.storyState.tension || 0) + 1, 0, 100);
+            gameState.supplies.med_kits = Math.max(0, (gameState.supplies.med_kits || 0) - 1);
+            (ctx.people || getAllPeople()).forEach(function (p) {
+              adjustPersonStat(p, "morale", 1);
+            });
+            logText = "You pour out a bottle to test it. Spirits rise when nothing mutates, though the smell lingers.";
+          } else if (variant === "skulk") {
+            adjustFactionRep("men_in_gray", -2, null, ctx);
+            gameState.money = Math.max(0, (gameState.money || 0) - 2);
+            logText = "You pay a begrudging hush fee to the limping performer and move on.";
+          } else {
+            ctx.storyState.tension = clamp((ctx.storyState.tension || 0) - 1, 0, 100);
+            (ctx.people || getAllPeople()).forEach(function (p) {
+              adjustPersonStat(p, "morale", 1);
+            });
+            logText = "You invite the fiddler in for a song, letting the road feel lighter for a night.";
+          }
+        } else if (selection === "shake") {
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) + 2, 0, 100);
+          if (variant === "skulk") {
+            const target = choice(ctx.people || getAllPeople());
+            if (target) target.condition = clamp((target.condition || 50) - 3, 0, 100);
+            logText = "You hurry the team; the performer fades but a rough jolt leaves someone sore.";
+          } else {
+            logText = "You outpace the lingering tune and leave the rattling crate unopened.";
+          }
+        }
+        advanceChain("b01_medicine_show", 2);
+        setEventFlag("b01_medicine_show_last", getCurrentTrailHour(gameState));
+        addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        recordStoryBeat("setpiece", "b01_medicine_show", "Medicine show follow-up", {
+          choice: selection,
+          variant: variant,
+        });
+      },
+    },
     {
       id: "setpiece_open_eye_revival",
       kind: "major",
@@ -21895,8 +22359,10 @@
       const subParts = [];
       if (vendorKey === "forts") subParts.push(fort ? fort.name : "Frontier post");
       else subParts.push((tradeDef && tradeDef.label) || getVendorLabelForKey(vendorKey));
+      const repVal = tier && isFinite(tier.value) ? tier.value : 0;
+      subParts.push(`Standing: ${tier.label} (${repVal >= 0 ? "+" : ""}${repVal})`);
+      subParts.push(`Terms: ${terms.label}`);
       subParts.push(formatDateTime(gameState.date));
-      subParts.push(terms.label + " terms");
       dom.tradeSub.textContent = subParts.join(" · ");
     }
 
@@ -25610,4 +26076,12 @@
 - Trait hover tooltips display clear summaries in draft and in-run views.
 - Fast-forward several days/hours: task odds remain sane on the new scale; no trail log spam from skill-ups.
 - Save/load mid-run works without crashing (best-effort).
+-->
+<!-- Validation checklist (B-set filler + B-01 + trade header):
+- Start a new run; fast-forward multiple days; confirm seeds appear but do not spam.
+- Confirm B-set global cooldown + per-seed cooldown works (no B-seed inside 36h; no same seed inside 7d).
+- Trigger B-01 only once per ~10 days mid-run; follow-up fires once 24–96h later and resolves.
+- Ensure no JS errors; encounter modal closes; trail log shows one meaningful line per event.
+- Open a trade modal (fort/caravan/open_eye) and see Standing + Terms in the header without layout break.
+- Save/load smoke test if available: old saves still load without crashes.
 -->
