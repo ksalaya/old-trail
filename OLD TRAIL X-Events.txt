@@ -1,0 +1,437 @@
+﻿OLD TRAIL X-Events
+Core Approach (so it stays replayable, not just “random spooky”)
+1) Run Seed: “Case File” (pick 1–2 per journey)
+Each run secretly picks a theme that boosts certain event pools and makes the trail feel like an alternate version of itself.
+* CASE FILE: SKY NOTES (lights, crashes, star-metal, abductions)
+* CASE FILE: BODY MARKS (bites, infections, mutations, “operations”)
+* CASE FILE: TIME SLIPS (missing hours, doubles, déjà vu, swapped landmarks)
+* CASE FILE: FORT CONSPIRACY (clerks, ledgers, quarantines, cover-ups)
+* CASE FILE: WOOD & HOLLOW (cults, hidden valleys, “people not right”)
+* CASE FILE: WATER THAT TALKS (rivers, drown-whispers, fish with eyes)
+* CASE FILE: THE LOST COMPANY (another wagon train you keep almost meeting)
+2) Add Two Lightweight Run Variables
+These make outcomes “stick” like RimWorld.
+* Strangeness (0–100): starts low; rises from anomalies, fever, forbidden items. Higher = weirder events, worse paranoia, bigger rewards.
+* Heat (0–100): how “noticed” you are (by forts, cults, watchers). Higher = ambushes, interrogations, forced quarantine.
+3) Persistent “Marks” on Pawns
+Instead of one-off events, give pawns conditions that evolve:
+* Strange Bite / Star Burn / Night Surgery / Hollow Cough / Dream-Latched
+Each has stages (mild → severe → transformation / cure / death / “new ability”).
+________________
+
+
+Event Chains (12 long-form “X-Files episodes”)
+Each chain is 4–7 nodes that can branch and reappear later. You can sprinkle nodes across weeks so it feels like a mystery.
+CHAIN A — “The Fallen Star”
+   1. Green Fire Over the Ridge (Uncommon, Night)
+A silent arc of green light.
+      * Investigate: +Strangeness, chance to gain Star-Iron Shard
+      * Ignore: nothing now, but later you may find burned circle anyway
+      2. Glass Field (Uncommon)
+Ground fused into black glass.
+         * Harvest glass: gain Black Glass (trade), +Heat
+         * Leave it: morale + (sensible)
+         3. The Singing Debris (Rare)
+Metal that “hums” near your wagon tongue.
+            * Keep it: unlock pawn perk chance Receiver
+            * Sell at fort: huge $ but fort questions (+Heat)
+            4. Night Visitors (Rare, Camp)
+Pawns wake with muddy feet / missing hour.
+               * Set watch: chance to prevent abduction; risk injury
+               * Pretend asleep: one pawn gains Night Surgery (Stage 1)
+               5. The Map That Isn’t Yours (Rare)
+Your map shows a shortcut that isn’t there—unless you go at dusk.
+                  * Follow: time-slip to a new segment, risk loss
+                  * Burn it: morale +, Strangeness −
+CHAIN B — “Operative at the Trading Post”
+                  1. Clerk With No Blink (Uncommon, Fort)
+Ledger entries include your party names before you speak them.
+                     * Confront: +Heat, chance of discount or expulsion
+                     * Play dumb: unlock later “Back Room Offer”
+                     2. Back Room Offer (Rare)
+“Bring me a sample.” (blood, hair, a tooth)
+                        * Accept: big supplies, pawn gains Marked (Stage 1)
+                        * Refuse: future prices inflate
+                        3. Receipt With Wrong Date (Rare)
+The receipt is dated years ahead.
+                           * Keep: later “proof” for interrogation
+                           * Destroy: reduces Heat
+                           4. Night Quarantine (Rare)
+Fort locks you in.
+                              * Escape: stealth skill check, lose goods
+                              * Comply: one pawn gets Night Surgery but cured of disease
+CHAIN C — “The Hollow Cough”
+                              1. Ash-Taste Morning (Common)
+                              * Rest: reduces spread
+                              * Push on: spread chance
+                              2. Cough That Knocks (Uncommon)
+A cough that sounds like knocking from inside ribs.
+                                 * Herbal tea: consumes herbs, may halt progression
+                                 * Bleed & pray: morale hit, may “appease it”
+                                 3. Mirror Breath (Rare)
+In cold air, the cough “breathes twice.”
+                                    * Isolate pawn: relationship penalties, reduces spread
+                                    * Keep working: pawn gains hidden ability chance (bad + good)
+                                    4. The Hollow Man (Mythic)
+The sick pawn stands outside the firelight, perfectly still.
+                                       * Approach: risk death, chance to “bring them back” changed
+                                       * Shoot: harsh but safe; massive morale loss + “ghost rumor” events later
+CHAIN D — “The Other Caravan”
+You keep seeing signs of another wagon train that matches yours… too closely.
+                                       * Fresh Tracks Beside Yours → Campfire Still Warm → A Child’s Toy (yours?) → Meet Your Double (Mythic)
+CHAIN E — “Skin of the Elk”
+A hunting line becomes a creature line.
+                                       * Elk With Human Eyes → Strange Bite → Antlers in the Night → The Herd Stands Upright (Mythic)
+CHAIN F — “River That Remembers”
+                                       * Names in the Current → Fish With Silver Thread → Crossing That Loops → You Exit Upstream Yesterday
+CHAIN G — “The Wax Church”
+                                       * Candle Stumps in the Prairie → Hymn Under the Ground → Offer of Warmth → The Congregation is Not Human
+CHAIN H — “Black Oil Jar”
+                                       * Tar Seep Discovery → Jarred Sample → Dream Possession → Pawn Turns Cold & Efficient
+CHAIN I — “The Bone Telegraph”
+                                       * Clicking at Night → Bone Wind Chimes → Messages in Morse Before Morse → Ambush Avoided / Caused
+CHAIN J — “The Photographer”
+                                       * Tin-Type Wagon → Photo Shows Extra Person → You Count… It’s True → Who Leaves With You?
+CHAIN K — “The Lantern That Points”
+                                       * Lantern Finds Trails → Lantern Finds Graves → Lantern Finds You → It Won’t Go Out
+CHAIN L — “The Survey Stakes”
+                                       * Perfect Stakes Across Miles → Your Wagons Drift Toward Them → A Grid Over the World → Sky Opens at the Center
+________________
+
+
+Standalone Event Library (80 events)
+Format: TITLE (Rarity | Where/When) → Setup → Choices → outcomes (use your stat names: morale/health/energy/warmth/food/ammo/$/Strangeness/Heat/relationships/skills).
+SKY / CRASH / LIGHTS
+                                       1. Silent Aurora (Uncommon | Night travel) → lights with no sound
+                                       * Camp early: +warmth, −progress, Heat−
+                                       * Push through: +Strangeness, chance panic
+                                       2. Star-Metal in the Firepit (Rare | Camp)
+                                       * Quench & keep: gain Star-Iron, pawn perk chance
+                                       * Throw away: morale + (relief), Strangeness −
+                                       3. Thunder Without Clouds (Uncommon | Plains)
+                                       * Spread out: fewer injuries, lose time
+                                       * Huddle: save time, risk wagon damage
+                                       4. Crater With Melted Grass (Rare | Explore)
+                                       * Salvage: rare trade item +Heat
+                                       * Bury it: morale +, but later “return” event triggers
+                                       5. Sky-Whistle (Common | Night)
+                                       * Wake everyone: morale −, prevents abduction chance
+                                       * Let sleep: one pawn may get Missing Hour
+                                       6. Three Shadows (Rare | Sunset)
+                                       * Mark the spot: later treasure/anomaly node
+                                       * Run: immediate morale hit, avoid chain
+ABDUCTION / “OPERATION” / MISSING TIME
+                                       7. Missing Hour (Uncommon | Camp)
+Pawn insists it was morning twice.
+                                          * Treat as fever: consumes medicine, may reduce Strangeness
+                                          * Record details: +Heat (you talk), unlock chain clue
+                                          8. Surgical Thread (Rare | Camp)
+A thin silver thread under skin.
+                                             * Pull it: injury risk, but removes Mark
+                                             * Leave it: pawn gains Receiver chance
+                                             9. Footprints Around the Wagon (Uncommon | Camp)
+                                             * Set traps: ammo loss, capture “something” chance
+                                             * Post double watch: fatigue cost, reduces risk
+                                             10. Cold Spot in the Bedroll (Rare | Night)
+                                             * Swap sleepers: relationship shifts, prevents condition
+                                             * Ignore: chance Night Surgery
+                                             11. The Returned (Mythic | Any)
+A pawn vanishes for a day and returns “fine.”
+                                                * Welcome: pawn becomes hyper-productive but empathy drops
+                                                * Quarantine: morale conflict, Heat−
+MUTATION / BITES / CREATURE TURNS
+                                                12. Bite With No Teeth Marks (Uncommon | Explore)
+                                                * Clean & stitch: medicine use, may halt progression
+                                                * Burn it: pain/morale hit, reduces transformation odds
+                                                13. Milk Turns Metallic (Rare | Camp)
+                                                * Drink anyway: energy +, sickness risk, Strangeness +
+                                                * Dump it: morale − (waste), Heat−
+                                                14. Horns Under Hair (Rare | Morning)
+                                                * Hide it: social stability +, Heat+ later
+                                                * Confess: morale −, but unlock “protective cult” event
+                                                15. Eyeshine (Uncommon | Night watch)
+                                                * Keep on watch: aim bonus, sleep −
+                                                * Force sleep: morale −, condition slows
+                                                16. The Hungry Kind (Mythic | Starvation state)
+A pawn offers to “go hunting alone” and returns with meat.
+                                                   * Eat: huge food +, Strangeness ++, later revelation
+                                                   * Refuse: morale −, but avoid chain
+TIME SLIPS / ALT TRAIL
+                                                   17. Landmark Out of Place (Uncommon | Map)
+A known rock formation is… wrong.
+                                                      * Correct course: progress −, safety +
+                                                      * Follow the “wrong” landmark: shortcut or trap
+                                                      18. Camp You Already Used (Rare | Night)
+Ash circle exactly as you left it… ahead.
+                                                         * Search: find your own lost item +Strangeness
+                                                         * Leave: morale + (sanity)
+                                                         19. The Same Stranger Twice (Uncommon | Trail encounter)
+                                                         * Question: Heat+; unlock “double” chain
+                                                         * Trade: normal trade + minor Strangeness
+                                                         20. Sunset That Won’t End (Rare | Travel)
+                                                         * Camp: warmth+, progress−
+                                                         * Travel: fatigue++, ambush chance
+                                                         21. Future Newspaper Scrap (Rare | Fort)
+                                                         * Show clerk: discount +Heat
+                                                         * Hide it: later “prophecy” event
+FORT / LEDGER / CONSPIRACY
+                                                         22. Ledger Knows Your Names (Uncommon | Fort)
+                                                         * Pay quietly: normal
+                                                         * Demand explanation: Heat+, maybe banned
+                                                         23. Quarantine Flag (Rare | Fort)
+                                                         * Submit to exam: lose time, disease removed chance, “Mark” risk
+                                                         * Flee: Heat++, but keep autonomy
+                                                         24. “Free” Vaccination (Rare | Fort)
+                                                         * Accept: disease resistance+, Strangeness+, Night Surgery chance
+                                                         * Decline: Heat+, prices up
+                                                         25. Deputy Wants Your Rifle (Uncommon | Fort)
+                                                         * Surrender: safety−, Heat−
+                                                         * Refuse: Heat+, possible arrest event
+                                                         26. Back-Alley Trader (Uncommon | Fort)
+                                                         * Buy oddities: rare items, Strangeness+
+                                                         * Ignore: safe
+CULTS / STRANGE SETTLERS / HOLLOW TOWNS
+                                                         27. A Town With No Dogs (Uncommon | Settlement)
+                                                         * Ask why: Heat+
+                                                         * Leave fast: morale− but safe
+                                                         28. The Wax Preacher (Rare | Camp visitor)
+                                                         * Listen: morale+ or obsession condition
+                                                         * Send away: Heat−, but cursed rumor starts
+                                                         29. Offer of “Warmth” (Uncommon | Cold snap)
+                                                         * Accept shelter: warmth++, supplies−, possible Mark
+                                                         * Refuse: warmth−, morale+ (pride)
+                                                         30. Child With Old Eyes (Rare | Encounter)
+                                                         * Take them in: new pawn, Strangeness+
+                                                         * Leave them: morale−, later haunting event
+                                                         31. Hymn Under the Ground (Rare | Night)
+                                                         * Investigate: loot + danger
+                                                         * Pray & sleep: chance it stops
+DREAM / PSYCH / “THE VIEWPORT LEAKS”
+                                                         32. Shared Dream (Common | Camp)
+Everyone dreams the same river crossing.
+                                                            * Prepare: next crossing safer
+                                                            * Laugh it off: morale+ now, risk later
+                                                            33. Dream-Latched (Uncommon | Sick pawn)
+                                                            * Wake them: fatigue cost, may prevent condition
+                                                            * Let dream: pawn gains hidden clue/ability
+                                                            34. The Viewport Stares Back (Rare | Any)
+A reflection in the “time window.”
+                                                               * Touch it: Strangeness++, reward item
+                                                               * Look away: morale− (unease)
+                                                               35. Night Map Writes Itself (Rare | Camp)
+                                                               * Copy it: unlock shortcut/side route
+                                                               * Burn it: Heat−
+                                                               36. Voices in the Wind (Common | Plains)
+                                                               * Follow: find water or trap
+                                                               * Ignore: morale + (focus)
+CREATURES (AMBIGUOUS / WESTERN FOLKLORE WITH X-FILES EDGE)
+                                                               37. Skinwalker Tracks (Rare | Dusk)
+                                                               * Circle wagons: safety+, progress−
+                                                               * Track them: loot chance, injury risk
+                                                               38. The Antler Man (Mythic | Forest edge)
+                                                               * Offer food: survives, loses food, gains protection token
+                                                               * Shoot: ammo−, curse chain begins
+                                                               39. Coyote That Talks (Rare | Night watch)
+                                                               * Listen: clue +Strangeness
+                                                               * Fire shot: ammo−, morale+ (dominance)
+                                                               40. Eyes in the Water (Uncommon | River camp)
+                                                               * Move camp: safety+
+                                                               * Stay: fishing bonus but risk
+                                                               41. The Upright Herd (Mythic | Hunting)
+                                                               * Run: safe, morale−
+                                                               * Stand ground: huge reward or massacre
+ITEMS / TRADE / ARTIFACTS
+                                                               42. Black Glass Shards (Uncommon | Explore) → sells high, but raises Heat
+                                                               43. Meteor Iron Knife (Rare | Trade) → better hunting, attracts events
+                                                               44. Silver Nitrate Bottle (Common | Fort) → reduces “mark/parasite” effects
+                                                               45. Strange Compass (Rare | Loot) → helps navigation, sometimes points to “wrong trail”
+                                                               46. Tin-Type That Moves (Rare | Fort photo) → morale+ or fear+, unlock chain
+SOCIAL / EMERGENT PAWN DRAMA (RimWorld vibe)
+                                                               47. Skeptic vs Believer (Common | After anomaly)
+                                                               * Mediate: morale+
+                                                               * Take sides: one pawn bonds, another resents
+                                                               48. Secret Night Journal (Uncommon | Camp)
+                                                               * Read: learn clue, relationship damage
+                                                               * Respect privacy: morale+
+                                                               49. Someone Is Stealing Jerky (Common | Low food)
+                                                               * Accuse: morale−, may reveal culprit
+                                                               * Set bait: catch thief, improve discipline
+                                                               50. Paranoia Spiral (Uncommon | High Strangeness)
+                                                               * Rest day: Strangeness−, progress−
+                                                               * Push on: fight chance
+                                                               51. “I Saw You Die” (Rare | Time-slip)
+Pawn insists another pawn died “yesterday.”
+                                                                  * Humor them: morale+
+                                                                  * Dismiss: relationship−
+WEATHER / ENVIRONMENT WITH ANOMALY TWIST
+                                                                  52. Red Rain (Rare | Storm)
+                                                                  * Collect: rare reagent, sickness risk
+                                                                  * Avoid: morale− (fear), safety+
+                                                                  53. Fog That Hums (Uncommon | Morning)
+                                                                  * Travel: risk lost hours
+                                                                  * Wait: progress−, safety+
+                                                                  54. Heat Lightning Faces (Rare | Night)
+                                                                  * Pray: morale+
+                                                                  * Watch: Strangeness+
+                                                                  55. Snow in Summer (Mythic | Late spring)
+                                                                  * Camp: warmth−, conserve
+                                                                  * Travel: injuries++
+COMBAT / AMBUSH / “MEN IN DUST”
+                                                                  56. Riders With Blank Badges (Uncommon | Trail)
+                                                                  * Pay “inspection fee”: lose $, Heat−
+                                                                  * Refuse: fight risk, Heat++
+                                                                  57. Shots From Nowhere (Rare | Night)
+                                                                  * Return fire: ammo−, maybe scare off
+                                                                  * Snuff fires: morale−, safety+
+                                                                  58. Someone Calls Your Name (Uncommon | Dusk)
+                                                                  * Answer: ambush risk
+                                                                  * Stay silent: safe
+                                                                  59. The Longcoat (Rare | Encounter)
+A man offers medicine that “works too well.”
+                                                                     * Accept: cures illness, adds Mark
+                                                                     * Refuse: later he appears again
+“SANDBOX” VARIANTS (RUN-DEFINING TWISTS)
+                                                                     60. The Trail Fork That Shouldn’t Exist (Mythic | Map)
+                                                                     * Take it: alternate biome route
+                                                                     * Ignore: normal
+                                                                     61. Wagon With No Tracks (Rare | Plains)
+                                                                     * Salvage parts: repair+, Strangeness+
+                                                                     * Leave: safe
+                                                                     62. A Fort That Isn’t On Any Map (Rare | Any)
+                                                                     * Enter: huge trade, conspiracy chain
+                                                                     * Avoid: safe
+                                                                     63. The Orchard in the Desert (Mythic)
+                                                                     * Eat fruit: heal+ but curse/Mark
+                                                                     * Camp nearby: ambush by “owners”
+                                                                     64. The Lake That Reflects Stars at Noon (Rare)
+                                                                     * Fish: big food, Strangeness+
+                                                                     * Leave: safe
+                                                                     65. An Empty Grave With Your Name (Rare)
+                                                                     * Fill it: morale+ (closure), Heat−
+                                                                     * Dig deeper: find artifact, Strangeness++
+SUPPLIES / COOKING / ECONOMY (WEIRD TRADE GOODS)
+                                                                     66. Jerky That Never Spoils (Rare | Trade)
+                                                                     * Buy: expensive, Strangeness+
+                                                                     * Decline: normal
+                                                                     67. Salt That Burns Blue (Uncommon | Loot)
+                                                                     * Use for cooking: morale+ + weird dreams
+                                                                     * Sell: $
+                                                                     68. Water Skin Full of Cold Air (Rare)
+                                                                     * Keep: warmth penalty but reduces fever
+                                                                     * Dump: morale+ (relief)
+                                                                     69. Stitched Medicine Pouch (Uncommon)
+                                                                     * Equip pawn: healing+
+                                                                     * Sell: $
+                                                                     70. Powdered “Star Chalk” (Rare)
+                                                                     * Mark circle: reduces night events
+                                                                     * Snort (bad choice): immediate Strangeness++ (fun chaos)
+HUNTING / WILDLIFE
+                                                                     71. Rabbit With Metal Tag (Uncommon)
+                                                                     * Follow: leads to cache/anomaly
+                                                                     * Kill: food+
+                                                                     72. Birds Fall Silent (Common)
+                                                                     * Camp: safe
+                                                                     * Travel: ambush chance
+                                                                     73. Wolf That Guards (Rare)
+                                                                     * Feed: becomes “camp guardian” (mechanic)
+                                                                     * Shoot: ammo−, curse chance
+                                                                     74. Deer That Won’t Bleed (Rare)
+                                                                     * Keep shooting: ammo−, morale−
+                                                                     * Back away: safe
+                                                                     75. Tracks That Walk Backward (Uncommon)
+                                                                     * Follow: shortcut or trap
+                                                                     * Ignore: safe
+FRIENDLY WEIRD / WONDER (NOT ALL HORROR)
+                                                                     76. The Helpful Stranger (Uncommon)
+A traveler warns of a storm that hits exactly as said.
+                                                                        * Trust: safety+
+                                                                        * Doubt: storm damage
+                                                                        77. Music in the Grass (Rare)
+                                                                        * Listen: morale++, Strangeness+
+                                                                        * Leave: safe
+                                                                        78. Blue Fireflies (Uncommon | Night)
+                                                                        * Collect: reagent item
+                                                                        * Watch: morale+
+                                                                        79. The Lost Dog Returns (Rare)
+                                                                        * Adopt: morale+, minor protection
+                                                                        * Send away: moral conflict
+                                                                        80. A Clear Night (Common)
+Nothing happens. Everyone sleeps. (This matters—contrast makes weirdness hit harder.)
+________________
+
+
+Rare Trade Items (30 “X-Files frontier” goods)
+Use these as loot tables, fort curiosities, or quest items.
+                                                                           1. Star-Iron Shard (craft/repair bonus; attracts “Sky Notes”)
+                                                                           2. Black Glass (high $; raises Heat at forts)
+                                                                           3. Silver Thread (surgery clue; can remove Mark)
+                                                                           4. Tin-Type That Lies (reveals hidden pawn secret OR false paranoia)
+                                                                           5. Strange Compass (route bonus; sometimes points to anomaly)
+                                                                           6. Blue Salt (cooking morale++ + vivid dreams)
+                                                                           7. Star Chalk (reduces night events if used as circle)
+                                                                           8. Cold Air Waterskin (fever reduction; warmth−)
+                                                                           9. Mercury Mirror Shard (time-slip chance; big reward)
+                                                                           10. Bone Telegraph Chimes (predict ambush/storm)
+                                                                           11. Wax Tallow Candle (prevents nightmares; cult attention)
+                                                                           12. Iron Needle Kit (“operation” reversal chance)
+                                                                           13. Tar Sample Jar (black-oil chain)
+                                                                           14. Meteor Knife (hunting+)
+                                                                           15. Coyote Tooth Necklace (fear resistance; social stigma)
+                                                                           16. Survey Stake (reveals “grid” events)
+                                                                           17. Red Rain Vial (reagent; sickness risk)
+                                                                           18. Lantern That Points (finds water/trouble)
+                                                                           19. Blank Badge (fort access; Heat++)
+                                                                           20. Stitched Medicine Pouch (heal+)
+                                                                           21. Never-Spoil Jerky (food security; Strangeness+)
+                                                                           22. Glass Needle Relic (removes parasite; costs health)
+                                                                           23. Map With No Ink (writes itself at night)
+                                                                           24. Feather That Floats Up (wind omen)
+                                                                           25. Stone With Warm Pulse (morale+; attracts watchers)
+                                                                           26. Silver Nitrate Bottle (anti-mark)
+                                                                           27. “Future” Receipt (proof; unlocks fort interrogation outcomes)
+                                                                           28. Hollow Whistle (scares wildlife; calls something else)
+                                                                           29. Truly Clean Water (rare; cures sickness once)
+                                                                           30. Stranger’s Ring (relationship chaos + luck swing)
+________________
+
+
+Hidden Pawn Traits / Abilities (24)
+These show up via events, not at character creation (so runs diverge).
+                                                                           * Receiver: hears “signals” → navigation/hunting bonus; insomnia risk
+                                                                           * Marked by the Sky: attracts anomalies; some fort discounts or arrests
+                                                                           * Dreamwalker: shared dreams give real intel; can’t rest well
+                                                                           * Iron Blood: resists disease; surgery events target them
+                                                                           * Hollow Lungs: cough chain; can “sense” storms
+                                                                           * Third Eye (subtle): detects ambush; social friction
+                                                                           * Cold-Hands: preserves food longer; warmth penalty
+                                                                           * Omen-Reader: morale buff after anomalies; paranoia risk
+                                                                           * Bone Listener: hears “telegraph” clicks; becomes exhausted
+                                                                           * Star-Touched: crafting/repair bonus; occasional time-slip
+                                                                           * Wolf-Favored: wildlife less aggressive; cult attention
+                                                                           * Black Oil Host: efficiency boost; empathy drop
+                                                                           * Missing Time Susceptible: abduction risk; sometimes returns with skills
+                                                                           * Skeptic: morale stability; blocks some “wonder” benefits
+                                                                           * Believer: morale swings bigger; unlocks unique choices
+                                                                           * Quarantine Flagged: forts treat them differently (good or bad)
+                                                                           * Night Watch Savant: prevents night events; fatigue cost reduced
+                                                                           * Lantern-Bound: can’t extinguish certain lantern; navigation boon
+                                                                           * Grid-Sense: detects “survey stake” patterns; Heat++
+                                                                           * Raven-Followed: hints appear; misfortune also follows
+                                                                           * Gentle Voice: calms conflicts; targeted by predators
+                                                                           * Hard Prayer: morale anchor; refuses “forbidden” items
+                                                                           * Knife Calm: combat bonus; social penalty
+                                                                           * Witness: gets special “case log” memories that unlock options later
+________________
+
+
+Quick “Combinatoric” Event Generator (so you can make infinite)
+If you want effectively endless variety, combine:
+[ODD SIGN] + [PRACTICAL PROBLEM] + [CHOICE] + [LASTING MARK]
+                                                                           * Odd Sign: lights, knocking cough, wrong shadow, humming fog, warm stone
+                                                                           * Practical Problem: low food, broken axle, river crossing, illness, fort prices
+                                                                           * Choice: investigate / ignore / trade / burn / quarantine / steal away
+                                                                           * Lasting Mark: new trait, new condition, new Heat/Strangeness modifier, new enemy/faction attention
+________________
+
+
+If you want, I can also convert all of this into a clean JSON-like event pack (titles, triggers, weights, option arrays, condition stages) that you can paste into a Codex prompt so it plugs into your current random-event system with minimal risk.
