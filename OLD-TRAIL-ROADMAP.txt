@@ -76,3 +76,7 @@ NEXT / DEFERRED
 - Event overlap/queue rules to avoid conflicting incidents in same block.
 - Expanded storyteller roster/weirdness slider UI + pacing rules.
 - Broader social arc varieties (long rivalries/romance/campfire followups) with trait-driven hooks.
+
+Deferred after B-Set Filler + B-01 Setpiece pass
+- Build remaining Tier B setpieces (B-02..B-05) with follow-up callbacks and matching 10-day cooldown pacing.
+- Add further Dream-West B-set filler beats and regional variants, including follow-ups for flags like seed_b16_mailbag_kept and seed_b19_mirror_mark.
