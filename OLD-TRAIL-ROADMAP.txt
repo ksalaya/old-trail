@@ -80,3 +80,11 @@ NEXT / DEFERRED
 Deferred after B-Set Filler + B-01 Setpiece pass
 - Build remaining Tier B setpieces (B-02..B-05) with follow-up callbacks and matching 10-day cooldown pacing.
 - Add further Dream-West B-set filler beats and regional variants, including follow-ups for flags like seed_b16_mailbag_kept and seed_b19_mirror_mark.
+
+DreamWest follow-ups
+- Expand DreamWest effect interpreter to support the full README spec (all effect keys) with thorough clamping and safety.
+- Integrate DreamWest items/curios into trading posts/fort vendors and inventory UI (pricing, rarity, restrictions).
+- Add DreamWest trait/affliction injection to pawn system (including staged progression and cures) using existing illness patterns.
+- Add lightweight debug panel for events (recent events, dw cooldown keys, lastAny hour) for balancing.
+- Optional hosted JSON fetch + caching while keeping embedded fallback for Weebly reliability.
+- Add optional scene/viewport flavor hooks (subtle captions/overlays) when DreamWest beats trigger, without requiring new art assets.
