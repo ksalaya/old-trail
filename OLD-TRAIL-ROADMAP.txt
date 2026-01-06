@@ -1,424 +1,51 @@
-﻿OLD-TRAIL-ROADMAP*
-A. Routes & Cutoffs → Big Strategic Choices
-Existing goals (kept):
-* Sublette vs. Fort Bridger, Three Island vs. south of Snake, Columbia rafting vs. Barlow Road.
-* Each route changes distance, hazards, events, and forts. 
-* “You are early/late” hints at Fort Laramie, South Pass, The Dalles based on real schedule targets. 
-New detail & extensions:
-1. Segment-level route cards
-   * For each fork, define a “route card” with:
-      * Extra miles vs. baseline.
-      * Expected total days from fork to next major fort at steady pace.
-      * Climate tweak (e.g., Sublette: +heat, +dust, -water; Bridger: +cool nights, +grass, +resupply). 
-      * Special events unlocked (Shoshone trade near Bridger, alkali/dry basin events on Sublette, etc.).
-2. Historical route hints & diary flavor
-   * Add log snippets based on diaries when a route is chosen:
-      * “Men talk of the ‘dry drive’ ahead; we must fill every cask at Green River.” (Sublette) 
-      * “Some say Bridger’s road is longer, but with better grass and a friendly fort for repairs.” (Fort Bridger path).
-   * Use these as soft recommendations, not hard tutorials.
-3. Route difficulty memory
-   * Track a hidden “route stress” score for each major segment:
-      * Long desert legs, bad water, and steep passes increase stress.
-      * Good grass, cool weather, and successful trades decrease it.
-   * This can later feed into:
-      * Oxen fatigue & failure risk.
-      * Companion morale (“Everyone dreads another dry basin like the one behind us.”).
-B. Weather Layer 2.0 Tied to Route Segments
-Existing goals (kept):
-* Early departures → high rivers and more storms; late → dust and heat on Platte/Snake/alkali.
-* Cholera corridor along Platte in wet years; late snow in South Pass / Blues / Barlow. 
-New detail & extensions:
-1. Segment-specific climate tuning
-   * Use per-segment profiles (Kansas bottomlands, Platte, Sweetwater, Snake plain, Blues, Columbia) with:
-      * Seasonally adjusted pRain, pStorm, and temperature bands tuned to notes from the routes + daily life PDFs.
-2. Disease-linked weather windows
-   * Along the Platte, if a week is unusually wet + warm:
-      * Increase bad-water event chance and cholera/dysentery risk when drinking from riverbank “holes” or marshes. 
-3. Snow window logic
-   * At South Pass, Blues, and Barlow:
-      * Check date vs. “normal window” (from routes PDF). If late, add light snow/frost event chance and travel penalties, escalating into blizzard events if very late. 
-4. Oxen/weather interplay
-   * Add a per-day “stock strain” score:
-      * Long hot days, bad mud, steep grades, and headwinds increase it.
-      * Cool clear days and good camp (proper evening camp macro) reduce it. 
-C. Deeper Cooking & Meal Types, Historically Grounded
-(This is the next big feature when you say “let’s restart.”)
-Existing goals (kept):
-* Named menu: mush & bacon, beans & bacon supper, buffalo/antelope stews, salmon stews at Salmon Falls, etc.
-* Food “groups” (staples, meat, fruit/veg, coffee/tea) and long-term diet penalties.
-* Camp effort vs. meal quality; fuel and skill affecting yields and burn chance.
-New detail & extensions (from food PDF + daily life):
-1. Authentic meal roster
- Use historically documented staples and routines:
-   * Breakfast archetypes
-   * Mush & bacon: flour/cornmeal + water + a little bacon grease.
-   * Flapjacks & coffee: flour + saleratus + water/coffee + bacon grease.
-   * Supper archetypes
-   * Beans & bacon: beans_rice + bacon + 2h simmer + decent fuel.
-   * Trail stew: fresh_meat + flour (dumplings) + dried_fruit or roots (when available).
-   * Salmon pot at Salmon Falls: special recipe unlocked via trade events.
-   2. Ration tier → recipe availability
-   * On filling rations, cook tasks can choose from hearty/feast recipes if supplies allow.
-   * On meager/bare-bones, cooking often devolves to quick fry-ups (simple meals or even burnt bread & coffee flavor events).
-   3. Food group tracker
-   * Maintain a rolling 10–14 day window of intake for:
-   * Staples (flour/hardtack/cornmeal/beans).
-   * Meat/fat (bacon, fresh_meat, rich stews).
-   * Fruit/veg (dried fruit, traded vegetables, foraged berries).
-   * Coffee/tea (morale stimulant). 
-   * Missing groups → slowly accumulate risks:
-   * Low fruit/veg → scurvy-like events (bleeding gums, poor healing).
-   * Low meat/fat → chronic fatigue and slower condition recovery.
-   * No coffee/tea for “coffee people” → morale malus.
-   4. Meal effort macros
-   * Quick fry-up (1h):
-   * Low fuel cost, can run in poor weather.
-   * Often yields meal_simple and uses basic staples.
-   * Proper supper (2–3h):
-   * Requires decent fuel and often a “camp quality” macro (Proper Camp).
-   * Converts more raw pounds → hearty/feast meals with better morale and warmth.
-   * Wet fuel / low skill → higher burn rates, with flavor text pulled from diaries (“biscuits burnt on the bottom, doughy on top”).
-   5. Region-aware recipes
-   * Tie certain recipes to segments:
-   * Buffalo-heavy feasts in Platte/buffalo country.
-   * Salmon & roots in Snake/Columbia.
-   * Potatoes and vegetables more common near Grande Ronde/Whitman Mission/Boise.
-D. Daily Rhythm & Event Layer (implemented v1, future tweaks)
-Already implemented:
-   * Morning/noon/evening/night blocks, daily rhythm scoring, camp macros (proper vs rushed), and night watch risk.
-Future depth layers:
-   1. Task nudges by block
-   * Morning: subtle boosts to travel speed + oxen recovery when you respect traditional 3–5h morning marches. 
-   * Noon: special micro-events (minor wagon fixes, brief doctoring, school or Sunday service on select days).
-   * Evening: replace some manual micro with bundled macros (camp quality already in place; later, we can auto-assign wood/water/guard/cooking combos based on priorities).
-   2. Historical day types
-   * Mark special days with unique log copy and slight rhythm expectations:
-   * Sunday “layover” days (rest & worship if morale is low or doctoring is needed).
-   * Forced layover days (storms, blizzards, or high water—heavy impact on upcoming schedule hints).
-E. Future Skill Progression Hooks
-Existing goals (kept):
-   * Use-based skills for Travel, Hunting, Cooking, Woodcutting, Doctoring, plus future Riverwork.
-   * Micro-perks at skill thresholds (Cooking 3, Woodcutting 4, Riverwork 3, etc.).
-New additions:
-   1. Soft per-day XP caps
-   * Borrow UnReal World–style daily caps so players can’t grind one task in a single day to max it. 
-   2. Background-linked perk trees
-   * Each background (Farmer/Banker/Carpenter/Teacher) unlocks one or two special perk choices at mid/high skill:
-   * Farmer: better oxen handling, improved grass sense (less stock strain).
-   * Banker: better prices when trading, small interest/credit events.
-   * Carpenter: extra wagon repair efficiency, less part usage.
-   * Teacher: morale-boosting camp events (stories, schooling) and improved doctoring outcomes.
-   3. Skill-synergy events
-   * Combine skills in checks: e.g. a difficult descent uses both Travel and Woodcutting (chaining wheels, braking), with special log text on success/failure.
-F. Inventory & Economy Tweaks Along the Route
-Existing goals (kept):
-   * Realistic price inflation at forts; segment-specific trade goods; climate-tuned spoilage.
-New detail from food & supplies + reference manual:
-   1. Fort-specific price tables
-   * Independence/St. Joseph: baseline Missouri prices from 1845 tables. 
-   * Fort Kearny/Laramie: 2–3× price multipliers for flour, bacon, coffee, ammo.
-   * Fort Hall/Boise: some items (flour, bacon, sugar, coffee) at 4–10× baseline.
-   2. Goods that matter
-   * Introduce small set of trade tags:
-   * Warm blankets, coffee, sugar, tobacco, spare ammunition, bright cloth.
-   * These can be traded with forts or Native groups for food or guidance events.
-   3. Spoilage by climate & container
-   * Raw meat and feast meals decay faster in hot, arid Snake/alkali segments; slower in high cool passes and Blue Mountain forests.
-   * Optional: simple “barrel vs sack” distinction—bacon in bran or barrels decays slower than loose or repeatedly opened supplies, nodding to period practices. 
-   4. Overload feedback
-   * Better log messaging tying overload to real wagon capacities (16–2000 lb safe cargo, as in guidebooks) so players feel why 1,600–2,000 lb is the sweet spot.
-G. Scene System & Temporal Viewport Mood
-Existing goals (kept):
-   * Use scene list mileage bands; weather/morale-aware mood selection; camp vs travel scenes. 
-New art-direction hooks (Bierstadt / Remington / Maggiori):
-   1. Mood palettes per region
-   * Bierstadt-style luminous dawn/sunset for triumphant milestones (South Pass, Grande Ronde, Oregon City). 
-   * Remington nocturnes (deep blue-green nights with firelight) for tense camp or guard events. 
-   * Maggiori cinematic storm and cloud drama for pivotal route choices and storms, emphasizing tiny wagons under massive skies. 
-   2. Scene tags
-   * Each scene in the list gets tags like travel_day_clear, camp_evening_rain, night_guard, feast_event, illness_camp.
-   * Viewport picker uses:
-   * Region + miles.
-   * Mode (camp vs travel).
-   * Weather (clear/heat/storm/cold).
-   * Party mood (mean morale, illness present, recent feast or tragedy).
-   3. Event scenes
-   * Pull from event art (river crossings, wagon crashes, illness, trade) as temporary viewport overlays when those events fire, then fade back to ambient travel scene.
-H. Health & Illness Layer Anchored to Geography
-Existing goals (kept):
-   * Cholera/dysentery corridor; alkali poisoning; mountain fever/exposure; snakebite/breaks/frostbite/exhaustion; treatments via doctoring skill + supplies.
-New specifics:
-   1. Geography-aware risk tables
-   * Platte in warm, wet periods: high cholera/dysentery risk if drinking from low holes or stagnant pools.
-   * Alkali segments (Snake/40-mile desert): “alkali water” events with taste/morale penalties and condition hits unless water is diluted or avoided.
-   * South Pass/Blues/Barlow: frostbite risk at night if warmth + clothing too low.
-   2. Affliction progression
-   * Each major illness has 3 stages (risk → onset → crisis/recovery) with clear log feedback and treatment hooks:
-   * e.g. Dysentery: risk from bad water, onset with cramps & weakness, crisis with major dehydration and potential death if not treated with boiled water + rest.
-   3. Doctoring gameplay
-   * Doctoring skill influences:
-    * Chance to correctly diagnose (log text clarity).
+OLD-TRAIL-ROADMAP (canonical)
 
-TODO – Historic cutoffs and passes (follow-up)
-* Add POI nodes for Lander Road / California Trail junction / Applegate cutoff / key passes.
-  - Needed: coordinates + tags for Lander Meadows, Big Sandy emigrant road split, Raft River junction, Goose Lake branch.
-* Extend OT_ROUTE_GRAPH with branch keys/values for those choices; keep dormant until map data is ready.
-* UI: prompt when reaching the new forks; ensure map pathfinder honors additional branch-specific trailHex segments.
-   * Effectiveness of treatments (fewer hours needed, less resource waste).
-   * Fort doctors and missions can offer superior care for high price or with narrative consequences.
-I. HTML5 Overlay, Audio & Fullscreen Hooks (Polish Phase)
-Existing goals (kept):
-   * Rain/lighting overlays, CRT/temporal viewport glow, HUD polish, soundscape with ambient loops & SFX, possible voice/TTS.
-Expanded plan:
-   1. Viewport overlay stack
-   * Reuse arcade CRT/time-window treatments on scene and map (already partially in CSS).
-   * Add:
-   * Optional rain/snow canvas overlays when storms/snow events fire.
-   * Occasional lightning flicker synced to storm log entries.
-   2. Audio pass
-   * Web Audio–based ambient loops:
-   * Prairie wind, storms, river crossings, night campfire, fort bustle.
-   * Audio sprites for UI clicks, task changes, event stingers to minimize requests. 
-   3. Fullscreen support
-   * Add a “Temporal Viewport Fullscreen” button that:
-   * Uses the Fullscreen API on the Old Trail root container.
-   * Respects mobile browser constraints (user gesture, iOS quirks) per fullscreen PDF guidance.
-   4. Mobile-friendly tweaks
-   * Make sure touch targets (buttons, dropdowns) are sized & spaced for phones.
-    * Optionally auto-suggest fullscreen when user taps “Begin journey” on mobile for more immersive play, with an easy exit toggle.
-    *
-=== Weather & Start-Date System – TODO / FUTURE HOOKS ===
-- Flesh out applyWeatherToParty(...) to translate storms, heat, mud, wind, and snow into travel speed, illness, and morale modifiers.
-- Use recent precipitation history to influence river depth and bogging risk at fords and ferries.
-- Tie hot/dry weather to dehydration, dust-related illness, and oxen fatigue events across the Platte and Snake River country.
-- Tie cold/wet weather to hypothermia, pneumonia, and morale penalties in camp, especially in the Rockies and Blues.
-- Add region-specific event variants keyed off weather (prairie fire, white-out blizzard, dust storm) and feed them into the viewport mood system.
+VISION PILLARS
+- Darkly humorous survival sim rooted in historical Oregon Trail grit and hard tradeoffs.
+- Dream-West layer: X-files-on-the-frontier omens and curios that stay opt-in when mythic is off.
+- Replayable runs via storyteller presets, route forks, faction reputations, and seeded events.
+- Embeddable, performant single-file HTML that feels like a living painting viewport.
 
-UI / Explorer View
-- Swap placeholder explorer tiles for painterly terrain sprites and lighting overlays.
-- Add touch/mobile-friendly movement controls (D-pad or swipe) for the explorer camera.
-- Animate weather and fog layers over the explorer viewport to mirror current conditions.
+CURRENT FOUNDATION (ALREADY IMPLEMENTED)
+- Single-file Weebly-ready HTML with start flow, save/load, and persistence for logs, stories, and inventories.
+- Storyteller presets (Calm, Classic, Chaotic, Harsh) that drive tension curves and pacing gates.
+- Hourly simulation with morning/noon/evening/night blocks, travel vs camp macros, guard/camp quality checks, and scene picker.
+- Party stats, afflictions, mythic toggles, curios, faction reputation tracking, and trade ledgers.
+- Trail log, journal beats, encounter modal system, and B-seed Dream-West hooks already driving events (Open Eye, Men in Gray, mirror wagon, tariffs, peddlers, etc.).
 
-Deferred from Seed + Bone Valley pass
-- Bullsnake seed event: travel/grassland trigger with calm weather; needs per-event cooldown flag and choice between letting it pass or driving it off with minor morale effects.
-- Lightning-split tree seed: stormy travel trigger; require flag to avoid repeats; options to shelter for warmth vs. gather charred wood with small injury risk.
-- Lost ring seed plus follow-up: camp trigger when chores are rushed; flag the missing ring, allow later discovery/return with morale or trade outcomes.
-- Broken axle at dusk seed: rough trail/cargo-heavy trigger near sundown; options to camp and fix vs. push on, setting risk flags for later axle failure.
-- Rival forts politics chain (2 stages): fort-town trigger with faction reputation check; needs flags for which fort is slighted, follow-up trade/aid price adjustments.
-- Camp thief 3-stage arc: initial theft in low-guard camps, mid investigation choice, closing confrontation with morale/reputation consequences.
-- Whiteout cache + optional mythic marker: blizzard-region travel trigger with mythic gating; flags for cache location, later retrieval event, optional mythic hint.
-- Remaining Tier-B setpieces (B-01/B-03/B-04/B-05): define triggers per region/mileage, add chain flags and cooldowns, map outcomes to money/safety/morale hooks.
-- Wagon tongue crack follow-through: if patched instead of repaired, schedule later axle/tongue failure check; if reinforced, provide small mitigation flag for wagon breakdown cascades.
+NEXT 3 PASSES
+1) Dream-West polish & pacing guardrails (short cycle)
+   - Add one-time callbacks for any remaining flagged seeds; enforce >=36h global B-seed spacing and respect mythic toggle.
+   - Add concise debug/UX affordance to show when a seed is cooling down or disabled by mode/block.
+   - Acceptance: callbacks fire once, log once, and save/load safely without mythic bleed-through.
+2) Route cards & travel forecasting
+   - Present fork-specific route cards (Sublette vs. Bridger, Three Island vs. south Snake, Columbia raft vs. Barlow) with miles, climate bias, and resupply hints.
+   - Journal/log diary lines when a route is chosen; include “you are early/late” schedule nudges at Laramie, South Pass, The Dalles.
+   - Acceptance: cards display correct deltas, schedule hints match date bands, and paths update trail/POI data without map errors.
+3) Survival meals & condition tuning (scoped first slice)
+   - Introduce a handful of authentic recipes (mush & bacon, beans & bacon, trail stew) tied to fuel/time and ration tier.
+   - Track simple food group intake (staples/meat/fruit-veg/coffee) for rolling 10–14 day penalties and small morale/condition nudges.
+   - Acceptance: recipes consume correct supplies, cook tasks respect camp quality, and malnourishment warnings surface without overwhelming the log.
 
-Procedural Characters / Social / Mythic Chains (this update)
-✅ Implemented
-- Hidden trait intel layer with suspicion → hint → reveal flow, including UI badges and once-per-trait stat application updates.
-- Trait/backstory pack appended with weighted draft buckets and mythic gating.
-- Mythic curio scaffolding (definitions, ownership, slots, and inventory UI) and basic faction reputation placeholders.
-
-⏳ Deferred
-- Event chains from spec (EX-01, EX-05, EX-06, EX-07, EX-08, EX-09, EX-10) and SHOULD sets (H-01, H-02, H-04, H-05, H-07, S-01, S-05, S-06, S-08, M-01, M-02, M-05, M-08) need staged implementation with storyteller hooks.
-- Mythic curio upkeep resolution, mythic rumor meter behaviors, and faction price/aid hooks tied to caravans/forts.
-- Social arcs for romance vows/heartbreak and rival mediation/duels beyond scaffolding.
-- Rapid-fire seed events and Big Setpieces (Tier B) remain to be designed and slotted.
-
-Deferred from Procedural Characters / Social / Mythic Chains
-- Add a reveal system for hidden traits/quirks that surface via specific events or milestones, including UI hints when a secret is suspected.
-- Extend relationship arcs into romance/kinship and formal rivalries with escalating incident chains and reconciliations.
-- Build deeper mythic encounter arcs (multi-step tall tales, rare items/boons with upkeep costs) and optional inventory slots for mythic curios.
-- Introduce faction/reputation ties to traveling NPC caravans or forts that respond to social webs and mythic rumors.
-
-Map v2 follow-ups
-- Fill in full POI coordinates and trail edges for the Lander Road, California Trail junction, and Applegate cutoff so the new branch scaffolding can render correct paths once tile data is available (current stubs stop at junction + rejoin nodes).
-- Add mountain pass landmarks and decision prompts tied to those branches once underlying hex tiles are painted for the passes.
-- Refine river/desert corridor sampling with higher-resolution polyline points and branch-aware recalculation triggers to keep overlays in sync with future route choices.
-- Add a lightweight minimap overlay/inset for quick orientation while traveling.
-
-Traillines Explorer – Phase 2+
-- Replace placeholder wagon drawing with real wagon sprite (and oxen) with painterly style matching Remington/Bierstadt/Maggiori reference PDFs.
-- Add distinct parallax background layers and biome-specific tiles for each region (plains, central plains, high plains, mountains, Snake plain, Blue Mountains, Columbia, Willamette).
-- Implement walkable camp scenes on their own mini-maps (fire, wagons, foraging, water, wood) instead of menu-only decisions.
-- Implement tactical mini-maps for raider attacks, rescues, and dangerous crossings (light squad-tactics feel, using existing delegation and hourly sim).
-- Externalize trail geometry / world chunks into JSON data files that can be streamed and extended (supports cutoffs and alternate routes).
-- Add mobile tilt/swipe integration for steering along the trail lane.
-- Add companion sprites and simple formation logic on the explorer map (ties into delegation priorities and hourly tasks).
-
-STORYTELLER – FUTURE WORK
-* Expansion Phase 2+
-  * Add a fuller storyteller preset picker polish pass (tooltips, mid-run toggle, save/load label).
-  * Expand multi-step romance/feud arcs with choices and camp tasks that respond to them.
-  * Build richer cascade analytics for the end screen so late-run summaries call out key turning points.
-  * Add multi-step mental break resolutions with player agency instead of auto-resolving beats.
-- Broaden the data-driven event library (river dramas, illness cascades, romance/rival showdowns) and tune tension curves for difficulty presets.
-- Introduce major mental breaks (refusing to travel for a day, storming off to hunt, leadership disputes) with resolution paths.
-- Expand relationship arcs beyond simple tags (romance, rescue loyalty shifts, gratitude chains from lifeline events).
-- Add richer risk cascades (extended shortages, long snow exposure, chained wagon failures) with end-screen summaries.
-
-STORYTELLER – FUTURE WORK (Phase 3+)
-* Complete romance and rivalry multi-step arcs with contextual camp tasks and closing beats.
-* Add lifeline and illness cascade analytics to the end screen, grouped as a mini timeline.
-* Expand major mental break resolution trees, including rare departures or leadership changes.
- 
-Map v2 (Hex world follow-ups)
-- Add click-to-move/pathfinding on the hex trail with time/mile sync rather than camera-only panning.
-- Replace simplified river boosts with explicit river corridor polylines (Snake/Columbia) and Big Sandy/Sublette desert hazards.
-- Integrate resource profiles into hunting/gathering/water actions so yields reflect nearby biome richness.
-- Add additional historic cutoffs (Lander Road, Applegate, California Trail junction) and mountain passes once tile data is ready.
-- Implement hex hit-testing for POI tooltips and future event triggers, plus UI toggles for fog-of-war silhouettes.
-
-Map v2 follow-ups (deferred)
-- Add full California Trail destination endpoints and alternate victory conditions once western terminus content is ready.
-- Rework milestone lists to adjust dynamically per chosen route (main vs. Lander vs. California/Applegate).
-- Replace POI-based pass prompts with tile-tag-driven triggers after mountain pass tiles are painted.
-- Extend desert corridor overlays for the Black Rock/High Rock sections of the Applegate route and related waterless stretches.
-- Run a biome painting pass to better convey Great Basin desert terrain on southern approach routes.
-
-Map v2 follow-ups (still deferred — next steps)
-- Full California Trail destination endpoints + alternate victory conditions
-  - What: Add west-coast termini (e.g., Sacramento/Sutter's Fort and branch endpoints) so California-bound runs conclude somewhere meaningful; adapt arrival/win text and scoring to the chosen route.
-  - Why: Current runs still end in Oregon City even when players pick California/Applegate; the milestone and distance work needs a proper destination.
-  - Implementation sketch: Expand OT_ROUTE_GRAPH with California destination nodes and routeChoice-aware destination selection; update arrival checks, end-screen copy, and scoring triggers to branch on the chosen terminus and seasonality.
-- Milestone system deepening
-  - What: Group/flag milestones by route and importance (major vs. minor), and let the map UI collapse/expand sections per branch.
-  - Why: Dynamic milestones are in place, but presentation is still flat and main-route-centric; route-specific clarity will help longer alternate paths.
-  - Implementation sketch: Tag POIs with milestone tiers, generate grouped lists by branch/segment, and add simple UI affordances (headers/toggles) without breaking save data.
-- Replace POI-name string matching for pass prompts with tile-tag-driven triggers
-  - What: Fire pass/grade prompts based on explicit tile tags instead of matching POI names once pass tiles are painted.
-  - Why: Name matching is brittle and will miss new branches; tags make prompts reliable across future map art.
-  - Implementation sketch: Add tileTags (e.g., tileTags.pass.salt_river) when painting passes, hit-test player hexes against tags, and gate prompts so each fires once per run without save/load regressions.
-- Great Basin biome enhancement pass
-  - What: Broaden and refine Great Basin painting (sage vs. alkali flats), extend desert corridor overlays, and tune waterless stretch difficulty and local weather for route variants.
-  - Why: Current pass is minimal; deeper tuning will make southern approaches feel distinct and keep scarcity coherent across weather and resource systems.
-  - Implementation sketch: Add more granular lat/lon + noise bands, expand corridor sampling (Black Rock/High Rock extensions), and adjust region/weather parameters for basin tiles once new art/tiles are available.
-
-RDR-inspired Enhancements (Deferred)
-- Dynamic music and ambient audio layering tied to weather, time of day, and encounter tension (optional Web Audio loops with graceful fallbacks).
-- Seasonal color grading and night overlays synced to time/biome, including subtle wagon lantern glow and weather-linked vignette effects.
-- Barter/ledger-style trading UI at forts with reputation-informed prices and visible ledgers instead of flat buttons.
-- Deeper hunting and tactical ambush resolution (cover/volley choices, risk to oxen) that leverage the new encounter modal instead of auto outcomes.
-- Longer “stranger mission” callbacks and caravan travel segments where prior choices trigger chained follow-ups across regions.
-- NPC caravan travel buffs/risks with richer guard coverage integration and mood impact when you part ways.
-- HUD minimalism/cinematic travel toggle that auto-fades noncritical panels while moving but surfaces alerts instantly on hover/tap.
-
-Deferred from Procedural Characters / Social / Mythic Chains update
-- Rapid-fire seed events pack (B-set and filler beats) – still to be added.
-- Tier B Big Setpieces (B-01..B-05 etc.) – not implemented in this pass.
-- Deeper faction politics (two rival forts, Open Eye Revival cult, Men in Gray full arc) – future milestone.
-- Chain follow-ups still stubbed: EX-01 through EX-10, H-01/H-02/H-04/H-05/H-07, S-01/S-05/S-06/S-08, and mythic M-01/M-02/M-05/M-08 remain to be staged.
-- Future: sprite movement/actions for chores, visual inventory deltas, caravan/fort UI polish.
-
-Deferred (new)
-- Wire Open Eye and Men in Gray faction reputation into fort/caravan trade modifiers and UI surfacing once faction hooks are ready.
-- Fill in remaining Dream-West B-set seeds and callbacks (b06+), with region-aware variants and tension tuning.
-- Extend Open Eye revival into later-tier confrontations or aid (escort, fort delivery options) once additional chain support is available.
-- Build a full mental-break/meltdown loop with escalating states (refusing tasks, fleeing, leadership challenges) tied to morale/stress instead of one-off beats.
-- Stage deeper multi-step mythic questlines with callbacks across regions and days, beyond the current single setpiece/seed moments.
-- Simulate recurring NPC caravans and factions over time (return visits, remembered favors/grudges) that feed events and trade menus.
-- Add explicit event overlap/queue rules to avoid conflicting incidents in the same block while still allowing occasional deliberate clashes.
-- Expand storyteller preset roster/weirdness slider (e.g., chaotic narrator) with UI surfacing and pacing rules.
-- Broaden social arc varieties (longer rivalries/romance/campfire follow-ups) with trait-driven writing hooks.
-
-Validation Checklist (Dream-West B-set)
-- Start new run; no console errors.
-- Fast-forward 5–10 days; seeds appear but are spaced out (global seed gate + per-seed cooldown).
-- Mythic OFF: Men in Gray seed never triggers; Open Eye events still behave (non-mythic).
-- Open Eye setpiece triggers once; follow-up triggers within the window; no repeats.
-- Save + reload mid-run; no crashes.
-- Trail log: one line per new event (no spam).
-
-Deferred (next passes)
-- Full ledger-style fort trading UI with itemized buy/sell lists, rep-based dynamic pricing, and visible ledgers.
-- Deeper faction politics: rival forts, Open Eye vs fort authorities, Men in Gray full arc.
-- Additional Dream-West B-seeds (B-09+) and longer chained callbacks across regions.
-- Hunting/ambush tactical resolution via encounter modal.
-- Seasonal color grading + night overlay + lantern glow.
-- Chores sprite movement/actions and visual inventory deltas.
-- HUD minimalism/cinematic travel toggle.
-
-- RimWorld-like continuous-time travel loop with pause, top-down caravan control, and sprite movement replacing the hourly tick.
-
-Deferred from Fort Trading Ledger pass (2025-05-07):
-- Add fort-specific stock rotations and scarcity hooks so not all SUPPLY_ITEMS are always available.
-- Tie faction/vendor flavor and additional trade posts into the pricing model (caravans, open-eye, men-in-gray) once their POIs are enabled.
-- Add per-vendor filters/exports for the trade ledger when more vendors exist beyond forts.
-
-Deferred (Barter tab follow-ups)
-- Fort policies/tariffs and rival fort quest hooks that react to faction reputation and past ledger entries (keep aligned with existing fort politics items above).
-- Men in Gray mythic-gated vendor path with contraband consequences (retain interplay with faction reputation).
-- Caravan/peddler trade encounters that call openVendorTradeModal("caravans", poiId) with faction inventories and flavor.
-- Dream-West B-10+ seeds with multi-region callbacks triggered by trades or reputation changes (cross-link with existing seed backlog).
-- Tactical hunting/ambush resolution via the encounter modal, including barter-dependent loot hooks.
-- Seasonal grading, night overlay, lantern glow, and weather vignette polish to support the barter UI mood.
-- Sprite chores and visual inventory deltas when barter transfers occur.
-- Cinematic HUD toggle (keep compatibility with modal-heavy barter flows).
-- Continuous-time travel loop with pause plus top-down caravan control that preserves trade modal access.
-
-Validation Checklist (Fort Trading Ledger pass):
-- Start a new run: no console errors.
-- Travel near a fort: “Trading Post” button appears; hides once you move away.
-- Trading modal: Buy/Sell tabs toggle and backdrop/close/Esc all close the modal.
-- Buying goods reduces money, increases supplies, and refreshes HUD/modal.
-- Selling goods increases money, reduces supplies, and never dips below zero held.
-- Fort reputation changes prices (adjust rep values and confirm buy/sell shifts).
-- Anti-arbitrage holds: buy then immediately sell never yields profit.
-- Save mid-run and reload: no crashes; ledger persists; legacy supply aliases (wheel/axle/medicine) normalize cleanly.
-- Trail log stays clean of per-click trade spam; transactions appear only in the ledger.
-
-Deferred (trade and traversal follow-ups)
-- Implement true barter currency and item-for-item offers inside the trade modal once cash flow is stable.
-- Layer fort policies/tariffs plus rival fort quest hooks that react to faction reputation and trading history.
-- Build a Men in Gray (mythic-gated) vendor path with contraband threads and consequences.
-- Add Dream-West B-10+ seeds with multi-region callbacks triggered by trade or faction reputation changes.
-- Ship tactical hunting/ambush resolution in the encounter modal (cover/volley, oxen risk, injury/loot tables).
-- Pass for seasonal color grading, night overlay, lantern glow, and weather vignettes across regions.
-- Hook up sprite chore animations with visual inventory deltas during stock moves and camp chores.
-- Add a cinematic HUD toggle with save-persisted settings.
-- Prototype a continuous-time travel loop with pause and top-down caravan control to supplant the hourly tick.
-
-Additional deferred items (current pass):
-- Full rival-fort quest chain system (policy/tariff missions: delivery, smuggling, audits) — acceptance: rivalry-driven questline with at least one mission per policy archetype and ledger-aware outcomes.
-- Dream-West B-11+ seeds with multi-region callbacks triggered by ledger and faction reputation deltas — acceptance: additional B seeds that check recent trades/rep shifts and fire regionally distinct follow-ups.
-- Tactical hunting/ambush encounter resolution (cover/volley, oxen risk, injuries, loot tables) — acceptance: encounter modal with cover/volley choices and explicit oxen/party injury plus loot results.
-- Seasonal grading/night overlay/lantern glow/weather vignette pass — acceptance: visual layer toggles that respond to season/time/weather without breaking modal readability.
-- Sprite chore movement + visual inventory deltas tied to camp/trade transfers — acceptance: visible sprite task loops with inventory indicators when goods move.
-- Cinematic HUD toggle with saved presets, modal-friendly behavior — acceptance: HUD/minimap fade option saved per profile and respecting modal visibility needs.
-- Continuous-time travel loop with pause + top-down caravan control (retain hourly fallback) — acceptance: playable continuous-time travel mode with pause/resume and controllable caravan position, while keeping hourly flow as a fallback.
-
-Deferred items (syntax fix follow-up)
-- Dream-West B-11+ multi-region callbacks keyed off ledger and faction rep deltas with explicit cooldown gates to keep existing pacing intact.
-- Seasonal grading plus night overlay, lantern glow, and weather vignette polish that preserves modal readability across regions.
-- Sprite chore movement loops with visual inventory delta cues during camp chores and trade transfers.
-- Cinematic HUD toggle with saved preset profiles that remain safe to use while modals are open.
-- Continuous-time travel loop with pause and top-down caravan control while retaining the hourly travel mode as a fallback.
-
-
-Square Tile Map + Sprites (Deferred)
-- Convert strategic hex map modal to square tile renderer + input mapping.
-- Party pawn sprite sheet integration (4-dir + walk cycles) in Explorer view.
-- Region banding across explorer world (tile selection varies by progress/mile, not just current region).
-- Explorer input cleanup (stop using hex camera movement helpers in explorer mode; add square-grid pan/zoom).
-- Replace procedural wagon/oxen drawing with a sprite sheet set (variants for oxen count, damage, lanterns, night states).
-- Add optional explorer tooltip/inspect mode for tiles plus hover labels for milestones.
-- Tie explorer region banding and tile types to real route/biome data instead of simple x-axis bands.
-- Add a lightweight explorer minimap overlay plus performance profiling (chunk caching, draw bounds) for the tile renderer.
-- Interactive minimap: click-to-pan + show POI markers; mobile toggle UX
-- Chunk caching/offscreen buffers for explorer terrain layer (static terrain blit)
-- Feature-corridor-driven terrain placement (Snake/Columbia/Humboldt rivers, deserts) using tags
-- Touch-friendly inspect: tap to pin tooltip + close button
-- Biome transition smoothing + seasonal tinting + variant tile set rotations
-
-Deferred from this pass
-- Corridor tag-driven terrain overrides for Snake/Columbia/Humboldt/Sublette desert stretches in the explorer world generator.
-- Multi-buffer terrain chunk caching and LOD streaming beyond the new single offscreen terrain blit.
-- Blended biome boundaries with seasonal tinting and rotated tile variants across explorer tiles.
-- Rival-fort quest chain missions (policy/tariff delivery, smuggling, audit arcs) with ledger-reactive outcomes.
-- Dream-West B-seed expansions with multi-region callbacks tied to ledger changes and faction reputation deltas.
-- Tactical hunting/ambush encounter resolution covering cover/volley choices, oxen risk, injuries, and loot tables.
-- Seasonal grading plus night overlay, lantern glow, and weather vignette polish across explorer and UI layers.
-
-Deferred from explorer corridor pass
-- Consolidate explorer terrain caching into multi-buffer chunk buffers and LOD streaming beyond the single offscreen blit; keep route/seed signatures in the cache key so new runs invalidate correctly.
-- Build rival-fort quest chain missions (delivery, smuggling, audit) with ledger-aware outcomes and rivalry policy hooks; reuse the existing fort politics scaffolding when wiring the ledger.
-- Expand Dream-West B-seeds with ledger and reputation delta callbacks across regions, gated by cooldowns to avoid seed spam, and surface ledger deltas in the callback payloads.
-- Ship tactical hunting/ambush encounter resolution (cover/volley choices, oxen risk, injuries, loot tables) through the encounter modal rather than trail-log shortcuts.
-- Finish full-season grading + weather/night overlay polish as UI-wide toggles (accessibility-friendly), keeping explorer canvas grading optional when HUD/minimap readability is at risk.
+BACKLOG / DEFERRED
+Events & Storyteller
+- Expand B-seed roster with regional omens, river variants, and mythic-safety fallbacks; add rare storyteller-specific beats.
+- Add late-run event overlays (river cliff scenes, wagon crash, illness crisis) tied to scene picker tags.
+Factions & Trade
+- Fort-specific price/stock tables (Independence baseline; Kearny/Laramie x2–3; Hall/Boise 4–10x) with tariff/policy flavor.
+- Barter/ledger polish: clearer capacity feedback (1,600–2,000 lb safe window) and recurring vendor restock behaviors per fort.
+- Add high-value trade goods (blankets, coffee, sugar, tobacco, ammo) that matter in faction encounters.
+Survival & Health
+- Weather 2.0 per segment: rain/storm/heat/snow tuned to Kansas bottomlands, Platte cholera corridor, South Pass/Blues/Barlow snow windows.
+- Stock strain/oxen fatigue score blending heat, grade, mud, and headwind; feeds breakdown and pace penalties.
+- Multi-stage illnesses (dysentery/cholera/alkali/frostbite/pneumonia/exhaustion) with diagnosis/treatment hooks and doctoring skill influence.
+Social / Pawns
+- Schedule grid for delegation (travel/camp/rest/guard) with auto-assignment tweaks and trait-aware job picks.
+- Camp crafting jobs (smoke/salt meat, patch gear, craft ammo/herbal tonics) with time/tool costs and cancel/partial-loss handling.
+UI / Polish
+- Fullscreen toggle and mobile touch spacing; maintain single-file footprint.
+- Explorer/map strip polish with painterly terrain tiles, fog/weather overlays, and responsive controls.
+- Log clarity: tag filter for events/trade/journal and reduced spam from repeated micro actions.
+Audio / Art
+- Ambient audio loops (prairie wind, storms, river crossings, night campfire, fort bustle) with lightweight Web Audio sprite system.
+- Optional lightning/rain/snow overlay tied to weather events; Bierstadt/Remington/Maggiori-inspired mood palettes per region and block.

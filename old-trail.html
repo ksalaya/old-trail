@@ -3584,6 +3584,82 @@
       },
     },
     {
+      id: "seed_b04_mirror_wagon_echo",
+      kind: "breather",
+      condition: function (ctx) {
+        const windowOk = ctx.mode === "camp" && ctx.block === "evening";
+        return (
+          getEventFlag("mirror_wagon_signal") &&
+          !getEventFlag("seed_b04_mirror_wagon_echo_done") &&
+          hoursSinceFlag("seed_b04_mirror_wagon_time") >= 48 &&
+          hoursSinceFlag("seed_b_global_time") >= 36 &&
+          windowOk
+        );
+      },
+      weight: function () {
+        return 2;
+      },
+      run: async function (ctx) {
+        const selection = await presentEncounter({
+          id: "seed_b04_mirror_wagon_echo",
+          title: "Echo of the mirror wagon",
+          subtitle: ctx.location,
+          body: [
+            "A lone lantern bobs where no wagon should be, the light moving as if through glass just beyond reach.",
+          ],
+          tags: ["camp", "omen"],
+          options: [
+            { id: "follow", label: "Follow the lantern", tone: "warm", hint: "Maybe guidance, maybe nothing." },
+            { id: "mark", label: "Mark it and move on", tone: "neutral", hint: "Note the spot; settle nerves." },
+            { id: "ignore", label: "Ignore it", tone: "danger", hint: "Keep routine; hope the light fades." },
+          ],
+          defaultId: "follow",
+        });
+        const nowHour = getCurrentTrailHour(gameState);
+        setEventFlag("seed_b_global_time", nowHour);
+        setEventFlag("seed_b04_mirror_wagon_echo_done", true);
+        setEventFlag("mirror_wagon_signal", false);
+        let logText = null;
+        if (selection === "follow") {
+          let curioGranted = false;
+          if (ctx.storyState.mythicEnabled !== false) {
+            const curioState = ensureMythicCurioState();
+            const candidates = ["home_marker", "wisp_lantern"].filter(function (id) {
+              return curioState.owned.indexOf(id) < 0;
+            });
+            const pool = candidates.length ? candidates : [];
+            if (pool.length && Math.random() < 0.18) {
+              const curioId = choice(pool);
+              gainMythicCurio(curioId, "Followed a mirrored lantern through the dark");
+              curioGranted = true;
+            }
+          }
+          if (!curioGranted) {
+            if (Math.random() < 0.5) {
+              gameState.supplies.ammo = Math.max(0, (gameState.supplies.ammo || 0) + 1);
+              logText = "You pace after the light and find only a forgotten cartridge box near a rock cairn.";
+            } else {
+              gameState.supplies.medicine = Math.max(0, (gameState.supplies.medicine || 0) + 1);
+              logText = "The lantern leads you to a tucked-away tonic bottle before winking out.";
+            }
+          }
+        } else if (selection === "mark") {
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) - 1, 0, 100);
+          (ctx.people || getAllPeople()).forEach(function (p) {
+            adjustPersonStat(p, "morale", 1);
+          });
+          logText = "You stake a marker and sketch the bend; the crew exhales as the strange light drifts on.";
+        } else if (selection === "ignore") {
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) + 1, 0, 100);
+          logText = "You let the lantern bob away. The night stays ordinary, if a little colder.";
+        }
+        if (logText) {
+          addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        }
+        recordStoryBeat("seed", "omen", "Echo of the mirror wagon", { id: "seed_b04_mirror_wagon_echo", choice: selection });
+      },
+    },
+    {
       id: "seed_b05_milepost_twisted",
       kind: "minor",
       condition: function (ctx) {
@@ -3868,6 +3944,74 @@
         }
         addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
         recordStoryBeat("seed", "mythic", "Men in Gray made an offer", { choice: selection });
+      },
+    },
+    {
+      id: "seed_b07_men_in_gray_resonance",
+      kind: "minor",
+      condition: function (ctx) {
+        const traceSeen = getEventFlag("men_in_gray_token") || getEventFlag("men_in_gray_footprints");
+        return (
+          ctx.storyState.mythicEnabled !== false &&
+          ctx.mode === "camp" &&
+          ctx.block === "night" &&
+          traceSeen &&
+          !getEventFlag("seed_b07_men_in_gray_resonance_done") &&
+          hoursSinceFlag("seed_b07_men_in_gray_offer_time") >= 24 &&
+          hoursSinceFlag("seed_b_global_time") >= 36
+        );
+      },
+      weight: function () {
+        return 2;
+      },
+      run: async function (ctx) {
+        const selection = await presentEncounter({
+          id: "seed_b07_men_in_gray_resonance",
+          title: "Gray token hums in the dark",
+          subtitle: ctx.location,
+          body: [
+            "A flat humming rolls through camp. The gray token feels warm, and bootprints near the wagons point everywhere at once.",
+          ],
+          tags: ["camp", "mythic"],
+          options: [
+            { id: "attune", label: "Attune / keep it close", tone: "warm", hint: "Lean into their unseen favor." },
+            { id: "bury", label: "Bury it / scrub the prints", tone: "neutral", hint: "Ease tension; step away from omens." },
+            { id: "discard", label: "Throw it away", tone: "danger", hint: "Break the link, whatever the cost." },
+          ],
+          defaultId: "attune",
+        });
+        const nowHour = getCurrentTrailHour(gameState);
+        let logText = null;
+        if (selection === "attune") {
+          if (getEventFlag("men_in_gray_token")) {
+            gainMythicCurio("gray_token", "Kept the gray token close");
+          }
+          adjustFactionRep("men_in_gray", 3, null, ctx);
+        } else if (selection === "bury") {
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) - 2, 0, 100);
+          (ctx.people || getAllPeople()).forEach(function (p) {
+            adjustPersonStat(p, "morale", 1);
+          });
+          adjustFactionRep("men_in_gray", -1, null, ctx);
+          logText = "You bury the token and scrub the prints into mud. Camp exhales, uneasy but calmer.";
+        } else if (selection === "discard") {
+          adjustFactionRep("men_in_gray", -3, null, ctx);
+          ctx.storyState.tension = clamp((ctx.storyState.tension || 0) + 1, 0, 100);
+          logText = "You fling the gray trace into the brush. The humming stops, leaving the dark to listen.";
+        }
+        setEventFlag("men_in_gray_token", false);
+        setEventFlag("men_in_gray_footprints", false);
+        setEventFlag("men_in_gray_resolved", true);
+        setEventFlag("seed_b07_men_in_gray_resonance_done", true);
+        setEventFlag("seed_b07_men_in_gray_offer_time", nowHour);
+        setEventFlag("seed_b_global_time", nowHour);
+        if (logText) {
+          addLog(logText, { tone: "event", tag: "DAY " + ctx.dayTag, location: ctx.location });
+        }
+        recordStoryBeat("seed", "mythic", "Men in Gray resonance settled", {
+          id: "seed_b07_men_in_gray_resonance",
+          choice: selection,
+        });
       },
     },
     {
@@ -6289,6 +6433,61 @@
         snake_plain: { tensionRiskScale: 0.33, baseDrift: 0.14, minClamp: 20, maxClamp: 90, label: "dry stretches" },
         blue_mountains: { tensionRiskScale: 0.35, baseDrift: 0.18, minClamp: 24, maxClamp: 94, label: "grinding passes" },
         columbia: { tensionRiskScale: 0.38, baseDrift: 0.2, minClamp: 28, maxClamp: 100, label: "river cliffs", seasons: { late_fall: { baseDrift: 0.26 } } },
+      },
+    },
+    chaotic: {
+      id: "chaotic",
+      label: "Chaotic Narrator",
+      iconKey: "storm",
+      tagline: "Unpredictable, darkly humorous frontier weirdness",
+      description:
+        "Finds the oddest beats at the edge of the trail — like X-files on the frontier told with a dry grin.",
+      hint: "Surprise-forward pacing with guarded relief valves.",
+      examples: [
+        "A calm dusk can pivot into a whispered omen, then back to laughter before sleep.",
+        "Prefers sharp turns over long cruelty; tension toys with you more than it crushes you.",
+      ],
+      personality: "Impish pacing; surprise over cruelty.",
+      tensionBaseDrift: 0.09,
+      tensionRiskScale: 0.34,
+      tensionMin: 10,
+      tensionMax: 100,
+      tensionAfterMajorDrop: 40,
+      tensionAfterMinorDrop: 20,
+      minHoursBetweenMajor: 16,
+      minHoursBetweenMinor: 2,
+      breatherBias: 0.98,
+      lifelineBias: 1.05,
+      pacingSummary: "Plains: pranks · Rockies: sudden turns · Columbia: uneasy grins",
+      regionCurves: {
+        plains: {
+          tensionRiskScale: 0.28,
+          baseDrift: 0.06,
+          minClamp: 12,
+          maxClamp: 85,
+          label: "quiet, until it isn't",
+          seasons: { spring: { baseDrift: 0.04 }, summer: { baseDrift: 0.1 } },
+        },
+        central_plains: {
+          tensionRiskScale: 0.3,
+          baseDrift: 0.08,
+          minClamp: 14,
+          maxClamp: 90,
+          label: "mirages and rumors",
+          seasons: { summer: { baseDrift: 0.12 } },
+        },
+        high_plains: { tensionRiskScale: 0.35, baseDrift: 0.12, minClamp: 18, maxClamp: 95, label: "flash-change skies" },
+        mountains: {
+          tensionRiskScale: 0.4,
+          baseDrift: 0.18,
+          minClamp: 24,
+          maxClamp: 100,
+          label: "switchback unease",
+          seasons: { fall: { baseDrift: 0.22 } },
+        },
+        snake_plain: { tensionRiskScale: 0.38, baseDrift: 0.16, minClamp: 24, maxClamp: 100, label: "heat mirage tricks" },
+        blue_mountains: { tensionRiskScale: 0.42, baseDrift: 0.2, minClamp: 26, maxClamp: 100, label: "shadow jokes" },
+        columbia: { tensionRiskScale: 0.46, baseDrift: 0.22, minClamp: 28, maxClamp: 100, label: "gallows chuckles" },
       },
     },
     harsh: {
@@ -25163,4 +25362,13 @@
 - Mythic OFF: no new mythic-only triggers were added; Men in Gray behaviors unchanged.
 - Save + reload mid-run; ledger still renders and events function without crashes.
 - Trail log: one line per seed run; smaller beats stay in pawn thoughts (no spam).
+-->
+<!-- Validation checklist (Chaotic narrator + Dream-West callbacks):
+- New run loads with no console errors.
+- “Chaotic Narrator” appears, is selectable, and persists after reloads.
+- Fast-forward 10+ days (mythic ON): Men in Gray offer can occur; resonance callback fires once (>=24h later) and never repeats.
+- Mirror Wagon seed can occur; echo callback fires once (>=48h later) and never repeats.
+- Global B-seed pacing holds (>=36h between B-seeds/callbacks).
+- Mythic OFF: Men in Gray callback never triggers; Mirror echo stays mundane and never grants curios.
+- Trail log stays lean: one meaningful log per new event path (plus curio gain log when applicable).
 -->
