@@ -1,0 +1,246 @@
+﻿UPDATED OLD TRAIL ROADMAP
+
+
+OLD TRAIL – MASTER ROADMAP (SANDBOX SURVIVAL EDITION)
+0. Vision & Pillars
+Goal: Old Trail is a sandbox survival sim in the Oregon Trail setting (1840s–1860s): part historical travelogue, part The Long Dark / UnReal World–style survival roguelike. You’re guiding a wagon party west (or living as one of them), juggling weather, illness, scarcity, and route decisions on an hourly timescale.
+Core pillars:
+1. Historically grounded simulation
+Route segments, forts, climate, hazards and prices follow documented Oregon Trail geography and diaries – from the Great Plains “ocean of grass” to the harsh passes and cholera corridor along the Platte.
+2. Modern survival depth
+Condition, hunger, thirst, warmth, fatigue, and morale behave more like The Long Dark / UnReal World – attrition over weeks, not just instant “health points”, with diet quality, weather exposure, and equipment all feeding long-term risk.
+3. Dynamic, semi-open journey
+The trail is a directed graph of segments and cutoffs (Sublette vs. Fort Bridger, Three Island vs. south of Snake, Columbia vs. Barlow), each with its own climate, hazards, and events.
+4. Living painting viewport
+The main scene feels like traveling inside a Bierstadt/Remington/Maggiori painting – luminous skies, storm drama, and small wagons against epic landscapes – with mood and weather-aware scene selection.
+5. HTML5-first, embeddable & performant
+Single-file or light-asset HTML5 that runs well when embedded (Weebly/iframe), with careful use of canvas, audio, and overlays to avoid slowing the host page.
+________________
+
+
+1. Foundations (Status – Already Implemented)
+These are present in after_first-update.txt and don’t need to reappear as “TODOs”:
+   * Modern UI shell & HUD
+   * Start screen with leader, background, departure info.
+   * Travel/Camp screen with survival bars (condition, warmth, energy, etc.), trail status HUD, log window, map strip with current-mile indicator, supplies overview, and responsive layout.
+   * Time & mode
+   * Hourly simulation with morning / noon / evening / night blocks, travel vs. camp mode toggle, and nightly guard/ travel tracking tied into a daily rhythm object and “proper vs. rushed camp” macros.
+   * Party, stats & tasks baseline
+   * Party manifest, skills, simple use-based progression hooks.
+   * Core survival stats per person (hunger, thirst, energy, warmth, morale).
+   * Job delegation system with priorities (RimWorld-style), “auto” vs. manual tasks, and essential-jobs auto assignment (travel, cooking, water, repair, guard).
+   * Trail structure & scenes v1
+   * Route represented as mile-based segments and major landmarks (Independence → Fort Kearny → Fort Laramie → South Pass → Fort Hall → Blue Mountains → The Dalles → Oregon City).
+   * SCENE_BANDS mapping mileage bands to mood-tagged background images (clear / heat / storm / cold).
+   * Weather system v1
+   * Seeded, region-aware hourly weather (getWeather) with Perlin noise, climate baselines per region, altitude-based lapse rate, and snowline logic.
+   * Start-date profiles that bias risk toward swollen rivers (early) vs. heat and storms (late).
+   * Save/load & local persistence
+   * Game state serialization, log rehydration, and reset.
+Everything below assumes this foundation exists and focuses on expanding it into a full Oregon Trail survival sandbox.
+________________
+
+
+2. Milestone 1 – Survival & Diet Overhaul (Next Major Feature Block)
+Theme: Make daily survival decisions as deep and interesting as route choices. Eating, resting, and camp setup should feel like UnReal World / The Long Dark–style planning, not a single “food” bar.
+2.1. Deeper cooking & meal system (Roadmap C)
+   * Recipe-based cooking tasks
+   * Implement historically grounded recipes: mush & bacon, flapjacks & coffee, beans & bacon, trail stew, special salmon pot at Salmon Falls, etc.
+   * Each recipe:
+   * Inputs: exact supplies (flour vs cornmeal, beans, bacon, fresh meat, dried fruit, coffee, fuel).
+   * Time cost (quick fry-up 1h vs proper supper 2–3h).
+   * Skill hooks (Cooking skill changes burn chance, yield quality, flavor text).
+   * Ration tier → recipe availability
+   * On filling rations, cook tasks can choose hearty or feast recipes if supplies allow.
+   * On meager / bare-bones, auto-degrade to quick fry-ups or even burnt/boring meals with log flavor.
+   * Food group tracking & long-term health
+   * Track 10–14 day rolling intake across Staples, Meat/Fat, Fruit/Veg, Coffee/Tea. Missing groups accumulate risk of fatigue, poor recovery, and scurvy-style afflictions (“camp fever”).
+   * Camp effort macros
+   * Make existing “Proper Camp / Rushed Camp” macros drive meal types:
+   * Rushed: mostly quick fry-ups, little warmth/morale gain.
+   * Proper: unlocks hearty stews and feasts, bigger warmth/morale boosts but more fuel and time. Wet fuel or low cooking skill increases burn risk and waste, with diary-inspired flavor text.
+   * Region-aware recipes
+   * Tie special recipes to segments: buffalo-rich stews on the Platte, salmon & roots in Snake/Columbia, vegetable-heavy meals near Grande Ronde/Whitman/Boi­se.
+2.2. Spoilage & preservation
+   * Climate-based spoilage
+   * Use region & weather to set decay rates: fast spoilage in hot, dry Snake/alkali, slower in cool high passes & Blue Mountains forests.
+   * Preservation actions
+   * New camp jobs: smoke/dry meat, salt meat, cache perishables in cool streams or dugouts to slow decay, drawing on historical practices and survival-game best practices.
+2.3. Condition & fatigue tuning
+   * Make hunger, thirst, warmth and sleep interact more strongly with movement speed, error risk, and illness chance, tuning numbers toward long-run attrition like modern survival sims rather than “instant death” spikes.
+________________
+
+
+3. Milestone 2 – Routes, Cutoffs & Weather Layer 2.0
+Theme: Route choices and departure timing become big, replay-defining decisions.
+3.1. Route cards & fork decisions (Roadmap A)
+   * Route card UI at each fork
+   * For Sublette vs Fort Bridger, Fort Hall vs Salt Lake Cutoff, Three Island vs lower Snake, Columbia raft vs Barlow; show:
+   * Extra miles vs baseline.
+   * Expected days from fork to next major fort at steady pace.
+   * Climate modifiers (+heat, -water vs +cool nights, +grass).
+   * Special events unlocked (Shoshone trade at Bridger, alkali basin events on Sublette, etc.).
+   * Historical hint text
+   * Diary snippets in log when choosing routes – advisory tone but not prescriptive (“Men talk of the ‘dry drive’ ahead…”).
+   * Route stress memory
+   * Track a hidden “route stress” score per major leg to feed into oxen fatigue and morale events (“No one wants another dry basin like the one behind us”).
+3.2. Weather 2.0 tied to segments (on top of existing weather system)
+   * Segment-specific climate tuning
+   * Extend CLIMATE baselines so each named segment (Kansas bottomlands, Platte, Sweetwater, Snake plain, Blues, Columbia) has tuned pRain/pStorm/temp bands based on the historical guide.
+   * Disease-linked weather windows
+   * In the Platte “cholera corridor,” unusually wet+warm weeks sharply increase bad-water and cholera/dysentery events when drinking from stagnant holes or marshes.
+   * Snow window logic in passes
+   * At South Pass, Blues, Barlow: late travel (vs historical “normal window”) triggers frost/snow events, mud and blizzard penalties, potentially trapped-wagon events if very late.
+   * Oxen/weather interplay
+   * Introduce a “stock strain” score per day combining heat, grade, mud, and headwind vs. good grass and cool days; feed into pulling capacity, breakdown chance, and death events.
+________________
+
+
+4. Milestone 3 – Health, Illness & Medical Play
+Theme: Geography-anchored illnesses and injuries that unfold over days, not single die rolls.
+4.1. Afflictions and progression (Roadmap H)
+   * Region-aware risk tables
+   * Platte (warm, wet): high cholera/dysentery risk on bad water; Snake alkali country: alkali water events that hurt condition and morale unless diluted or avoided; South Pass/Blues/Barlow: frostbite risk at night if warmth & clothing too low.
+   * Multi-stage illnesses
+   * Each major illness (dysentery, cholera, scurvy, mountain fever, pneumonia, camp fever, snakebite, broken bones, exhaustion) has stages: risk → onset → crisis→ recovery/death, with clear log feedback, treatment windows, and debuffs.
+   * Treatments & supplies
+   * Use doctoring tasks plus supplies (rest, boiled water, herbal remedies, bandages, opiates, etc.) to influence outcomes. Missing treatment or misdiagnosis makes things worse.
+4.2. Doctoring gameplay
+   * Doctoring skill & diagnosis
+   * Skill affects diagnosis clarity (“likely cholera vs. simple stomach upset”), treatment effectiveness, and resource efficiency.
+   * Forts & specialized care
+   * At forts, pay steep prices or accept story consequences for better treatment (e.g., experimental medicine, quarantine, time lost).
+   * Injury events
+   * Boating accidents, wagon rollovers, gun mishaps, and animal incidents that create long-term injuries influencing travel speed and task performance.
+________________
+
+
+5. Milestone 4 – Companion Schedules, Camp Tasks & Crafting
+Theme: Camp life becomes a deep sandbox: you run a small RimWorld-style party on wheels.
+5.1. Task delegation depth
+   * Job list expansion
+   * Beyond travel/cook/fetch water/guard/repair, add jobs like:
+   * Hunt/game processing, foraging, woodcutting, herbalism, smoking/salting meat, ammo crafting, gear repair, cartography/journal, animal handling.
+   * Schedule grid (per person)
+   * Optional 24h schedule like RimWorld: define blocks (Travel, Camp chores, Rest, Guard, Free) which bias the delegation system hour by hour.
+   * Task hints from daily rhythm
+   * Use day-block context to nudge tasks (morning travel bonus, noon micro-events like school/church, evening camp macros auto-assign combos of wood/water/guard/cooking).
+5.2. Crafting & camp UI
+   * Camp Tasks Menu UI
+   * Bring in the camp-tasks-menu visual design as a dedicated panel for chores & crafting queues (wood, water, repair, craft, preserve, doctoring), showing time costs and required tools.
+   * Crafting system
+   * Implement a simple recipe UI: list craftable items (smoked meat, repaired shoes, patched wagon cover, extra ammunition, herbal tonic) with inputs, tools, and time. Allow canceling with partial losses, following survival-game craft UX recommendations.
+   * NPC autonomy
+   * Companions on “auto” should pick chores based on priorities, stats (e.g. don’t assign the exhausted person to night guard), and immediate needs (low water, broken wagon, looming weather).
+________________
+
+
+6. Milestone 5 – Forts, Trading & Economy
+Theme: Forts and trading posts become big strategic beats, not just “shops”.
+6.1. Fort-specific prices & stocks (Roadmap F)
+   * Price tables
+   * Implement realistic price curves:
+   * Independence/St. Joseph: baseline Missouri prices.
+   * Fort Kearny/Laramie: 2–3× multipliers on staples.
+   * Fort Hall/Boise: 4–10× multipliers on flour, bacon, sugar, coffee.
+   * Stock logic
+   * Some forts intentionally under-stock certain goods (e.g., early Fort Hall), generating scarcity and tough decisions.
+   * Trade goods that matter
+   * Introduce compact, high-value goods: warm blankets, coffee, sugar, tobacco, spare ammunition, bright cloth – used in both fort shops and encounters with Native groups for food, guidance, or safe passage.
+6.2. Store & ledger UI
+   * General Store Ledger interface
+   * Use the GENERAL STORE LEDGER widget design as the template:
+   * Left: categories & items with descriptions; Right: ledger showing current cash, weight, and pending purchases.
+   * Clear feedback on wagon capacity (safe 1,600–2,000 lb window with overload messaging tied to real wagon capacities).
+   * Fort / Trading Post screen
+   * Dedicated fort view with:
+   * Local scene art & mood.
+   * Store ledger.
+   * Optional side interactions: gossip, doctor, blacksmith, optional side missions.
+   * Barter encounters
+   * Simple barter screen using the ledger UI for ad hoc trading with travelers or Native groups (trading blankets / ammunition for food or route guidance).
+________________
+
+
+7. Milestone 6 – Dynamic Trail Encounters & Sandbox Events
+Theme: The trail feels alive and unpredictable like a Red Dead–style frontier, but tuned to a finite westward journey.
+7.1. Encounter system
+   * Ambient dynamic events
+   * Per hour of travel or camp, roll for location/biome/weather/time-dependent events:
+   * Ambushes and bandit attacks in passes or wooded ravines.
+   * Travelers in distress (decisions: help & share supplies, recruit, ignore).
+   * Buffalo herds, antelope, or scarce game opportunities depending on segment.
+   * Weather-caused hazards (flash floods, lightning striking a nearby tree, dust storms, etc.).
+   * Multi-outcome decisions
+   * Each event offers multiple responses (flee/fight/negotiate, ford/wait/build ferry, detour vs. press on) feeding into survival stats, supplies, reputation/morale.
+7.2. Reputation & story threads (later in this milestone or next)
+   * Simple reputation flags (merciful, ruthless, shrewd trader, generous) that:
+   * Influence prices, help offered by NPCs, ambush frequency.
+   * Drive unique late-game events at The Dalles/Oregon City.
+________________
+
+
+8. Milestone 7 – Scene System, Art Direction & Overlays
+Theme: Tie all the painterly research into a living “time window” viewport.
+8.1. Mood-based scene picker (Roadmap G)
+   * Scene tagging
+   * Tag each scene with attributes like travel_day_clear, camp_evening_rain, night_guard, feast_event, illness_camp.
+   * Selection logic
+   * Picker uses:
+   * Region & miles (scene bands already in code).
+   * Mode (camp vs travel).
+   * Weather (clear/heat/storm/cold).
+   * Party mood (morale, illness, recent feast/tragedy).
+   * Event scenes
+   * Temporary overlay scenes for big moments (river crossing, crash, illness crisis, major trade), fading back to ambient travel/camp scenes.
+8.2. Art style hooks
+   * Bierstadt / Remington / Maggiori palettes
+   * Region/mood presets:
+   * Bierstadt-style luminous dawn/sunset for triumphant milestones (South Pass, Grande Ronde, Oregon City).
+   * Remington nocturnes for tense camps and raids (blue-green nights, warm fire cores, strong silhouettes).
+   * Maggiori-style storm drama and dust-haze sunsets for heat waves and dust storms.
+   * Overlay stack & audio (Roadmap I)
+   * Optional rain/snow/lighting overlays synchronized to weather and log entries.
+   * Web Audio ambient loops (prairie wind, storms, campfire, fort bustle) and UI click/tension stingers.
+   * Fullscreen & mobile polish
+   * Temporal Viewport fullscreen button, mobile touch-friendly targets, and optional “suggest fullscreen” on Begin Journey when embedded.
+________________
+
+
+9. Milestone 8 – Skills, Background Perks & Meta-Progression
+Theme: Builds long-term replayability and that “one more run west” feeling.
+9.1. Skill progression (Roadmap E)
+   * Use-based skills
+   * Travel, Hunting, Cooking, Woodcutting, Doctoring, future Riverwork – gain XP by doing; each has thresholds unlocking micro-perks.
+   * Soft per-day XP caps
+   * Prevent grinding a single task in one day to max level, UnReal World–style.
+   * Background-linked perks
+   * Each leader background unlocks perk choices at mid/high skill:
+   * Farmer: better oxen handling & grass sense.
+   * Banker: better trade rates and occasional credit/loan events.
+   * Carpenter: improved wagon repairs, less part usage.
+   * Teacher: morale boosts from stories/schooling, better doctoring outcomes.
+   * Skill-synergy checks
+   * Combine skills in checks (Travel + Woodcutting for steep descent, Hunting + Stealth for tricky game).
+9.2. Meta & scenarios
+   * Permadeath runs with diary carryover
+   * Each failed or successful run generates a short “journal page” summary and maybe unlocks:
+   * New backgrounds (e.g., experienced guide, mountain man).
+   * Alternative starts (St. Joseph vs Independence).
+   * Challenge modes (hard winter year, disease-heavy year).
+   * Alternate scenarios
+   * California-bound variant (post–Fort Hall branch).
+   * Late-season emergency trek with less prep time.
+   * Solo trapper or mail express mode (minimal party, high risk).
+________________
+
+
+10. Milestone 9 – Tech, Embedding & Tools
+Theme: Make Old Trail easy to ship, embed, and iterate with AI tools and Git.
+   * Single-embed HTML5 bundle
+   * Keep the game as a single <div> + <style> + <script> for Weebly/custom-HTML embedding, or an externally hosted bundle for iframe embedding following the Codex/HTML5 best-practices doc.
+   * Performance safeguards
+   * Pause simulation when the tab or iframe is not visible.
+   * Defer heavy audio/image loads until first interaction.
+   * AI-assisted workflows
+   * Maintain clear prompts and file comments so Codex / GPT can safely refactor UI modules, add new scenes, or tweak systems without breaking the single-file embed constraints.
