@@ -88,3 +88,86 @@ DreamWest follow-ups
 - Add lightweight debug panel for events (recent events, dw cooldown keys, lastAny hour) for balancing.
 - Optional hosted JSON fetch + caching while keeping embedded fallback for Weebly reliability.
 - Add optional scene/viewport flavor hooks (subtle captions/overlays) when DreamWest beats trigger, without requiring new art assets.
+
+BYTE-BUDGET PASSES
+- Byte-budget pass (Weebly-safe) — baseline: 1,225,146 bytes — after: 998,287 bytes (saved 226,859 bytes) — target: <1,000,000
+
+QA / Regression checklists (moved out of HTML to save bytes)
+Validation checklist (Explorer view updates)
+- Start new run → go to Travel → toggle Explorer.
+- Explorer canvas spans full embed width; layout doesn’t break Journal view.
+- Canvas resizes sharply when toggling views and when resizing the browser (no blur).
+- Tile images load progressively; if they fail, fallback colors still render.
+- Oxen count changes wagon team visuals (try buying/selling oxen); clamp works.
+- No new trail log spam during rendering.
+- Save/load still works (best effort).
+- Any “mythic/secret” content never appears in normal logs/events as a side effect.
+
+Validation checklist (Fort ledger scarcity pass):
+- Start a new run; no console errors.
+- Enter travel phase and approach a fort; “Trading Post” button appears; modal opens/closes cleanly.
+- Buy/sell works; vendor stock decreases/increases; buy buttons disable when stock is insufficient.
+- Prices shift reasonably with scarcity (never negative/NaN; multipliers clamped).
+- Wait/advance 2–3 days and reopen trade; stock restocks toward caps (no duplication explosions).
+- Save + reload mid-run; trade modal still works; vendor inventories persist; no crashes.
+- Trail log remains clean (no spam per transaction); trade history shows in the trade ledger panel.
+- Mythic OFF: nothing new leaks into Men in Gray behaviors (this pass should not add mythic triggers at all).
+
+Validation checklist (Barter tab):
+- Start new run; no console errors.
+- Reach a fort and open Trade; Buy/Sell tabs still function and haggle offers spend attempts.
+- Switch to Barter tab; Offer/Request bundles update totals; Clear empties baskets.
+- Propose Barter consumes a haggle attempt, applies accepted/countered trades without negative stocks or dupes, and refuses cleanly.
+- Haggle attempts exhausted disables proposing; panel explains remaining attempts.
+- Trade ledger shows “Barter — …” lines; no trail log spam.
+- Save/reload mid-run; trade modal and barter baskets open without crashes.
+
+Validation checklist (Dream-West B11/B12/B13 seeds):
+- Start new run; no console errors.
+- Fast-forward 5–10 days; B-11/B-12/B-13 seeds surface with seed_lastHour + seed_b_global_time + per-seed cooldown spacing.
+- B-11 follow-up triggers once after dispute/forge at a fort or mission; clears pending flags; no repeats.
+- B-13 follow-up triggers once at a fort/mission before deadline; clears pending flags; no repeats.
+- Mythic OFF: no new mythic-only triggers were added; Men in Gray behaviors unchanged.
+- Save + reload mid-run; ledger still renders and events function without crashes.
+- Trail log: one line per seed run; smaller beats stay in pawn thoughts (no spam).
+
+Validation checklist (Chaotic narrator + Dream-West callbacks):
+- New run loads with no console errors.
+- “Chaotic Narrator” appears, is selectable, and persists after reloads.
+- Fast-forward 10+ days (mythic ON): Men in Gray offer can occur; resonance callback fires once (>=24h later) and never repeats.
+- Mirror Wagon seed can occur; echo callback fires once (>=48h later) and never repeats.
+- Global B-seed pacing holds (>=36h between B-seeds/callbacks).
+- Mythic OFF: Men in Gray callback never triggers; Mirror echo stays mundane and never grants curios.
+- Trail log stays lean: one meaningful log per new event path (plus curio gain log when applicable).
+
+Validation checklist (mythic-only + 1–20 skills + narrator UI):
+- Start a new run: start screen loads; no console errors.
+- Mythic toggle is gone; mythic content is always enabled; old saves with mythicOff load and are forced mythicOn.
+- Narrator selection appears only once via cards; hover detail text reads at normal width; selection persists into play/save.
+- Party rerolls show skills on a 1–20 scale with noticeable variation; 3 traits are most common but not guaranteed.
+- Younger characters generally roll lower baselines and fewer frailty traits; older characters can show higher skills and health quirks.
+- Trait hover tooltips display clear summaries in draft and in-run views.
+- Fast-forward several days/hours: task odds remain sane on the new scale; no trail log spam from skill-ups.
+- Save/load mid-run works without crashing (best-effort).
+
+Validation checklist (B-set filler + B-01 + trade header):
+- Start a new run; fast-forward multiple days; confirm seeds appear but do not spam.
+- Confirm B-set global cooldown + per-seed cooldown works (no B-seed inside 36h; no same seed inside 7d).
+- Trigger B-01 only once per ~10 days mid-run; follow-up fires once 24–96h later and resolves.
+- Ensure no JS errors; encounter modal closes; trail log shows one meaningful line per event.
+- Open a trade modal (fort/caravan/open_eye) and see Standing + Terms in the header without layout break.
+- Save/load smoke test if available: old saves still load without crashes.
+
+Validation checklist (DreamWest pack + mythic-always-on):
+- Start a new run: no console errors, no Mythic toggle anywhere.
+- Fast-forward 5–10 in-game days: DreamWest events appear but do not cluster; cooldowns respected.
+- Confirm core (non-DreamWest) events still trigger normally.
+- Save/reload mid-run: no crashes; DreamWest cooldown flags persist.
+- Confirm no “mythic off” branches exist (quick grep for mythicEnabled checks; should be removed or forced true).
+
+Future byte-budget pipeline
+- Proper build pipeline: bundle → minify (terser) → entropy pack (roadroller) → inline to single HTML.
+- JSON/data packing: LZ-string / heatshrink style packed chunks + tiny decoder; lazy-inflate by feature on first use.
+- Asset pipeline: single atlas; AVIF/WebP primary + PNG fallback; SVG subset/minify.
+- Audio footprint reduction: multiplex SFX via a tracker/music engine; avoid multiple players; consider tiny ADPCM spritemap.
+- Optional: rename CSS classes/ids via a mapping pass (only if truly needed for bytes).
