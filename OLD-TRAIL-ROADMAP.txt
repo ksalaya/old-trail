@@ -13,6 +13,10 @@ CURRENT FOUNDATION (ALREADY IMPLEMENTED)
 - Party stats, afflictions, mythic toggles, curios, faction reputation tracking, and trade ledgers.
 - Trail log, journal beats, encounter modal system, and B-seed Dream-West hooks already driving events (Open Eye, Men in Gray, mirror wagon, tariffs, peddlers, etc.).
 
+TEMPORARY STABILITY ROLLBACKS (RESTORE)
+- Reintroduce Dream-West event pack scripting and mythic encounter hooks after stability fixes.
+- Restore the fort-specific trade/ledger system (vendor stock, barter tabs, restock simulation, tariffs).
+
 NEXT 3 PASSES
 1) Dream-West polish & pacing guardrails (short cycle)
    - Add one-time callbacks for any remaining flagged seeds; enforce >=36h global B-seed spacing and respect mythic toggle.
