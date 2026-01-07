@@ -7309,6 +7309,7 @@ return `<span class="ot-draft-tag" title="${tip}" data-tip="${tip}">${
     relBA.opinion = clamp((relBA.opinion || 0) + delta * 0.8, -100, 100);
     if (tag && relAB.tags.indexOf(tag) < 0) relAB.tags.push(tag);
     if (tag && relBA.tags.indexOf(tag) < 0) relBA.tags.push(tag);
+  }
   function getPairKey(a, b) {
     if (!a || !b) return "";
     return a.id < b.id ? a.id + ":" + b.id : b.id + ":" + a.id;
@@ -9298,6 +9299,7 @@ return `<span class="ot-draft-tag" title="${tip}" data-tip="${tip}">${
           gameState.supplies[item.id] = Math.max(0, val);
           updateOutfitSummary();
           saveGame();
+        });
         outfitDom.inputs[item.id] = input;
         tdQty.appendChild(input);
       }
@@ -20928,7 +20930,9 @@ dom.departureSeason.addEventListener("change", function () {
 renderDepartureSeasonDesc();
 });
 }
+if (dom.departureSelect) {
 dom.departureSelect.addEventListener("change", updateStartArt);
+}
 if (!ensurePartyDraftState().initialized) {
 ensurePartyDraftState().initialized = true;
 generateFullDraft();
@@ -20943,9 +20947,15 @@ renderAllDraftInfo();
 saveGame();
 });
 }
+if (dom.btnBeginOutfit) {
 dom.btnBeginOutfit.addEventListener("click", startNewGameFromForm);
+}
+if (dom.btnAddRecommended) {
 dom.btnAddRecommended.addEventListener("click", addRecommendedLoad);
+}
+if (dom.btnBeginJourney) {
 dom.btnBeginJourney.addEventListener("click", beginJourney);
+}
 renderStorytellerOptions(
 dom.storytellerPreset,
 gameState.storytellerPresetId || "classic"
@@ -21004,16 +21014,20 @@ renderStorytellerOptions(dom.storytellerPreset, presetId);
 renderNarratorRules();
 });
 }
+if (dom.btnAdvance1) {
 dom.btnAdvance1.addEventListener("click", function () {
 withAdvanceLock(function () {
 return advanceHours(1);
 });
 });
+}
+if (dom.btnAdvance4) {
 dom.btnAdvance4.addEventListener("click", function () {
 withAdvanceLock(function () {
 return advanceHours(4);
 });
 });
+}
 if (dom.btnViewJournal) {
 dom.btnViewJournal.addEventListener("click", function () {
 setTravelView("journal");
@@ -21024,6 +21038,7 @@ dom.btnViewExplorer.addEventListener("click", function () {
 setTravelView("explorer");
 });
 }
+if (dom.btnToggleMode) {
 dom.btnToggleMode.addEventListener("click", function () {
 gameState.mode = gameState.mode === "travel" ? "camp" : "travel";
 resetTasksForCurrentMode();
@@ -21035,6 +21050,8 @@ gameState.mode === "travel"
 saveGame();
 renderAll();
 });
+}
+if (dom.btnChangePace) {
 dom.btnChangePace.addEventListener("click", function () {
 const options = ["steady", "slow", "grueling"];
 const idx = options.indexOf(gameState.pace);
@@ -21048,6 +21065,8 @@ PACE_CONFIG[next].label.toLowerCase() +
 saveGame();
 renderAll();
 });
+}
+if (dom.btnChangeRations) {
 dom.btnChangeRations.addEventListener("click", function () {
 const options = ["filling", "normal", "meager", "barebones"];
 const idx = options.indexOf(gameState.rations);
@@ -21061,6 +21080,7 @@ RATION_CONFIG[next].label.toLowerCase() +
 saveGame();
 renderAll();
 });
+}
 dom.btnOpenInventory.addEventListener("click", function () {
 renderInventoryModal();
 dom.inventoryModal.classList.add("active");
@@ -21346,7 +21366,9 @@ gameState.travelView === "explorer" ? "journal" : "explorer"
 );
 }
 });
+if (dom.btnReset) {
 dom.btnReset.addEventListener("click", resetGame);
+}
 }
 function ensureCampFlags() {
 if (!gameState.flags) gameState.flags = {};
@@ -22972,6 +22994,7 @@ buildOutfitTable();
 }
 renderAll();
 }
+function safeInit() {
 try {
 init();
 } catch (err) {
@@ -22989,4 +23012,10 @@ banner.style.borderRadius = "10px";
 banner.style.fontSize = "12px";
 root.appendChild(banner);
 }
+}
+}
+if (document.readyState === "loading") {
+document.addEventListener("DOMContentLoaded", safeInit);
+} else {
+safeInit();
 }
