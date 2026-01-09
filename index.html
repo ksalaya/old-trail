@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#202737" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; media-src 'self';" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
+  <title>Old Trail</title>
+  <link rel="stylesheet" href="/src/styles.css" />
+</head>
+<body>
+<div id="oldtrail-root" class="ot-root">
+<div class="ot-header">
+<div class="ot-title-block">
+<div class="ot-title">OLD TRAIL</div>
+<div class="ot-subtitle">
+SURVIVAL JOURNAL · OREGON TRAIL, 1840s–1860s
+</div>
+</div>
+<div class="ot-header-right">
+<div id="ot-leader-pill" class="ot-pill">Leader — not yet chosen</div>
+<button id="ot-btn-reset" class="ot-pill ot-pill-danger">
+Reset journey
+</button>
+</div>
+</div>
+<div id="ot-screen-start" class="ot-screen ot-screen-active">
+<div class="ot-screen-grid ot-start-grid">
+<div>
+<div class="ot-panel">
+<div class="ot-panel-header">Assemble your party</div>
+<div class="ot-panel-body">
+<div class="ot-field">
+<div class="ot-label">Leader name</div>
+<div class="ot-draft-row" data-slot="leader">
+<div class="ot-draft-header">
+<span>Leader</span>
+<div class="ot-draft-controls">
+<button class="ot-mini-btn" data-action="lock">Lock</button>
+<button class="ot-mini-btn" data-action="reroll">Reroll</button>
+</div>
+</div>
+<input
+id="ot-leader-name"
+class="ot-input"
+placeholder="e.g., Amelia Knight"
+/>
+<div class="ot-draft-info" id="ot-draft-info-leader"></div>
+</div>
+</div>
+<div class="ot-field">
+<div class="ot-label">Leader calling</div>
+<div id="ot-leader-calling" class="ot-panel-body-sm"></div>
+<div
+id="ot-leader-starting-funds"
+class="ot-panel-body-sm ot-text-muted"
+style="margin-top: 4px;"
+></div>
+</div>
+<div class="ot-field">
+<div class="ot-label">Departure town</div>
+<select id="ot-departure" class="ot-select">
+<option value="independence">Independence, Missouri</option>
+<option value="st_joseph">St. Joseph, Missouri</option>
+<option value="council_bluffs">Council Bluffs</option>
+</select>
+</div>
+<div class="ot-field">
+<div class="ot-label">Departure date</div>
+<select id="ot-departure-season" class="ot-select">
+<option value="early_april">Early April – swollen rivers, cold nights, sparse grass</option>
+<option value="late_april">Late April – historically ideal window (rivers falling, grass growing)</option>
+<option value="mid_may">Mid May – good grass, some storms, still safe for passes</option>
+<option value="early_june">Early June – hotter plains, stronger storms, still OK if you move well</option>
+<option value="mid_july">Mid July – high heat & dust, late for mountain passes</option>
+</select>
+<div
+id="ot-departure-season-desc"
+class="ot-panel-body-sm ot-text-muted"
+style="margin-top: 4px;"
+></div>
+</div>
+<div class="ot-field ot-start-hidden">
+<div class="ot-label">Trail narrator</div>
+<select id="ot-storyteller-preset" class="ot-select"></select>
+<div
+id="ot-storyteller-desc"
+class="ot-panel-body-sm ot-text-muted"
+style="margin-top: 4px;"
+>
+Shapes how quickly tension rises, how often dramatic events strike, and how generous breathers feel.
+</div>
+</div>
+<div class="ot-field">
+<div class="ot-label">Companions (up to 4)</div>
+<div id="ot-draft-rows"></div>
+<div class="ot-draft-controls" style="margin-top: 6px;">
+<button id="ot-btn-generate-party" class="ot-btn-gold" style="flex:1;">Generate party</button>
+<div class="ot-panel-body-sm ot-text-muted" style="flex:1;">
+Reroll individuals, lock favorites, or type over names. Traits and backstories carry into play.
+</div>
+</div>
+</div>
+<button id="ot-btn-begin-outfit" class="ot-btn-gold">
+Begin outfitting
+</button>
+</div>
+</div>
+</div>
+<div>
+<div class="ot-panel">
+<div class="ot-panel-header">Trail brief</div>
+<div class="ot-panel-body ot-panel-body-sm">
+Your wagon party will travel roughly two thousand miles from the
+Missouri frontier to the Willamette Valley. Most days you'll walk
+beside the wagon for 8–10 hours, stopping at noon to rest the stock
+and again at night to cook, make camp, and stand watch.
+<br /><br />
+Time advances in hours. Each hour you can have your leader and
+companions travel, scout ahead, hunt, cook, gather wood or water,
+repair the wagon, or simply rest. Tasks use their skills and carry
+different risks. Weather and season matter: swollen rivers in early
+spring, searing heat and dust in midsummer.
+<br /><br />
+Keep everyone fed, watered, warm, and rested. A party in poor
+condition will slow to a crawl or fall apart long before Oregon.
+</div>
+</div>
+<div class="ot-panel">
+<div class="ot-panel-header">Narrator &amp; tone</div>
+<div class="ot-panel-body ot-panel-body-sm">
+<div id="ot-storyteller-cards" class="ot-preset-cards"></div>
+<div
+id="ot-storyteller-example"
+class="ot-preset-example"
+aria-live="polite"
+></div>
+<div class="ot-panel-body-sm ot-text-muted" style="margin-top: 6px;">
+Tap or click a card to select a narrator. Your choice persists
+into the run and in saves.
+</div>
+</div>
+</div>
+<div id="ot-start-art" class="ot-start-art"></div>
+</div>
+</div>
+</div>
+<div id="ot-screen-outfit" class="ot-screen">
+<div class="ot-screen-grid">
+<div>
+<div class="ot-panel">
+<div class="ot-panel-header">Outfit your wagon</div>
+<div class="ot-panel-body">
+<div
+id="ot-outfit-intro"
+class="ot-panel-body-sm ot-text-muted"
+style="margin-bottom: 6px;"
+></div>
+<table class="ot-outfit-table" id="ot-outfit-table">
+<thead>
+<tr>
+<th>Item</th>
+<th>Qty</th>
+<th>Unit</th>
+<th>Cost</th>
+<th>Subtotal</th>
+</tr>
+</thead>
+<tbody id="ot-outfit-body"></tbody>
+</table>
+<div
+style="margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap;"
+>
+<button id="ot-btn-add-recommended" class="ot-btn-outline">
+Add recommended load
+</button>
+<button id="ot-btn-begin-journey" class="ot-btn-gold">
+Begin the journey
+</button>
+</div>
+</div>
+</div>
+</div>
+<div>
+<div class="ot-panel">
+<div class="ot-panel-header">Wagon summary</div>
+<div class="ot-panel-body ot-panel-body-sm">
+<div class="ot-outfit-summary-row">
+<div class="ot-supplies-label">Starting funds</div>
+<div id="ot-sum-starting" class="ot-supplies-value">$0.00</div>
+</div>
+<div class="ot-outfit-summary-row">
+<div class="ot-supplies-label">Money remaining</div>
+<div id="ot-sum-money" class="ot-supplies-value">$0.00</div>
+</div>
+<div class="ot-outfit-summary-row">
+<div class="ot-supplies-label">Total load</div>
+<div id="ot-sum-load" class="ot-supplies-value">0 lb</div>
+</div>
+<div class="ot-outfit-summary-row">
+<div class="ot-supplies-label">Draft power</div>
+<div id="ot-sum-draft" class="ot-supplies-value">
+0 lb pull
+</div>
+</div>
+<div class="ot-outfit-summary-row">
+<div class="ot-supplies-label">Load ratio</div>
+<div id="ot-sum-ratio" class="ot-supplies-value">0%</div>
+</div>
+<div
+class="ot-panel-body-sm ot-text-muted"
+style="margin-top: 6px;"
+>
+A heavily overloaded wagon will crawl along the trail and break
+down more often, but leaving too much behind risks starvation
+later.
+</div>
+</div>
+</div>
+<div id="ot-outfit-art" class="ot-start-art"></div>
+</div>
+</div>
+</div>
+<div id="ot-screen-travel" class="ot-screen">
+<div class="ot-screen-grid ot-screen-travel">
+<div class="ot-travel-main">
+<div class="ot-panel">
+<div class="ot-panel-header">
+Explorer viewport
+<div class="ot-panel-actions">
+<div class="ot-travel-view-toggle">
+<button
+id="ot-btn-view-journal"
+class="ot-view-toggle-btn ot-view-toggle-btn-active"
+type="button"
+>
+Journal view
+</button>
+<button id="ot-btn-view-explorer" class="ot-view-toggle-btn" type="button">
+Explorer view
+</button>
+</div>
+<button id="ot-btn-open-map" class="ot-btn-outline ot-map-launch" type="button">
+Trail map
+</button>
+</div>
+</div>
+<div class="ot-travel-scene-wrapper ot-viewport-window">
+<div id="ot-explorer-chip" class="ot-explorer-chip"></div>
+<canvas
+id="ot-trail-canvas"
+class="ot-trail-canvas"
+aria-hidden="true"
+></canvas>
+<div id="ot-scene" class="ot-travel-scene"></div>
+<div class="ot-travel-scene-overlay" id="ot-scene-caption"></div>
+<div id="ot-affliction-alerts" class="ot-affliction-alerts"></div>
+</div>
+</div>
+<div class="ot-panel">
+<div class="ot-panel-header">Trail info</div>
+<div
+class="ot-panel-body ot-panel-body-sm"
+id="ot-trail-header"
+></div>
+</div>
+<div class="ot-panel">
+<div class="ot-panel-header">Trail log</div>
+<div class="ot-panel-body" id="ot-trail-log-panel">
+<div id="old-trail-log-widget">
+<div class="ot-log-shell">
+<div class="ot-log-header">
+<div class="ot-log-title">Trail Log</div>
+<div class="ot-log-sub">Journal of the Journey</div>
+</div>
+<div class="ot-log-body">
+<div class="ot-log-list"></div>
+</div>
+<div class="ot-log-footer">
+<div>Recent entries</div>
+<div class="ot-footer-pill">Handwritten mode</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="ot-panel" id="ot-cascade-panel" style="display: none;">
+<div class="ot-panel-header">Trail story highlights</div>
+<div class="ot-panel-body ot-cascade-wrapper">
+<div id="ot-cascade-summary"></div>
+<div id="ot-cascade-highlights"></div>
+<div id="ot-cascade-timeline" aria-label="Cascade timeline"></div>
+<div id="ot-cascade-people" aria-label="Companion timelines"></div>
+</div>
+</div>
+</div>
+<div class="ot-travel-side">
+<div class="ot-panel">
+<div class="ot-panel-header">On the trail</div>
+<div class="ot-panel-body ot-panel-body-sm">
+<div>Pace: <span id="ot-ontrail-pace">Steady</span></div>
+<div>Rations: <span id="ot-ontrail-rations">Full rations</span></div>
+<div>Mode: <span id="ot-ontrail-mode">In camp</span></div>
+<div>Daily block: <span id="ot-ontrail-block">Morning</span></div>
+<div>Weather: <span id="ot-weather-summary">—</span></div>
+<div class="ot-text-muted" id="ot-weather-note"></div>
+<div>
+Reputation:
+<span
+id="ot-reputation-chip"
+class="ot-rep-chip ot-rep-chip-neutral"
+title="Standing among travelers"
+role="status"
+>
+Neutral
+</span>
+</div>
+<div>
+Factions:
+<span id="ot-faction-forts" class="ot-rep-chip ot-rep-chip-neutral">Forts</span>
+<span id="ot-faction-caravans" class="ot-rep-chip ot-rep-chip-neutral">Caravans</span>
+<span id="ot-faction-open-eye" class="ot-rep-chip ot-rep-chip-neutral">Open Eye</span>
+<span id="ot-faction-men-in-gray" class="ot-rep-chip ot-rep-chip-neutral">Men in Gray</span>
+</div>
+</div>
+</div>
+<div class="ot-panel">
+<div class="ot-panel-header">Narrator</div>
+<div class="ot-panel-body ot-panel-body-sm">
+<div class="ot-narrator-row">
+<div id="ot-narrator-label" class="ot-text-muted"></div>
+<button id="ot-btn-toggle-narrator" class="ot-link-button" type="button">
+Change narrator
+</button>
+</div>
+<div id="ot-narrator-picker" class="ot-narrator-picker" style="display: none; margin-top: 6px;">
+<select id="ot-storyteller-midrun" class="ot-select"></select>
+<div id="ot-narrator-hint" class="ot-panel-body-sm ot-text-muted" style="margin-top: 4px;"></div>
+</div>
+<div id="ot-narrator-rules" class="ot-panel-body-sm ot-text-muted" style="margin-top: 4px;"></div>
+<div class="ot-panel-body-sm ot-text-muted" style="margin-top: 6px;">
+<label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+<input type="checkbox" id="ot-tension-debug" />
+<span>Show tension debug</span>
+</label>
+<div id="ot-tension-readout" class="ot-panel-body-sm ot-text-muted"></div>
+</div>
+</div>
+</div>
+<div class="ot-panel">
+<div class="ot-panel-header">Leader status</div>
+<div class="ot-panel-body" id="ot-leader-status"></div>
+</div>
+<div class="ot-panel">
+<div class="ot-panel-header">
+Party manifest
+<button id="ot-btn-open-social" class="ot-link-button" type="button">Social web</button>
+</div>
+<div class="ot-panel-body" id="ot-party-manifest"></div>
+</div>
+<div class="ot-panel">
+<div class="ot-panel-header">
+Hour tasks
+<button
+id="ot-btn-open-priorities"
+class="ot-link-button"
+type="button"
+>
+Work priorities
+</button>
+</div>
+<div class="ot-panel-body" id="ot-hour-tasks"></div>
+</div>
+<div class="ot-panel">
+<div class="ot-panel-header">Companion detail</div>
+<div class="ot-panel-body" id="ot-companion-detail"></div>
+</div>
+<div class="ot-panel">
+<div class="ot-panel-header">
+Supplies overview
+<button
+id="ot-btn-open-inventory"
+class="ot-link-button"
+type="button"
+>
+Inventory
+</button>
+<button
+id="ot-btn-open-trade"
+class="ot-link-button"
+type="button"
+style="display:none;"
+>
+Trading Post
+</button>
+</div>
+<div class="ot-panel-body" id="ot-supplies-overview"></div>
+</div>
+</div>
+</div>
+<div class="ot-footer">
+<div class="ot-footer-left" id="ot-footer-status"></div>
+<div class="ot-footer-right">
+<button id="ot-btn-advance-1" class="ot-btn-gold">
+Advance 1 hour
+</button>
+<button id="ot-btn-advance-4" class="ot-btn-gold">
+Advance 4 hours
+</button>
+<button id="ot-btn-toggle-mode" class="ot-btn-outline">
+Toggle travel / camp
+</button>
+<button id="ot-btn-change-pace" class="ot-btn-outline">
+Change pace
+</button>
+<button id="ot-btn-change-rations" class="ot-btn-outline">
+Change rations
+</button>
+<button id="ot-btn-evening-proper-camp" class="ot-btn-outline">
+Proper camp (2h)
+</button>
+<button id="ot-btn-evening-rushed-camp" class="ot-btn-outline">
+Rushed camp (1h)
+</button>
+<button id="ot-btn-campfire-moment" class="ot-btn-outline">
+Campfire moment (1h)
+</button>
+<button id="ot-btn-open-camp-tasks" class="ot-btn-outline">
+Camp tasks
+</button>
+<button id="ot-btn-export-save" class="ot-btn-outline">
+Export save
+</button>
+<button id="ot-btn-import-save" class="ot-btn-outline">
+Import save
+</button>
+<input
+id="ot-import-save-file"
+type="file"
+accept="application/json"
+class="ot-hidden-input"
+/>
+</div>
+</div>
+<div class="ot-time-bar">
+<div class="ot-time-controls">
+<button class="ot-time-btn" data-speed="0" id="ot-time-pause">
+Pause
+</button>
+<button class="ot-time-btn" data-speed="1" id="ot-time-1x">
+1x
+</button>
+<button class="ot-time-btn" data-speed="2" id="ot-time-2x">
+2x
+</button>
+<button class="ot-time-btn" data-speed="3" id="ot-time-3x">
+3x
+</button>
+</div>
+<div class="ot-time-readout" id="ot-time-readout"></div>
+</div>
+</div>
+<div id="ot-camp-overlay">
+<div class="ot-overlay-inner">
+<div class="ot-overlay-panel">
+<div class="ot-panel-header" style="margin-bottom: 6px">
+Camp tasks planner
+</div>
+<div id="oldtrail-camp-menu-widget"></div>
+<div class="ot-panel-body-sm" id="ot-camp-chore-wrapper" style="margin-top:6px;">
+<div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+<div class="ot-text-muted" style="flex:1">Night chores are based on current work roles. Edit priorities to adjust who does what.</div>
+<button id="ot-btn-edit-roles" class="ot-btn-outline" style="padding:4px 6px; font-size:11px;">Edit roles</button>
+</div>
+<div id="ot-camp-chore-strips" class="ot-panel-body-sm" style="background: rgba(255,255,255,0.03); border-radius:8px;"></div>
+</div>
+<div
+id="ot-camp-roles-summary"
+class="ot-panel-body-sm ot-text-muted"
+style="margin-top: 6px"
+></div>
+<div style="display: flex; gap: 8px; margin-top: 8px; align-items: center">
+<button id="ot-btn-camp-confirm" class="ot-btn-gold">Confirm chores</button>
+<button id="ot-btn-camp-auto" class="ot-btn-outline">Auto plan</button>
+<div class="ot-text-muted" id="ot-camp-summary-note"></div>
+</div>
+</div>
+<div class="ot-overlay-panel">
+<div class="ot-panel-header" style="margin-bottom: 6px">
+Crafting & repairs
+</div>
+<div id="oldtrail-crafting-widget"></div>
+</div>
+<button id="ot-btn-close-camp" class="ot-btn-outline ot-overlay-close">Close</button>
+</div>
+</div>
+<div id="ot-map-modal" class="ot-modal">
+<div class="ot-modal-backdrop"></div>
+<div class="ot-modal-content ot-map-modal-content">
+<div class="ot-modal-title">Trail map</div>
+<div class="ot-modal-sub" id="ot-map-sub">
+View your progress and nearby waypoints along the route.
+</div>
+<div class="ot-map-modal-grid">
+<div class="ot-map-viewport ot-viewport-window" id="ot-map-viewport">
+<div id="ot-map-tooltip" class="ot-map-tooltip" style="display: none"></div>
+</div>
+<div class="ot-trail-map" id="ot-trail-map"></div>
+</div>
+<div class="ot-map-controls">
+<div class="ot-map-toggle-row">
+<label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+<input id="ot-toggle-fog" type="checkbox" /> Fog of war
+</label>
+<label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+<input id="ot-toggle-silhouettes" type="checkbox" /> Silhouettes on unseen
+</label>
+</div>
+<div class="ot-map-target-block">
+<div class="ot-map-target-header">
+<div style="font-weight: 600;">Travel target</div>
+<button id="ot-btn-clear-target" class="ot-btn-outline" type="button">Clear Target</button>
+</div>
+<div class="ot-map-target-meta" id="ot-target-meta">No destination selected</div>
+<div class="ot-map-conditions" id="ot-local-conditions"></div>
+<div class="ot-map-target-actions">
+<button id="ot-btn-travel-1h" class="ot-btn-gold" type="button">Travel 1h</button>
+<button id="ot-btn-travel-4h" class="ot-btn-outline" type="button">Travel 4h</button>
+<button id="ot-btn-auto-travel" class="ot-btn-outline" type="button">Auto Travel (max 12h)</button>
+</div>
+</div>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; gap: 8px;">
+<button
+id="ot-btn-toggle-maplist"
+class="ot-link-button"
+type="button"
+>
+Show waypoints
+</button>
+<button id="ot-btn-close-map" class="ot-btn-outline" type="button">Close</button>
+</div>
+</div>
+</div>
+<div id="ot-encounter-modal" class="ot-modal" aria-hidden="true">
+<div class="ot-modal-backdrop"></div>
+<div
+class="ot-modal-content ot-encounter-content"
+role="dialog"
+aria-modal="true"
+aria-labelledby="ot-encounter-title"
+tabindex="-1"
+>
+<div class="ot-encounter-header">
+<div id="ot-encounter-title" class="ot-modal-title">Encounter</div>
+<div id="ot-encounter-subtitle" class="ot-encounter-subtitle"></div>
+</div>
+<div
+id="ot-encounter-image"
+class="ot-encounter-image"
+style="display: none;"
+aria-hidden="true"
+></div>
+<div id="ot-encounter-body" class="ot-encounter-body"></div>
+<div
+id="ot-encounter-companions"
+class="ot-encounter-companions"
+style="display: none;"
+></div>
+<div id="ot-encounter-options" class="ot-encounter-options"></div>
+</div>
+</div>
+<div id="oldtrail-thoughts-bubble" style="display: none">
+<div class="tb-window">
+<div class="tb-header">
+<span class="tb-name">Companion</span>
+<span class="tb-close">×</span>
+</div>
+<div class="tb-body">
+<div class="tb-avatar"></div>
+<div style="flex: 1">
+<div class="tb-text">Quiet thoughts by the fire.</div>
+<div class="tb-mood-row">
+<div class="tb-mood-bar">
+<div class="tb-mood-fill"></div>
+</div>
+<div class="tb-mood-label">Mood</div>
+</div>
+</div>
+</div>
+<div class="tb-footer">Tap to cycle thoughts</div>
+</div>
+</div>
+<div id="ot-inventory-modal" class="ot-modal">
+<div class="ot-modal-backdrop"></div>
+<div class="ot-modal-content">
+<div class="ot-modal-title">Wagon inventory</div>
+<div id="ot-inventory-sub" class="ot-modal-sub"></div>
+<table class="ot-inventory-table">
+<thead>
+<tr>
+<th>Item</th>
+<th>Qty</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody id="ot-inventory-body"></tbody>
+</table>
+<div style="display: flex; justify-content: flex-end; margin-top: 6px;">
+<button id="ot-btn-close-inventory" class="ot-btn-outline">
+Close
+</button>
+</div>
+</div>
+</div>
+<div id="ot-trade-modal" class="ot-modal" aria-hidden="true">
+<div class="ot-modal-backdrop"></div>
+<div class="ot-modal-content ot-trade-content">
+<div class="ot-modal-title" id="ot-trade-title">Trading Post</div>
+<div id="ot-trade-sub" class="ot-modal-sub"></div>
+<div class="ot-trade-summary" id="ot-trade-summary"></div>
+<div class="ot-trade-tabs">
+<button id="ot-trade-tab-buy" class="ot-btn-outline">Buy</button>
+<button id="ot-trade-tab-sell" class="ot-btn-outline">Sell</button>
+<button id="ot-trade-tab-barter" class="ot-btn-outline">Barter</button>
+</div>
+<div class="ot-trade-grid">
+<div>
+<table class="ot-trade-table">
+<thead>
+<tr>
+<th>Goods</th>
+<th>Owned</th>
+<th>Stock</th>
+<th>Buy</th>
+<th>Sell</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="ot-trade-body"></tbody>
+</table>
+<div id="ot-trade-msg" class="ot-modal-sub" style="min-height:16px; margin-top:6px;"></div>
+<div id="ot-barter-panel" class="ot-barter-panel" style="display:none;"></div>
+</div>
+<div class="ot-trade-ledger">
+<div class="ot-trade-ledger-notes">
+<div class="ot-trade-ledger-notes-title">Ledger Notes</div>
+<div id="ot-trade-ledger-notes"></div>
+</div>
+<div class="ot-trade-ledger-title">Ledger</div>
+<div id="ot-trade-ledger-body"></div>
+</div>
+</div>
+<div style="display:flex; justify-content:flex-end; margin-top:6px;">
+<button id="ot-btn-close-trade" class="ot-btn-outline">Close</button>
+</div>
+</div>
+</div>
+<div id="ot-priorities-modal" class="ot-modal">
+<div class="ot-modal-backdrop"></div>
+<div class="ot-modal-content">
+<div class="ot-modal-title">Work priorities</div>
+<div id="ot-priorities-sub" class="ot-modal-sub ot-priorities-legend">
+Set what each person focuses on when set to “auto”. Lower numbers are
+higher priority; “—” means they rarely do that job unless you assign it
+directly. Toggling between travel and camp will reset hour-by-hour
+assignments so the auto system can re-balance jobs.
+</div>
+<table class="ot-priorities-table">
+<thead>
+<tr id="ot-priorities-head-row"></tr>
+</thead>
+<tbody id="ot-priorities-body"></tbody>
+</table>
+<div id="ot-priorities-warnings" class="ot-priorities-warnings"></div>
+<div style="display: flex; justify-content: flex-end; margin-top: 6px;">
+<button id="ot-btn-close-priorities" class="ot-btn-outline">
+Close
+</button>
+</div>
+</div>
+</div>
+<div id="ot-social-modal" class="ot-modal">
+<div class="ot-modal-backdrop"></div>
+<div class="ot-modal-content">
+<div class="ot-modal-title">Social web</div>
+<div id="ot-social-body" class="ot-panel-body"></div>
+</div>
+</div>
+</div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
